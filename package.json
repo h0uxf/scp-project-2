@@ -1,0 +1,36 @@
+{
+  "name": "scp-project-1",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/h0uxf/scp-project-1.git"
+  },
+  "author": "h0uxf, karysgoh, kahhian24, RvL-afk, ruyi520520",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/h0uxf/scp-project-1/issues"
+  },
+  "homepage": "https://github.com/h0uxf/scp-project-1#readme",
+  "dependencies": {
+    "@prisma/client": "^6.10.1",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.0.0",
+    "env": "^0.0.2",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "nodemon": "^3.1.10"
+  },
+  "devDependencies": {
+    "prisma": "^6.10.1"
+  },
+  "prisma": {
+    "schema": "./prisma/schema.prisma"
+  }
+}
