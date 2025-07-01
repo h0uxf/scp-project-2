@@ -1,14 +1,59 @@
-const express = require("express");
-const cors = require("cors");
+//////////////////////////////////////////////////////
+// INCLUDES
+//////////////////////////////////////////////////////
+const express = require('express');
+const cors = require('cors');
 
+//////////////////////////////////////////////////////
+// CREATE APP
+//////////////////////////////////////////////////////
 const app = express();
 
-//middleware
-app.use(cors());
+//////////////////////////////////////////////////////
+// USES
+//////////////////////////////////////////////////////
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true,
+}));
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
-// routes
-const mainRouter = require("./routes/main");
-app.use("/", mainRouter);
+const { sanitizeResponse } = require('../src/middlewares/sanitizers');
+const helmet = require('helmet');
 
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
+//////////////////////////////////////////////////////
+// SETUP STATIC FILES
+//////////////////////////////////////////////////////
+app.use(helmet());
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'"],
+      imgSrc: ["'self'"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  })
+)
+
+//////////////////////////////////////////////////////
+// SETUP ROUTES
+//////////////////////////////////////////////////////
+const mainRoutes = require('./routes/mainRoutes');
+app.use("/api", mainRoutes);
+
+app.use("/", express.static('public'));
+app.use(sanitizeResponse);
+
+//////////////////////////////////////////////////////
+// EXPORT APP
+//////////////////////////////////////////////////////
 module.exports = app;
