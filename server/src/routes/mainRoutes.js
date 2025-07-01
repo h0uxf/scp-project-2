@@ -1,8 +1,106 @@
-const express = require("express");
+//////////////////////////////////////////////////////
+// REQUIRED MODULES
+//////////////////////////////////////////////////////
+const express = require('express');
+
+//////////////////////////////////////////////////////
+// IMPORT CONTROLLERS
+//////////////////////////////////////////////////////
+const bcryptMiddleware = require('../middlewares/bcryptMiddleware.js');
+const jwtMiddleware = require('../middlewares/jwtMiddleware.js');
+
+//////////////////////////////////////////////////////
+// IMPORT MIDDLEWARES FOR INPUT VALIDATION
+//////////////////////////////////////////////////////
+const {
+  validate, 
+  userValidationRules
+} = require('../middlewares/validators.js');
+
+const { sanitizeRequest, sanitizeResponse } = require('../middlewares/sanitizers.js');
+
+//////////////////////////////////////////////////////
+// CREATE ROUTER
+//////////////////////////////////////////////////////
 const router = express.Router();
+router.use(sanitizeRequest);
 
-const authRoutes = require("./authRoutes.js");
+//////////////////////////////////////////////////////
+// DEFINE ROUTES
+//////////////////////////////////////////////////////
+// [POST] User login 
+router.post(
+  "/login",
+  userValidationRules(), // Apply validation rules for user-related fields
+  validate, // Check validation results
+  userController.login,
+  bcryptMiddleware.comparePassword,
+  jwtMiddleware.generateToken,
+  (req, res) => {
+    res.status(200).json({
+      message: "Login successful",
+      user: {
+        user_id: res.locals.user_id,
+        username: res.locals.username,
+        role_id: res.locals.role_id,
+      }
+    });
+  }
+);
 
-router.use("/api", authRoutes);
+// [POST] User register
+router.post(
+  "/register",
+  userValidationRules(), // Apply validation rules for user-related fields
+  validate, // Check validation results
+  userController.checkUsernameExist,
+  bcryptMiddleware.hashPassword,
+  userController.register,
+  jwtMiddleware.generateToken,
+  (req, res) => {
+    res.status(201).json({
+      message: "Registration successful",
+      user: {
+        user_id: res.locals.user_id,
+        username: res.locals.username,
+        role_id: res.locals.role_id,
+      }
+    });
+  }
+);
 
+
+router.get('/me', jwtMiddleware.verifyToken, (req, res) => {
+  const user = {
+    user_id: req.user.user_id,
+    username: req.user.username,
+    role_id: req.user.role_id,
+  };
+  res.status(200).json(user);
+});
+
+// [POST] Logout route to clear the cookie
+router.post("/logout", (req, res) => {
+  res.clearCookie("authToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Lax",
+  });
+
+  res.status(200).json({ message: "Logged out successfully" });
+});
+
+const locationRoutes = require('../routes/locationRoutes.js'); 
+router.use('/location', locationRoutes);
+
+const activityRoutes = require('../routes/activityRoutes.js');
+router.use('/activity', activityRoutes);
+
+const tourRoutes = require('../routes/tourRoutes.js');
+router.use('/tour', tourRoutes);
+
+//////////////////////////////////////////////////////
+// EXPORT ROUTER
+//////////////////////////////////////////////////////
+router.use(sanitizeResponse);
 module.exports = router;
