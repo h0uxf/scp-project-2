@@ -8,6 +8,7 @@ const express = require('express');
 //////////////////////////////////////////////////////
 const bcryptMiddleware = require('../middlewares/bcryptMiddleware.js');
 const jwtMiddleware = require('../middlewares/jwtMiddleware.js');
+const userController = require('../controllers/userController.js');
 
 //////////////////////////////////////////////////////
 // IMPORT MIDDLEWARES FOR INPUT VALIDATION
@@ -89,15 +90,6 @@ router.post("/logout", (req, res) => {
 
   res.status(200).json({ message: "Logged out successfully" });
 });
-
-const locationRoutes = require('../routes/locationRoutes.js'); 
-router.use('/location', locationRoutes);
-
-const activityRoutes = require('../routes/activityRoutes.js');
-router.use('/activity', activityRoutes);
-
-const tourRoutes = require('../routes/tourRoutes.js');
-router.use('/tour', tourRoutes);
 
 //////////////////////////////////////////////////////
 // EXPORT ROUTER

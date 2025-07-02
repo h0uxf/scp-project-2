@@ -7,3 +7,150 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Entities for crossword puzzle feature
+model Word {
+  wordId     Int      @id @default(autoincrement()) @map("word_id")
+  wordText   String   @map("word_text")
+  wordLength Int      @map("word_length")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  wordClues  WordClue[]
+}
+
+model Clue {
+  clueId     Int      @id @default(autoincrement()) @map("clue_id")
+  clueText   String   @map("clue_text")
+  clueType   String   @map("clue_type")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  wordClues  WordClue[]
+}
+
+model WordClue {
+  wordId      Int      @map("word_id")
+  clueId      Int      @map("clue_id")
+  gridNumber  Int      @map("grid_number")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  word        Word     @relation(fields: [wordId], references: [wordId], onDelete: Cascade)
+  clue        Clue     @relation(fields: [clueId], references: [clueId], onDelete: Cascade)
+
+  @@id([wordId, clueId])
+}
+
+model Question {
+  questionId    Int      @id @default(autoincrement()) @map("question_id")
+  questionText  String   @map("question_text")
+  options       Option[]
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+}
+
+model Option {
+  optionId     Int      @id @default(autoincrement()) @map("option_id")
+  optionText   String   @map("option_text")
+  isCorrect    Boolean  @map("is_correct")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  question     Question @relation(fields: [questionId], references: [questionId], onDelete: Cascade)
+  questionId   Int      @map("question_id")
+}
+
+model Location {
+  locationId   Int      @id @default(autoincrement()) @map("location_id")
+  name         String   
+  description  String   
+  code         String   
+  points       Int      
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  activity     Activity[]
+  userLocations UserLocation[] // Added opposite relation field
+}
+
+model Activity {
+  activityId   Int      @id @default(autoincrement()) @map("activity_id")
+  name         String   
+  description  String   
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  feature      Location @relation(fields: [locationId], references: [locationId], onDelete: Cascade)
+  locationId   Int      @map("location_id")
+  userActivities UserActivities[] // Added opposite relation field
+}
+
+model User {
+  userId       Int      @id @default(autoincrement()) @map("user_id")
+  username     String   @unique 
+  passwordHash String   @map("password_hash")
+  points       Int      
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  userLocation UserLocation[]
+  userActivities UserActivities[]
+  userRole     UserRole[]
+}
+
+model UserLocation {
+  userId       Int      @map("user_id")
+  locationId   Int      @map("location_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  user         User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  location     Location @relation(fields: [locationId], references: [locationId], onDelete: Cascade)
+
+  @@id([userId, locationId])
+}
+
+model UserActivities {
+  userId       Int      @map("user_id")
+  activityId   Int      @map("activity_id")
+  points       Int      
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  user         User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  activity     Activity @relation(fields: [activityId], references: [activityId], onDelete: Cascade)
+
+  @@id([userId, activityId])
+}
+
+model UserRole {
+  userId       Int      @map("user_id")
+  roleId       Int      @map("role_id")
+  assignedAt   DateTime @default(now()) @map("assigned_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  user         User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  role         Role     @relation(fields: [roleId], references: [roleId], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+model Role {
+  roleId       Int      @id @default(autoincrement()) @map("role_id")
+  roleName     String   @map("role_name")
+  description  String   
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  userRole     UserRole[]
+  rolePermission RolePermission[]
+}
+
+model RolePermission {
+  roleId       Int      @map("role_id")
+  permissionId Int      @map("permission_id")
+  assignedAt   DateTime @default(now()) @map("assigned_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  role         Role     @relation(fields: [roleId], references: [roleId], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [permissionId], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model Permission {
+  permissionId   Int      @id @default(autoincrement()) @map("permission_id")
+  permissionName String   @map("permission_name")
+  description    String   
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  rolePermission RolePermission[]
+}
