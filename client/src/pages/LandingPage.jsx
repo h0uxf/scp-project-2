@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Menu, X, Crown, Play, HelpCircle, Home, GraduationCap, Star, Trophy, Medal } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const top3 = [
   { name: "Alice", points: 120 },
@@ -24,6 +25,7 @@ const GlowingOrb = ({ size, color, position, delay = 0 }) => (
 const LandingPage = () => {
   const [navOpen, setNavOpen] = useState(false);
   const [scrollY, setScrollY] = useState(0);
+  const navigate = useNavigate();
   
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -234,7 +236,7 @@ const LandingPage = () => {
               Challenge yourself with our interactive computing quiz. Test your knowledge, learn new concepts, and compete with fellow students!
             </p>
             <button 
-              onClick={() => handleButtonClick('quiz')}
+              onClick={() => navigate('/quiz')}
               className="group bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-8 py-4 rounded-full shadow-lg hover:scale-105 transition-all duration-300 font-semibold"
             >
               <span className="flex items-center gap-2">

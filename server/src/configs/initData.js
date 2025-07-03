@@ -153,6 +153,78 @@ async function initializeData() {
     } else {
       console.log('Admin user already exists, skipping creation.');
     }
+
+    // --- 4. Create Quiz Questions ---
+    const quizQuestions = [
+      {
+        questionText: 'When was School of Computing (SoC) established?',
+        options: [
+          { optionText: '1965', isCorrect: false },
+          { optionText: '1954', isCorrect: false },
+          { optionText: '1980', isCorrect: true },
+          { optionText: '2000', isCorrect: false },
+        ],
+      },
+      {
+        questionText: 'How many courses does SoC offer?',
+        options: [
+          { optionText: '3', isCorrect: true },
+          { optionText: '4', isCorrect: false },
+          { optionText: '5', isCorrect: false },
+          { optionText: '6', isCorrect: false },
+        ],
+      },
+      {
+        questionText: 'Which of the following is NOT a course offered by SoC?',
+        options: [
+          { optionText: 'Diploma of Computer Science', isCorrect: false },
+          { optionText: 'Diploma of Cybersecurity and Digital Forensics', isCorrect: false }, 
+          { optionText: 'Diploma of Arts', isCorrect: true },
+          { optionText: 'Diploma of Applied AI and Analytics', isCorrect: false }
+        ],
+      },
+      {
+        questionText: 'What is the main focus of the Diploma of Cybersecurity and Digital Forensics?',
+        options: [
+          { optionText: 'Web development', isCorrect: false },
+          { optionText: 'Data analysis', isCorrect: false },
+          { optionText: 'Cybersecurity and digital forensics', isCorrect: true },
+          { optionText: 'Game development', isCorrect: false },
+        ],
+      }, 
+      {
+        questionText: 'How many Special Interest Groups (SIGs) does SoC have?',
+        options: [
+          { optionText: '2', isCorrect: false },
+          { optionText: '3', isCorrect: false }, 
+          { optionText: '4', isCorrect: false },
+          { optionText: '5', isCorrect: true },
+        ],
+      }
+    ];
+
+    for (const questionData of quizQuestions) {
+      const existingQuestion = await prisma.question.findUnique({
+        where: { questionText: questionData.questionText },
+      });
+
+      if (!existingQuestion) {
+        const newQuestion = await prisma.question.create({
+          data: {
+            questionText: questionData.questionText,
+            options: {
+              create: questionData.options.map(option => ({
+                optionText: option.optionText,
+                isCorrect: option.isCorrect,
+              })),
+            },
+          },
+        });
+        console.log(`Quiz question created: ${newQuestion.questionText}`);
+      } else {
+        console.log(`Quiz question '${existingQuestion.questionText}' already exists, skipping creation.`);
+      }
+    }
   } catch (error) {
     console.error('Error initializing data:', error);
     process.exit(1); // Ensure the process exits with a non-zero code on failure
