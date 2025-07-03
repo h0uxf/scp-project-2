@@ -91,6 +91,9 @@ router.post("/logout", (req, res) => {
   res.status(200).json({ message: "Logged out successfully" });
 });
 
+const quizRoutes = require('../routes/quizRoutes.js');
+router.use('/quiz', quizRoutes);
+
 //////////////////////////////////////////////////////
 // EXPORT ROUTER
 //////////////////////////////////////////////////////

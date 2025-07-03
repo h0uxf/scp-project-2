@@ -42,6 +42,7 @@ model Question {
   questionId    Int      @id @default(autoincrement()) @map("question_id")
   questionText  String   @map("question_text")
   options       Option[]
+  quizResults   QuizResult[] 
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 }
@@ -54,6 +55,18 @@ model Option {
   updatedAt    DateTime @updatedAt @map("updated_at")
   question     Question @relation(fields: [questionId], references: [questionId], onDelete: Cascade)
   questionId   Int      @map("question_id")
+  quizResults  QuizResult[] 
+}
+
+model QuizResult {
+  resultId     Int      @id @default(autoincrement()) @map("result_id")
+  userId       String   @map("user_id") 
+  question     Question @relation(fields: [questionId], references: [questionId], onDelete: Cascade)
+  questionId   Int      @map("question_id")
+  option       Option   @relation(fields: [optionId], references: [optionId], onDelete: Cascade)
+  optionId     Int      @map("option_id")
+  isCorrect    Boolean  @map("is_correct") 
+  submittedAt  DateTime @default(now()) @map("submitted_at")
 }
 
 model Location {
