@@ -62,7 +62,7 @@ const rolesToCreate = [
             'manage_settings',
             'manage_all_content',
         ],
-    }
+    },
     {
         roleName: 'admin',
         description: 'Administrator role with full access to manage users, content, and settings',
