@@ -21,6 +21,8 @@ app.use(express.urlencoded({ extended: false }));
 
 const { sanitizeResponse } = require('../src/middlewares/sanitizers');
 const helmet = require('helmet');
+const rateLimit = require('express-rate-limit'); // for rate limiting
+
 
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
@@ -43,6 +45,16 @@ app.use(
     },
   })
 )
+
+// rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again after 15 minutes',
+  standardHeaders: true, // return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, 
+});
+app.use(limiter); // rate limiting to all requests
 
 //////////////////////////////////////////////////////
 // SETUP ROUTES
