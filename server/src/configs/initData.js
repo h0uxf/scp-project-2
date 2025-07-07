@@ -4,24 +4,33 @@ const bcrypt = require('bcrypt');
 
 async function initializeData() {
   try {
-    // --- 1. Initialize Permissions ---
+    // --- 1. Initialize Roles ---
+    const rolesToCreate = [
+      { roleName: 'admin', description: 'Administrator with full access' },
+      { roleName: 'user', description: 'Standard application user' },
+    ];
+
+    const createdRoles = {};
+    for (const roleData of rolesToCreate) {
+      let role = await prisma.role.findUnique({
+        where: { roleName: roleData.roleName },
+      });
+      if (!role) {
+        role = await prisma.role.create({ data: roleData });
+        console.log(`Role '${role.roleName}' created.`);
+      } else {
+        console.log(`Role '${role.roleName}' already exists, skipping creation.`);
+      }
+      createdRoles[role.roleName] = role;
+    }
+
+    // --- 2. Initialize Permissions ---
     const permissionsToCreate = [
-      { permissionName: 'access_app', description: 'Basic access to the application features' },
-      { permissionName: 'view_content', description: 'Ability to view content (words, clues, questions, locations, activities)' },
-      { permissionName: 'view_users', description: 'Ability to view user accounts' },
-      { permissionName: 'view_roles', description: 'Ability to view roles and permissions' },
-      { permissionName: 'view_logs', description: 'Ability to view system logs' },
-      { permissionName: 'view_reports', description: 'Ability to view system reports' },
-      { permissionName: 'manage_words', description: 'Ability to manage words' },
-      { permissionName: 'manage_clues', description: 'Ability to manage clues' },
-      { permissionName: 'manage_questions', description: 'Ability to manage questions' },
-      { permissionName: 'manage_activities', description: 'Ability to manage activities' },
-      { permissionName: 'manage_locations', description: 'Ability to manage locations' },
-      { permissionName: 'manage_all_content', description: 'Ability to create, edit, and delete content (words, clues, questions, locations, activities)' },
       { permissionName: 'manage_users', description: 'Ability to manage user accounts' },
-      { permissionName: 'manage_admin_users', description: 'Ability to manage admin user accounts' },
       { permissionName: 'manage_roles', description: 'Ability to manage roles and permissions' },
-      { permissionName: 'manage_settings', description: 'Ability to manage application settings' },
+      { permissionName: 'manage_content', description: 'Ability to create, edit, and delete content (words, clues, questions, locations, activities)' },
+      { permissionName: 'view_reports', description: 'Ability to view system reports' },
+      { permissionName: 'access_app', description: 'Basic access to the application features' },
     ];
 
     const createdPermissions = {};
@@ -36,92 +45,11 @@ async function initializeData() {
       createdPermissions[perm.permissionName] = permission;
     }
 
-    // --- 2. Initialize Roles ---
-    const rolesToCreate = [
-      {
-        roleName: 'user',
-        description: 'Basic user role with limited permissions',
-        permissions: [
-          'access_app', 
-          'view_content', 
-          'view_users'
-        ],
-      },
-      {
-        roleName: 'content_manager',
-        description: 'Content manager role with permissions to manage all content',
-        permissions: [
-          'access_app',
-          'view_content',
-          'view_users',
-          'manage_words',
-          'manage_clues',
-          'manage_questions',
-          'manage_activities',
-          'manage_locations',
-          'manage_all_content',
-        ],
-      },
-      {
-        roleName: 'moderator',
-        description: 'Moderator role with permissions to manage users and content',
-        permissions: [
-          'access_app',
-          'view_content',
-          'view_users',
-          'manage_users',
-          'manage_roles',
-          'manage_settings',
-          'manage_all_content',
-        ],
-      },
-      {
-        roleName: 'admin',
-        description: 'Administrator role with full access to manage users, content, and settings',
-        permissions: [
-          'access_app',
-          'view_content',
-          'view_users',
-          'manage_users',
-          'manage_roles',
-          'manage_settings',
-          'manage_all_content',
-        ],
-      },
-      {
-        roleName: 'super_admin',
-        description: 'Super administrator role with all permissions',
-        permissions: [
-          'access_app',
-          'view_content',
-          'view_users',
-          'manage_users',
-          'manage_admin_users',
-          'manage_roles',
-          'manage_settings',
-          'manage_all_content',
-        ],
-      },
-    ];
-
-    const createdRoles = {};
-    for (const roleData of rolesToCreate) {
-      let role = await prisma.role.findUnique({ where: { roleName: roleData.roleName } });
-      if (!role) {
-        role = await prisma.role.create({
-          data: {
-            roleName: roleData.roleName,
-            description: roleData.description,
-          },
-        });
-        console.log(`Role '${role.roleName}' created.`);
-      } else {
-        console.log(`Role '${role.roleName}' already exists, skipping.`);
-      }
-      createdRoles[roleData.roleName] = role;
-
-      // Assign permissions
-      for (const permName of roleData.permissions) {
+    // --- 3. Assign Permissions to Roles ---
+    // Admin role gets all permissions
+    const adminRole = createdRoles['admin'];
+    if (adminRole) {
+      for (const permName in createdPermissions) {
         const permission = createdPermissions[permName];
         const existing = await prisma.rolePermission.findUnique({
           where: {
