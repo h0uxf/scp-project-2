@@ -27,7 +27,7 @@ router.use(sanitizeRequest);
 // [GET] Get all users
 router.get(
     '/users',
-    jwtMiddleware.verifyToken,
+    jwtMiddleware.verifyAccessToken,
     roleMiddleware([4, 5]),
     adminController.getAllUsers
 );
@@ -35,7 +35,7 @@ router.get(
 // [GET] Get user by ID
 router.get(
     '/users/:userId',
-    jwtMiddleware.verifyToken,
+    jwtMiddleware.verifyAccessToken,
     roleMiddleware([4, 5]),
     adminController.getUserById
 );
@@ -43,7 +43,7 @@ router.get(
 // [PUT] Update user by ID
 router.put(
     '/users/:userId',
-    jwtMiddleware.verifyToken,
+    jwtMiddleware.verifyAccessToken,
     roleMiddleware([4, 5]),
     adminController.updateUserById
 );
@@ -51,7 +51,7 @@ router.put(
 // [DELETE] Delete user by ID
 router.delete(
     '/users/:userId',
-    jwtMiddleware.verifyToken,
+    jwtMiddleware.verifyAccessToken,
     roleMiddleware([4, 5]),
     adminController.deleteUserById
 );
@@ -62,7 +62,7 @@ router.delete(
 // [GET] Get user statistics
 router.get(
     '/statistics',
-    jwtMiddleware.verifyToken,
+    jwtMiddleware.verifyAccessToken,
     roleMiddleware([4, 5]),
     adminController.getUserStatistics
 );

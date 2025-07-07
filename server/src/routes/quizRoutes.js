@@ -40,7 +40,7 @@ router.get(
 // [POST] Submit quiz answer by question ID
 router.post(
   '/:questionId/submit',
-  jwtMiddleware.verifyToken,
+  jwtMiddleware.verifyAccessToken,
   quizController.submitQuizAnswerById
 );
 
@@ -50,7 +50,7 @@ router.post(
 // [GET] Get quiz results by user ID
 router.get( 
   '/results/user/:userId',
-  jwtMiddleware.verifyToken,
+  jwtMiddleware.verifyAccessToken,
   verifyRole([4, 5]), 
   quizController.getQuizResultsByUserId
 );
@@ -61,7 +61,7 @@ router.get(
 // [POST] Create a new quiz question 
 router.post(
   '/',
-  jwtMiddleware.verifyToken,
+  jwtMiddleware.verifyAccessToken,
   verifyRole([3, 4, 5]), 
   quizController.createQuizQuestion
 );
@@ -69,7 +69,7 @@ router.post(
 // [PUT] Update a quiz question by ID
 router.put(
   '/:questionId',
-  jwtMiddleware.verifyToken,
+  jwtMiddleware.verifyAccessToken,
   verifyRole([3, 4, 5]),
   quizController.updateQuizQuestionById
 );
@@ -77,14 +77,14 @@ router.put(
 // [DELETE] Delete a quiz question by ID
 router.delete(
   '/:questionId',
-  jwtMiddleware.verifyToken,
+  jwtMiddleware.verifyAccessToken,
   verifyRole([3, 4, 5]),
   quizController.deleteQuizQuestionById
 );
 
 router.get( 
   '/results/question/:questionId',
-  jwtMiddleware.verifyToken,
+  jwtMiddleware.verifyAccessToken,
   verifyRole([3, 4, 5]), 
   quizController.getQuizResultsByQuestionId
 );
