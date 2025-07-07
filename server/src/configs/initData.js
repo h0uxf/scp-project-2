@@ -195,6 +195,7 @@ async function initializeData() {
         } else {
             console.log(`Permission '${permission.permissionName}' already assigned to role '${role.roleName}', skipping.`);
         }
+      }
     }
 
     /*    // deprecated assign permissions to roles automatically
