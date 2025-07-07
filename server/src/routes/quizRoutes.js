@@ -9,7 +9,7 @@ const express = require('express');
 //////////////////////////////////////////////////////
 const quizController = require('../controllers/quizController.js');
 const jwtMiddleware = require('../middlewares/jwtMiddleware.js');
-const roleMiddleware = require('../middlewares/roleMiddleware.js');
+const verifyRole = require('../middlewares/roleMiddleware.js');
 
 //////////////////////////////////////////////////////
 // IMPORT MIDDLEWARES FOR INPUT VALIDATION
@@ -40,6 +40,7 @@ router.get(
 // [POST] Submit quiz answer by question ID
 router.post(
   '/:questionId/submit',
+  jwtMiddleware.verifyToken,
   quizController.submitQuizAnswerById
 );
 
@@ -50,18 +51,18 @@ router.post(
 router.get( 
   '/results/user/:userId',
   jwtMiddleware.verifyToken,
-  roleMiddleware.verifyRole([1, 2]), // Allow both admin and player roles
+  verifyRole([4, 5]), 
   quizController.getQuizResultsByUserId
 );
 
 //////////////////////////////////////////////////////
-// DEFINE ROUTES FOR QUIZ (ADMIN)
+// DEFINE ROUTES FOR QUIZ (CONTENT MANAGER, ADMIN AND SUPER ADMIN)
 //////////////////////////////////////////////////////
 // [POST] Create a new quiz question 
 router.post(
   '/',
   jwtMiddleware.verifyToken,
-  roleMiddleware.verifyRole([1]), 
+  verifyRole([3, 4, 5]), 
   quizController.createQuizQuestion
 );
 
@@ -69,7 +70,7 @@ router.post(
 router.put(
   '/:questionId',
   jwtMiddleware.verifyToken,
-  roleMiddleware.verifyRole([1]),
+  verifyRole([3, 4, 5]),
   quizController.updateQuizQuestionById
 );
 
@@ -77,14 +78,14 @@ router.put(
 router.delete(
   '/:questionId',
   jwtMiddleware.verifyToken,
-  roleMiddleware.verifyRole([1]),
+  verifyRole([3, 4, 5]),
   quizController.deleteQuizQuestionById
 );
 
 router.get( 
   '/results/question/:questionId',
   jwtMiddleware.verifyToken,
-  roleMiddleware.verifyRole([1]), 
+  verifyRole([3, 4, 5]), 
   quizController.getQuizResultsByQuestionId
 );
 //////////////////////////////////////////////////////

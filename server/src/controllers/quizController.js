@@ -46,8 +46,8 @@ module.exports = {
         const { optionId } = req.body;
         const userId = res.locals.user_id;
 
-        if (!questionId || !optionId) {
-            return res.status(400).json({ message: 'Question ID and Option ID are required' });
+        if (!questionId || !optionId || !userId) {
+            return res.status(400).json({ message: 'Question ID, Option ID and user ID are required' });
         }
 
         try {

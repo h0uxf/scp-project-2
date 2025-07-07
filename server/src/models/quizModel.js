@@ -95,19 +95,19 @@ module.exports = {
 
         await prisma.userActivities.upsert({
             where: {
-            userId_activityId: {
-                userId: parseInt(userId),
-                activityId,
-            },
+                userId_activityId: {
+                    userId: userId,
+                    activityId,
+                },
             },
             update: {
-            points: { increment: pointsEarned },
-            updatedAt: new Date(),
+                points: { increment: pointsEarned },
+                updatedAt: new Date(),
             },
             create: {
-            userId: parseInt(userId),
-            activityId,
-            points: pointsEarned,
+                userId: userId,
+                activityId,
+                points: pointsEarned,
             },
         });
 
