@@ -325,7 +325,7 @@ const LandingPage = () => {
         </div>
       </footer>
 
-      <style jsx>{`
+      {/* <style jsx>{`
         @keyframes fadeInUp {
           from {
             opacity: 0;
@@ -350,7 +350,7 @@ const LandingPage = () => {
         .animate-fadeIn {
           animation: fadeIn 0.3s ease-out forwards;
         }
-      `}</style>
+      `}</style> */}
     </div>
   );
 };
