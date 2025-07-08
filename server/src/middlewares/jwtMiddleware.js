@@ -1,92 +1,170 @@
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 
-const secretKey = process.env.JWT_SECRET_KEY;
-const tokenDuration = process.env.JWT_EXPIRES_IN;
-const tokenAlgorithm = process.env.JWT_ALGORITHM;
+const accessSecret = process.env.JWT_SECRET_KEY;
+const refreshSecret = process.env.JWT_REFRESH_SECRET_KEY;
+const accessDuration = process.env.JWT_EXPIRES_IN;
+const refreshDuration = process.env.JWT_REFRESH_EXPIRES_IN;
+const algorithm = process.env.JWT_ALGORITHM;
 
 module.exports = {
-  // Middleware to generate the JWT token
-  generateToken: (req, res, next) => {
-      console.log(`Generating JWT token`);
+  // Generate access and refresh tokens
+  generateTokens: (req, res, next) => {
+    console.log(`Generating access and refresh JWT tokens`);
 
-      // Ensure user_id is available
-      if (!res.locals.user_id) {
-        console.error('User ID not found in res.locals');
-        return res.status(500).json({ error: 'User ID required to generate token' });
+    const { user_id, username, role_id } = res.locals;
+
+    if (!user_id) {
+      console.error('User ID not found in res.locals');
+      return res.status(500).json({ error: 'User ID required to generate token' });
+    }
+
+    const payload = {
+      user_id,
+      username: username || null,
+      role_id: role_id || 3,
+      timestamp: new Date()
+    };
+
+    const accessOptions = { algorithm, expiresIn: accessDuration };
+    const refreshOptions = { algorithm, expiresIn: refreshDuration };
+
+    try {
+      const accessToken = jwt.sign(payload, accessSecret, accessOptions);
+      const refreshToken = jwt.sign(payload, refreshSecret, refreshOptions);
+
+      // Set HTTP-only cookies
+      res.cookie('authToken', accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax',
+        maxAge: 1000 * 60 * 15 // 15 mins
+      });
+
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax',
+        maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+      });
+
+      console.log('Access and Refresh JWTs set in cookies');
+      next();
+
+    } catch (err) {
+      console.error('Error generating tokens:', err);
+      return res.status(500).json({ error: 'Failed to generate tokens' });
+    }
+  },
+
+  // Verify access token and attempt refresh if invalid or missing
+  verifyAccessToken: (req, res, next) => {
+    const accessToken = req.cookies?.authToken;
+    const refreshToken = req.cookies?.refreshToken;
+
+    // Helper function to verify refresh token and issue new access token
+    const tryRefreshToken = () => {
+      if (!refreshToken) {
+        console.error('No refresh token found');
+        return res.status(401).json({ error: 'No refresh token found' });
       }
 
-      // Payload includes user_id, username, and timestamp
-      const payload = {
-        user_id: res.locals.user_id,
-        username: res.locals.username || null,
-        role_id: res.locals.role_id || 3,
-        timestamp: new Date()
-      };
-
-      const options = {
-        algorithm: tokenAlgorithm,
-        expiresIn: tokenDuration
-      };
-
-      jwt.sign(payload, secretKey, options, (err, token) => {
-        if(err){
-          console.error(`Error generating JWT: ${err.message}`);
-          return res.status(500).json({ error: `Failed to generate token: ${err.message}`});
+      jwt.verify(refreshToken, refreshSecret, (err, decoded) => {
+        if (err) {
+          console.error('Refresh token error:', err.message);
+          return res.status(401).json({ error: 'Invalid or expired refresh token' });
         }
 
-        res.cookie('authToken', token, {
-          httpOnly: true, 
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'Lax',
-          maxAge: 1000*60*60*24
-        });
+        const payload = {
+          user_id: decoded.user_id,
+          username: decoded.username,
+          role_id: decoded.role_id,
+          timestamp: new Date()
+        };
 
-      console.log('JWT set in cookie');
+        try {
+          const newAccessToken = jwt.sign(payload, accessSecret, {
+            algorithm,
+            expiresIn: accessDuration
+          });
+
+          // Set new access token in cookie
+          res.cookie('authToken', newAccessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Lax',
+            maxAge: 1000 * 60 * 15 // 15 mins
+          });
+
+          console.log('New access token issued via refresh');
+          req.user = payload;
+          res.locals = { ...res.locals, ...payload };
+          next();
+        } catch (err) {
+          console.error('Error generating new access token:', err);
+          return res.status(500).json({ error: 'Failed to generate new access token' });
+        }
+      });
+    };
+
+    if (!accessToken) {
+      console.log('No access token found, attempting refresh');
+      return tryRefreshToken();
+    }
+
+    jwt.verify(accessToken, accessSecret, (err, decoded) => {
+      if (err) {
+        console.error('Access token error:', err.message);
+        console.log('Attempting to refresh access token');
+        return tryRefreshToken();
+      }
+
+      req.user = decoded;
+      res.locals = { ...res.locals, ...decoded };
       next();
     });
   },
 
-  // Middleware to verify the JWT token
-  verifyToken: (req, res, next) => {
-    const token = req.cookies?.authToken;
+  // Endpoint handler: Refresh access token
+  refreshTokenHandler: (req, res) => {
+    const refreshToken = req.cookies?.refreshToken;
 
-    if (!token) {
-      return res.status(401).json({ error: 'No token found in cookies' });
+    if (!refreshToken) {
+      return res.status(401).json({ error: 'No refresh token found' });
     }
 
-    const callback = (err, decoded) => {
+    jwt.verify(refreshToken, refreshSecret, (err, decoded) => {
       if (err) {
-        console.error(`Error verifying JWT: ${err.message}`);
-        return res.status(401).json({ error: 'Invalid or expired token' });
+        console.error('Refresh token error:', err.message);
+        return res.status(401).json({ error: 'Invalid or expired refresh token' });
       }
 
-      if (!decoded.user_id) {
-        console.error('Token payload missing user_id');
-        return res.status(400).json({ error: 'Token payload invalid. User ID is required.' });
-      } 
-
-      if (!decoded.role_id){
-        console.error('Token payload missing role_id');
-        return res.status(400).json({ error: 'Token payload invalid. Role ID is required.'})
-      }
-
-      // Store decoded data in res.locals
-      res.locals.user_id = decoded.user_id;
-      res.locals.username = decoded.username || null;
-      res.locals.role_id = Number(decoded.role_id) || 3;
-      res.locals.tokenTimestamp = decoded.timestamp;
-
-      req.user = {
+      const payload = {
         user_id: decoded.user_id,
-        username: decoded.username || null,
-        role_id: decoded.role_id || 3
+        username: decoded.username,
+        role_id: decoded.role_id,
+        timestamp: new Date()
       };
 
-      console.log('Token verified, user_id:', req.user.user_id);
-      next();
-    };
+      try {
+        const accessToken = jwt.sign(payload, accessSecret, {
+          algorithm,
+          expiresIn: accessDuration
+        });
 
-    jwt.verify(token, secretKey, callback);
+        res.cookie('authToken', accessToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'Lax',
+          maxAge: 1000 * 60 * 15 // 15 mins
+        });
+
+        console.log('New access token issued');
+        res.json({ message: 'Access token refreshed' });
+      } catch (err) {
+        console.error('Error generating new access token:', err);
+        return res.status(500).json({ error: 'Failed to generate new access token' });
+      }
+    });
   }
 };

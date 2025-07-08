@@ -36,7 +36,7 @@ router.post(
   validate, // Check validation results
   userController.login,
   bcryptMiddleware.comparePassword,
-  jwtMiddleware.generateToken,
+  jwtMiddleware.generateTokens,
   (req, res) => {
     res.status(200).json({
       message: "Login successful",
@@ -57,7 +57,7 @@ router.post(
   userController.checkUsernameExist,
   bcryptMiddleware.hashPassword,
   userController.register,
-  jwtMiddleware.generateToken,
+  jwtMiddleware.generateTokens,
   (req, res) => {
     res.status(201).json({
       message: "Registration successful",
@@ -71,7 +71,7 @@ router.post(
 );
 
 
-router.get('/me', jwtMiddleware.verifyToken, (req, res) => {
+router.get('/me', jwtMiddleware.verifyAccessToken, (req, res) => {
   const user = {
     user_id: req.user.user_id,
     username: req.user.username,
@@ -88,11 +88,24 @@ router.post("/logout", (req, res) => {
     sameSite: "Lax",
   });
 
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Lax",
+  });
+
   res.status(200).json({ message: "Logged out successfully" });
 });
 
+// [POST] Refresh token route
+router.post("/refresh", jwtMiddleware.refreshTokenHandler);
+
 const quizRoutes = require('../routes/quizRoutes.js');
 router.use('/quiz', quizRoutes);
+
+// routes for admin to manage user
+const adminRoutes = require('../routes/adminRoutes.js');
+router.use('/admin', adminRoutes);
 
 //////////////////////////////////////////////////////
 // EXPORT ROUTER

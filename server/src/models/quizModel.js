@@ -89,25 +89,25 @@ module.exports = {
             },
         });
 
-        // Update UserActivities table (assume activityId = fixed value, e.g., 1 for Quiz)
-        const activityId = 1;
+        // Update UserActivities table (activityId is 4 for quiz)
+        const activityId = 4;
         const pointsEarned = isCorrect ? 10 : 0;
 
         await prisma.userActivities.upsert({
             where: {
-            userId_activityId: {
-                userId: parseInt(userId),
-                activityId,
-            },
+                userId_activityId: {
+                    userId: userId,
+                    activityId,
+                },
             },
             update: {
-            points: { increment: pointsEarned },
-            updatedAt: new Date(),
+                points: { increment: pointsEarned },
+                updatedAt: new Date(),
             },
             create: {
-            userId: parseInt(userId),
-            activityId,
-            points: pointsEarned,
+                userId: userId,
+                activityId,
+                points: pointsEarned,
             },
         });
 

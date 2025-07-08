@@ -60,7 +60,7 @@ model Option {
 
 model QuizResult {
   resultId     Int      @id @default(autoincrement()) @map("result_id")
-  userId       String   @map("user_id") 
+  userId       Int   @map("user_id") 
   question     Question @relation(fields: [questionId], references: [questionId], onDelete: Cascade)
   questionId   Int      @map("question_id")
   option       Option   @relation(fields: [optionId], references: [optionId], onDelete: Cascade)
@@ -87,9 +87,9 @@ model Activity {
   description  String   
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
-  feature      Location @relation(fields: [locationId], references: [locationId], onDelete: Cascade)
-  locationId   Int      @map("location_id")
-  userActivities UserActivities[] // Added opposite relation field
+  feature      Location? @relation(fields: [locationId], references: [locationId], onDelete: Cascade)
+  locationId   Int?      @map("location_id")
+  userActivities UserActivities[] 
 }
 
 model User {
@@ -140,7 +140,7 @@ model UserRole {
 
 model Role {
   roleId       Int      @id @default(autoincrement()) @map("role_id")
-  roleName     String   @map("role_name")
+  roleName     String   @map("role_name") @unique
   description  String   
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -161,7 +161,7 @@ model RolePermission {
 
 model Permission {
   permissionId   Int      @id @default(autoincrement()) @map("permission_id")
-  permissionName String   @map("permission_name")
+  permissionName String   @map("permission_name") @unique
   description    String   
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")

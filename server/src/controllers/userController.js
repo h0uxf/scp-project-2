@@ -18,21 +18,15 @@ module.exports = {
         try {
             const results = await userModel.selectByUsernameAndPassword(data);
             if (results) {
-                if (Array.isArray(results) && results.length === 1) {
-                    res.locals.user_id = results[0].userId;
-                    res.locals.username = results[0].username;
-                    res.locals.hash = results[0].passwordHash;
-                    res.locals.role_id = results[0].roleId;
-                    next();
-                } else if (Array.isArray(results) && results.length > 1) {
-                    res.status(409).json({
-                        message: `Duplicate username for ${results[0].username}. Please try another username.`,
-                    });
-                } else {
-                    res.status(404).json({
-                        message: `Username ${data.username} does not exist. Please try another username.`,
-                    });
-                }
+                res.locals.user_id = results.userId;
+                res.locals.username = results.username;
+                res.locals.hash = results.passwordHash;
+                res.locals.role_id = results.userRole[0]?.roleId || null; 
+                next();
+            } else {
+                res.status(404).json({
+                    message: `Username ${data.username} does not exist. Please try another username.`,
+                });
             }
         } catch (error) {
             console.error(`Error login: ${error}. \nPlease try again later.`);
@@ -121,4 +115,23 @@ module.exports = {
             return res.status(500).json(error);
         }
     },
+
+    readUserPointsById: async (req, res, next) => {
+        const userId = req.params.userId;
+
+        if (!userId) {
+            return res.status(400).json({ message: 'User ID is required' });
+        }
+
+        try {
+            const results = await userModel.readUserPointsById(userId);
+            if (!results) {
+                return res.status(404).json({ message: `User with ID ${userId} not found.` });
+            }
+            return res.status(200).json(results);
+        } catch (error) {
+            console.error(`Error readUserPointsById: ${error}`);
+            return res.status(500).json(error);
+        }
+    }
 };
