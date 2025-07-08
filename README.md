@@ -1,4 +1,4 @@
-# SCP Project 1
+# SCP Project 2
 
 ## Tech Stack
 
