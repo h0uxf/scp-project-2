@@ -41,8 +41,7 @@ const LandingPage = () => {
   };
 
   const handleButtonClick = (action) => {
-    // In a real app, this would navigate to different pages
-    alert(`This would navigate to the ${action} page!`);
+    navigate(`/${action}`);
   };
 
   return (
