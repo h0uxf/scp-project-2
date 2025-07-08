@@ -66,4 +66,23 @@ module.exports = {
             throw error;
         }
     },
+
+    readUserPointsById: async (userId) => {
+        try {
+            const user = await prisma.user.findUnique({
+                where: { userId: parseInt(userId, 10) },
+                select: {
+                    points: true,
+                },
+            });
+
+            if (!user) {
+                throw new Error(`User with ID ${userId} not found.`);
+            }
+
+            return user.points;
+        } catch (error) {
+            throw error;
+        }
+    }
 };

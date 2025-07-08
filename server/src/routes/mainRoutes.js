@@ -97,7 +97,6 @@ router.post("/logout", (req, res) => {
   res.status(200).json({ message: "Logged out successfully" });
 });
 
-
 // [POST] Refresh token route
 router.post("/refresh", jwtMiddleware.refreshTokenHandler);
 

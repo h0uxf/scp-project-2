@@ -89,8 +89,8 @@ module.exports = {
             },
         });
 
-        // Update UserActivities table (assume activityId = fixed value, e.g., 1 for Quiz)
-        const activityId = 1;
+        // Update UserActivities table (activityId is 4 for quiz)
+        const activityId = 4;
         const pointsEarned = isCorrect ? 10 : 0;
 
         await prisma.userActivities.upsert({

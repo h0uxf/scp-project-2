@@ -115,4 +115,23 @@ module.exports = {
             return res.status(500).json(error);
         }
     },
+
+    readUserPointsById: async (req, res, next) => {
+        const userId = req.params.userId;
+
+        if (!userId) {
+            return res.status(400).json({ message: 'User ID is required' });
+        }
+
+        try {
+            const results = await userModel.readUserPointsById(userId);
+            if (!results) {
+                return res.status(404).json({ message: `User with ID ${userId} not found.` });
+            }
+            return res.status(200).json(results);
+        } catch (error) {
+            console.error(`Error readUserPointsById: ${error}`);
+            return res.status(500).json(error);
+        }
+    }
 };

@@ -57,18 +57,66 @@ module.exports = {
     }
   },
 
-  // Verify access token
+  // Verify access token and attempt refresh if invalid or missing
   verifyAccessToken: (req, res, next) => {
-    const token = req.cookies?.authToken;
+    const accessToken = req.cookies?.authToken;
+    const refreshToken = req.cookies?.refreshToken;
 
-    if (!token) {
-      return res.status(401).json({ error: 'No access token found' });
+    // Helper function to verify refresh token and issue new access token
+    const tryRefreshToken = () => {
+      if (!refreshToken) {
+        console.error('No refresh token found');
+        return res.status(401).json({ error: 'No refresh token found' });
+      }
+
+      jwt.verify(refreshToken, refreshSecret, (err, decoded) => {
+        if (err) {
+          console.error('Refresh token error:', err.message);
+          return res.status(401).json({ error: 'Invalid or expired refresh token' });
+        }
+
+        const payload = {
+          user_id: decoded.user_id,
+          username: decoded.username,
+          role_id: decoded.role_id,
+          timestamp: new Date()
+        };
+
+        try {
+          const newAccessToken = jwt.sign(payload, accessSecret, {
+            algorithm,
+            expiresIn: accessDuration
+          });
+
+          // Set new access token in cookie
+          res.cookie('authToken', newAccessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Lax',
+            maxAge: 1000 * 60 * 15 // 15 mins
+          });
+
+          console.log('New access token issued via refresh');
+          req.user = payload;
+          res.locals = { ...res.locals, ...payload };
+          next();
+        } catch (err) {
+          console.error('Error generating new access token:', err);
+          return res.status(500).json({ error: 'Failed to generate new access token' });
+        }
+      });
+    };
+
+    if (!accessToken) {
+      console.log('No access token found, attempting refresh');
+      return tryRefreshToken();
     }
 
-    jwt.verify(token, accessSecret, (err, decoded) => {
+    jwt.verify(accessToken, accessSecret, (err, decoded) => {
       if (err) {
         console.error('Access token error:', err.message);
-        return res.status(401).json({ error: 'Invalid or expired access token' });
+        console.log('Attempting to refresh access token');
+        return tryRefreshToken();
       }
 
       req.user = decoded;
@@ -98,20 +146,25 @@ module.exports = {
         timestamp: new Date()
       };
 
-      const accessToken = jwt.sign(payload, accessSecret, {
-        algorithm,
-        expiresIn: accessDuration
-      });
+      try {
+        const accessToken = jwt.sign(payload, accessSecret, {
+          algorithm,
+          expiresIn: accessDuration
+        });
 
-      res.cookie('authToken', accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'Lax',
-        maxAge: 1000 * 60 * 15 // 15 mins
-      });
+        res.cookie('authToken', accessToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'Lax',
+          maxAge: 1000 * 60 * 15 // 15 mins
+        });
 
-      console.log('New access token issued');
-      res.json({ message: 'Access token refreshed' });
+        console.log('New access token issued');
+        res.json({ message: 'Access token refreshed' });
+      } catch (err) {
+        console.error('Error generating new access token:', err);
+        return res.status(500).json({ error: 'Failed to generate new access token' });
+      }
     });
   }
 };

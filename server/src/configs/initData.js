@@ -179,21 +179,43 @@ async function initializeData() {
     // --- 4. Create Activities --- 
     const activitiesToCreate = [
       {
-        activityName: 'Quiz',
-        description: 'Complete the quiz to test your knowledge.',
-        points: 10,
+        name: 'NPC Interation (Introduction)',
+        description: 'Learn more about the game and how to play.'
       },
       {
-        activityName: 'Word Search',
-        description: 'Find all the words in the word search puzzle.',
-        points: 5,
+        name: 'Computing Crash Course',
+        description: 'A quick introduction to computing concepts.'
       },
       {
-        activityName: 'Clue Hunt',
-        description: 'Solve clues to find hidden locations.',
-        points: 15,
+        name: 'Crossword Puzzle',
+        description: 'Solve a crossword puzzle to test your knowledge of computing terms.'
       },
+      {
+        name: 'SoC Quiz',
+        description: 'Answer trivia questions about SoC history and fun facts.'
+      },
+      {
+        name: 'AR Selfie Challenge',
+        description: 'Take a selfie with an AR filter and share it on social media.'
+      }
     ];
+
+    for (const a of activitiesToCreate) {
+      const existing = await prisma.activity.findFirst({
+        where: { name: a.name },
+      });
+      if (!existing) {
+        const created = await prisma.activity.create({
+          data: {
+            name: a.name,
+            description: a.description
+          },
+        });
+        console.log(`Activity created: ${created.name}`);
+      } else {
+        console.log(`Activity ${a.name} already exists, skipping.`);
+      }
+    }
 
     // --- 5. Create Quiz Questions ---
     const quizQuestions = [
