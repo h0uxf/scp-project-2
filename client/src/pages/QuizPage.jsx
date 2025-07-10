@@ -81,7 +81,7 @@ const QuizPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-20 px-6 text-white text-center">
-      <h1 className="text-4xl font-bold mb-8">Quiz Challenge</h1>
+      <h1 className="text-4xl font-bold mb-8">Find the SoC Diploma best suited for you!</h1>
       <div className="max-w-3xl mx-auto bg-white/5 border border-white/20 rounded-2xl p-8 shadow-xl">
         <h2 className="text-2xl font-semibold mb-6 flex justify-center items-center gap-2">
           <HelpCircle className="text-yellow-400" />

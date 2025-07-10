@@ -81,26 +81,26 @@ app.
 //////////////////////////////////////////////////////
 // ERROR HANDLING
 //////////////////////////////////////////////////////
-app.use((req, res, next) => {
-  res.status(404).json({
-    error: "Not Found",
-    message: "The requested resource could not be found.",
-  });
-});
+// app.use((req, res, next) => {
+//   res.status(404).json({
+//     error: "Not Found",
+//     message: "The requested resource could not be found.",
+//   });
+// });
 
-app.use((err, req, res, next) => {
-  logger.error("Error occurred", {
-    message: err.message,
-    stack: err.stack,
-    method: req.method,
-    path: req.path,
-  });
+// app.use((err, req, res, next) => {
+//   logger.error("Error occurred", {
+//     message: err.message,
+//     stack: err.stack,
+//     method: req.method,
+//     path: req.path,
+//   });
 
-  res.status(500).json({
-    error: "Internal Server Error",
-    message: "An unexpected error occurred. Please try again later.",
-  });
-});
+//   res.status(500).json({
+//     error: "Internal Server Error",
+//     message: "An unexpected error occurred. Please try again later.",
+//   });
+// });
 
 //////////////////////////////////////////////////////
 // API ROUTES
