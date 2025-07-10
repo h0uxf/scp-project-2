@@ -44,6 +44,13 @@ router.post(
   quizController.submitQuizAnswerById
 );
 
+// [GET] Calculate personality trait for logged-in user
+router.get(
+  '/personality-result',
+  jwtMiddleware.verifyAccessToken,
+  quizController.calculatePersonalityTrait
+);
+
 //////////////////////////////////////////////////////
 // DEFINE ROUTES FOR QUIZ (PLAYER & ADMIN)
 //////////////////////////////////////////////////////
@@ -88,6 +95,7 @@ router.get(
   verifyRole([3, 4, 5]), 
   quizController.getQuizResultsByQuestionId
 );
+
 //////////////////////////////////////////////////////
 // EXPORT ROUTER
 //////////////////////////////////////////////////////

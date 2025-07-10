@@ -39,34 +39,55 @@ model WordClue {
 }
 
 model Question {
-  questionId    Int      @id @default(autoincrement()) @map("question_id")
-  questionText  String   @map("question_text")
+  questionId    Int        @id @default(autoincrement()) @map("question_id")
+  questionText  String     @map("question_text")
   options       Option[]
-  quizResults   QuizResult[] 
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  quizResults   QuizResult[]
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
 }
 
 model Option {
-  optionId     Int      @id @default(autoincrement()) @map("option_id")
-  optionText   String   @map("option_text")
-  isCorrect    Boolean  @map("is_correct")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  question     Question @relation(fields: [questionId], references: [questionId], onDelete: Cascade)
-  questionId   Int      @map("question_id")
-  quizResults  QuizResult[] 
+  optionId      Int             @id @default(autoincrement()) @map("option_id")
+  optionText    String          @map("option_text")
+  personality   PersonalityType? @relation(fields: [personalityId], references: [id])
+  personalityId Int?            @map("personality_id")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  question      Question        @relation(fields: [questionId], references: [questionId], onDelete: Cascade)
+  questionId    Int             @map("question_id")
+  quizResults   QuizResult[]
 }
 
 model QuizResult {
   resultId     Int      @id @default(autoincrement()) @map("result_id")
-  userId       Int   @map("user_id") 
+  userId       Int      @map("user_id")
   question     Question @relation(fields: [questionId], references: [questionId], onDelete: Cascade)
   questionId   Int      @map("question_id")
   option       Option   @relation(fields: [optionId], references: [optionId], onDelete: Cascade)
   optionId     Int      @map("option_id")
-  isCorrect    Boolean  @map("is_correct") 
   submittedAt  DateTime @default(now()) @map("submitted_at")
+
+  user         User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+}
+
+model PersonalityType {
+  id           Int           @id @default(autoincrement())
+  code         String        @unique // e.g., "AI", "CS", "Cyber"
+  name         String        // Full name like "Diploma in Computer Science"
+  description  String
+  options      Option[]
+  userResults  UserResult[]
+}
+
+model UserResult {
+  id             Int              @id @default(autoincrement())
+  userId         Int              @map("user_id")
+  personality    PersonalityType  @relation(fields: [personalityId], references: [id])
+  personalityId  Int              @map("personality_id")
+  calculatedAt   DateTime         @default(now()) @map("calculated_at")
+
+  user           User             @relation(fields: [userId], references: [userId], onDelete: Cascade)
 }
 
 model Location {
@@ -102,6 +123,9 @@ model User {
   userLocation UserLocation[]
   userActivities UserActivities[]
   userRole     UserRole[]
+
+  quizResults    QuizResult[]
+  userResults    UserResult[]
 }
 
 model UserLocation {

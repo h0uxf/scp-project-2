@@ -4,6 +4,18 @@ const bcrypt = require('bcrypt');
 
 async function initializeData() {
   try {
+    await prisma.rolePermission.deleteMany({});
+    await prisma.userRole.deleteMany({});
+    await prisma.role.deleteMany({});
+    await prisma.permission.deleteMany({});
+    await prisma.user.deleteMany({});
+    await prisma.activity.deleteMany({});
+    await prisma.quizResult.deleteMany({});
+    await prisma.userResult.deleteMany({});
+    await prisma.personalityType.deleteMany({});
+    await prisma.option.deleteMany({});
+    await prisma.question.deleteMany({});
+
     // --- 1. Initialize Permissions ---
     const permissionsToCreate = [
       { permissionName: 'access_app', description: 'Basic access to the application features' },
@@ -191,8 +203,8 @@ async function initializeData() {
         description: 'Solve a crossword puzzle to test your knowledge of computing terms.'
       },
       {
-        name: 'SoC Quiz',
-        description: 'Answer trivia questions about SoC history and fun facts.'
+        name: 'SoC Personality Quiz',
+        description: 'Take a quiz to discover your most suitable SoC diploma based on your personality.'
       },
       {
         name: 'AR Selfie Challenge',
@@ -217,51 +229,123 @@ async function initializeData() {
       }
     }
 
+    const personalityTypes = [
+      {
+        code: 'DAAA',
+        name: 'Diploma in Applied AI and Analytics',
+        description: 'You have a sharp eye for patterns and enjoy making sense of complex information. You’re naturally curious and driven to uncover insights through data.',
+      },
+      {
+        code: 'DCDF',
+        name: 'Diploma in Cybersecurity and Digital Forensics',
+        description: 'You’re detail-oriented, cautious, and enjoy solving mysteries. You take pride in protecting others and ensuring systems remain secure and resilient.',
+      },
+      {
+        code: 'DCS',
+        name: 'Diploma in Computer Science',
+        description: 'You enjoy building things from the ground up and thinking logically to solve problems. You’re inventive, hands-on, and love creating solutions that make an impact.',
+      },  
+    ];
+
+    for (const p of personalityTypes) {
+      const existing = await prisma.personalityType.findUnique({
+        where: { code: p.code }, // Use 'code' as it's marked unique in your schema
+      });
+
+      if (!existing) {
+        const created = await prisma.personalityType.create({
+          data: {
+            code: p.code,
+            name: p.name,
+            description: p.description,
+          },
+        });
+        console.log(`Personality type created: ${created.name}`);
+      } else {
+        console.log(`Personality type '${p.name}' already exists, skipping.`);
+      }
+    }
+
     // --- 5. Create Quiz Questions ---
     const quizQuestions = [
       {
-        questionText: 'When was School of Computing (SoC) established?',
+        questionText: 'When working on a project, what do you enjoy the most?',
         options: [
-          { optionText: '1965', isCorrect: false },
-          { optionText: '1954', isCorrect: false },
-          { optionText: '1980', isCorrect: true },
-          { optionText: '2000', isCorrect: false },
+          { optionText: 'Understanding patterns and making sense of information' }, 
+          { optionText: 'Creating something new and building things from scratch' },  
+          { optionText: 'Keeping things safe and solving problems that protect others' },  
         ],
       },
       {
-        questionText: 'How many courses does SoC offer?',
+        questionText: 'What kind of tasks do you prefer?',
         options: [
-          { optionText: '3', isCorrect: true },
-          { optionText: '4', isCorrect: false },
-          { optionText: '5', isCorrect: false },
-          { optionText: '6', isCorrect: false },
+          { optionText: 'Exploring data and spotting trends' },
+          { optionText: 'Designing and making plans for new ideas' },
+          { optionText: 'Finding solutions to keep things secure and protected' },
         ],
       },
       {
-        questionText: 'Which of the following is NOT a course offered by SoC?',
+        questionText: 'How do you like to spend your free time?',
         options: [
-          { optionText: 'Diploma of Computer Science', isCorrect: false },
-          { optionText: 'Diploma of Cybersecurity and Digital Forensics', isCorrect: false },
-          { optionText: 'Diploma of Arts', isCorrect: true },
-          { optionText: 'Diploma of Applied AI and Analytics', isCorrect: false },
+          { optionText: 'Reading about new discoveries and learning how things work' },
+          { optionText: 'Making or fixing things, like DIY projects or crafts' },
+          { optionText: 'Playing detective games or puzzles that involve solving mysteries' },
         ],
       },
       {
-        questionText: 'What is the main focus of the Diploma of Cybersecurity and Digital Forensics?',
+        questionText: 'What kind of teamwork do you enjoy?',
         options: [
-          { optionText: 'Web development', isCorrect: false },
-          { optionText: 'Data analysis', isCorrect: false },
-          { optionText: 'Cybersecurity and digital forensics', isCorrect: true },
-          { optionText: 'Game development', isCorrect: false },
+          { optionText: 'Collaborating to analyze information and make decisions' },
+          { optionText: 'Working together to build or develop something tangible' },
+          { optionText: 'Joining forces to guard and protect important things' },
         ],
       },
       {
-        questionText: 'How many Special Interest Groups (SIGs) does SoC have?',
+        questionText: 'What motivates you?',
         options: [
-          { optionText: '2', isCorrect: false },
-          { optionText: '3', isCorrect: false },
-          { optionText: '4', isCorrect: false },
-          { optionText: '5', isCorrect: true },
+          { optionText: 'Learning new things and understanding the “why” behind them' },
+          { optionText: 'Creating and building useful things that people can use' },
+          { optionText: 'Helping keep people safe and solving problems that matter' },
+        ],
+      },
+      {
+        questionText: 'How do you approach problems?',
+        options: [
+          { optionText: 'I try to understand all the facts before deciding' },
+          { optionText: 'I like to try different ideas until something works' },
+          { optionText: 'I look for weaknesses or risks and try to fix them' },
+        ],
+      },
+      {
+        questionText: 'What kind of stories or movies do you prefer?',
+        options: [
+          { optionText: 'Stories about discoveries and innovations' },
+          { optionText: 'Adventures where characters build or invent something new' },
+          { optionText: 'Thrillers or mysteries involving secrets and investigations' },
+        ],
+      },
+      {
+        questionText: 'If you had to choose, which sounds most interesting?',
+        options: [
+          { optionText: 'Finding useful patterns in everyday information' },
+          { optionText: 'Designing and building a new tool or app' },
+          { optionText: 'Tracking down a mystery or stopping a bad actor' },
+        ],
+      },
+      {
+        questionText: 'What skill would you like to get better at?',
+        options: [
+          { optionText: 'Understanding data and how to use it wisely' },
+          { optionText: 'Creating and building new things' },
+          { optionText: 'Protecting others and solving tricky problems' },
+        ],
+      },
+      {
+        questionText: 'What’s your preferred way to learn?',
+        options: [
+          { optionText: 'By analyzing facts and figures' },
+          { optionText: 'By making and doing hands-on projects' },
+          { optionText: 'By practicing real-life problem solving and investigation' },
         ],
       },
     ];
