@@ -41,61 +41,29 @@ module.exports = {
     }
   },
 
-  submitQuizAnswerById: async (req, res) => {
-    const { questionId } = req.params;
-    const { optionId } = req.body;
+  submitQuizAndCalculatePersonality: async (req, res) => {
+    const { answers } = req.body;
     const userId = res.locals.user_id;
 
-    if (!questionId || !optionId || !userId) {
-      logger.warn("Submit quiz answer failed: Missing question ID, option ID or user ID");
-      return res.status(400).json({ message: "Question ID, Option ID and user ID are required" });
+    if (!Array.isArray(answers) || answers.length === 0) {
+      logger.warn("Submit quiz answers failed: Answers must be a non-empty array");
+      return res.status(400).json({ message: "Answers must be a non-empty array" });
+    }
+    if (!userId) {
+      logger.warn("Submit quiz answers failed: Missing user ID");
+      return res.status(400).json({ message: "User ID is required" });
     }
 
     try {
-      const result = await quizModel.submitQuizAnswerById(questionId, optionId, userId);
-      if (!result) {
-        logger.warn(`Question ID ${questionId} and option ID ${optionId} not found`);
-        return res.status(404).json({ message: "Quiz question or option not found" });
+      const personalityResults = await quizModel.calculatePersonalityFromAnswers(answers, userId);
+      if (!personalityResults) {
+        logger.warn("No personality determined from provided answers");
+        return res.status(404).json({ message: "No personality determined from provided answers" });
       }
-      logger.info(`User ID ${userId} submitted option ${optionId} for question ${questionId}`);
-      res.status(200).json(result);
-    } catch (error) {
-      logger.error(`Error submitting quiz answer: ${error.message}`);
-      res.status(500).json({ message: "Internal server error" });
-    }
-  },
-
-  getQuizResultsByUserId: async (req, res) => {
-    const userId = res.locals.user_id;
-
-    if (!userId) {
-      logger.warn("Fetch quiz results failed: Missing user ID");
-      return res.status(400).json({ message: "User ID is required" });
-    }
-
-    try {
-      const results = await quizModel.readQuizResultsByUserId(userId);
-      logger.debug(`Fetching quiz results for user ID ${userId}`);
-      res.status(200).json(results);
-    } catch (error) {
-      logger.error(`Error fetching quiz results: ${error.message}`);
-      res.status(500).json({ error: error.message });
-    }
-  },
-  
-  getPersonalityResultByUserId: async (req, res) => {
-    const userId = res.locals.user_id;
-    if (!userId) {
-      logger.warn("Fetch personality result failed: Missing user ID");
-      return res.status(400).json({ message: "User ID is required" });
-    }
-
-    try {
-      const personalityResults = await quizModel.calculatePersonalityResult(userId);
-      logger.debug(`Fetched personality result for user ID ${userId}`);
+      logger.info(`Calculated personality for user ID ${userId}`);
       res.status(200).json(personalityResults);
     } catch (error) {
-      logger.error(`Error fetching personality result: ${error.message}`);
+      logger.error(`Error calculating personality: ${error.message}`);
       res.status(500).json({ error: error.message });
     }
   },
@@ -159,27 +127,6 @@ module.exports = {
       res.status(200).json({ message: "Quiz question deleted successfully" });
     } catch (error) {
       logger.error(`Delete quiz question failed: ${error.message}`);
-      if (error.message.includes("not found")) {
-        return res.status(404).json({ error: `Quiz question with id ${questionId} not found.` });
-      }
-      res.status(500).json({ error: error.message });
-    }
-  },
-
-  getQuizResultsByQuestionId: async (req, res) => {
-    const { questionId } = req.params;
-
-    if (!questionId) {
-      logger.warn("Fetch quiz results by question ID failed: Missing question ID");
-      return res.status(400).json({ message: "Question ID is required" });
-    }
-
-    try {
-      const results = await quizModel.readQuizResultsByQuestionId(questionId);
-      logger.debug(`Fetching quiz results for question ID ${questionId}`);
-      res.status(200).json(results);
-    } catch (error) {
-      logger.error(`Fetch quiz results by question ID failed: ${error.message}`);
       if (error.message.includes("not found")) {
         return res.status(404).json({ error: `Quiz question with id ${questionId} not found.` });
       }

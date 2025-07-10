@@ -271,81 +271,81 @@ async function initializeData() {
       {
         questionText: 'When working on a project, what do you enjoy the most?',
         options: [
-          { optionText: 'Understanding patterns and making sense of information' }, 
-          { optionText: 'Creating something new and building things from scratch' },  
-          { optionText: 'Keeping things safe and solving problems that protect others' },  
+          { optionText: 'Understanding patterns and making sense of information', personalityId: 1 }, // DAAA
+          { optionText: 'Creating something new and building things from scratch', personalityId: 3 }, // DCS
+          { optionText: 'Keeping things safe and solving problems that protect others', personalityId: 2 }, // DCDF
         ],
       },
       {
         questionText: 'What kind of tasks do you prefer?',
         options: [
-          { optionText: 'Exploring data and spotting trends' },
-          { optionText: 'Designing and making plans for new ideas' },
-          { optionText: 'Finding solutions to keep things secure and protected' },
+          { optionText: 'Exploring data and spotting trends', personalityId: 1 }, // DAAA
+          { optionText: 'Designing and making plans for new ideas', personalityId: 3 }, // DCS
+          { optionText: 'Finding solutions to keep things secure and protected', personalityId: 2 }, // DCDF
         ],
       },
       {
         questionText: 'How do you like to spend your free time?',
         options: [
-          { optionText: 'Reading about new discoveries and learning how things work' },
-          { optionText: 'Making or fixing things, like DIY projects or crafts' },
-          { optionText: 'Playing detective games or puzzles that involve solving mysteries' },
+          { optionText: 'Reading about new discoveries and learning how things work', personalityId: 1 }, // DAAA
+          { optionText: 'Making or fixing things, like DIY projects or crafts', personalityId: 3 }, // DCS
+          { optionText: 'Playing detective games or puzzles that involve solving mysteries', personalityId: 2 }, // DCDF
         ],
       },
       {
         questionText: 'What kind of teamwork do you enjoy?',
         options: [
-          { optionText: 'Collaborating to analyze information and make decisions' },
-          { optionText: 'Working together to build or develop something tangible' },
-          { optionText: 'Joining forces to guard and protect important things' },
+          { optionText: 'Collaborating to analyze information and make decisions', personalityId: 1 }, // DAAA
+          { optionText: 'Working together to build or develop something tangible', personalityId: 3 }, // DCS
+          { optionText: 'Joining forces to guard and protect important things', personalityId: 2 }, // DCDF
         ],
       },
       {
         questionText: 'What motivates you?',
         options: [
-          { optionText: 'Learning new things and understanding the “why” behind them' },
-          { optionText: 'Creating and building useful things that people can use' },
-          { optionText: 'Helping keep people safe and solving problems that matter' },
+          { optionText: 'Learning new things and understanding the “why” behind them', personalityId: 1 }, // DAAA
+          { optionText: 'Creating and building useful things that people can use', personalityId: 3 }, // DCS
+          { optionText: 'Helping keep people safe and solving problems that matter', personalityId: 2 }, // DCDF
         ],
       },
       {
         questionText: 'How do you approach problems?',
         options: [
-          { optionText: 'I try to understand all the facts before deciding' },
-          { optionText: 'I like to try different ideas until something works' },
-          { optionText: 'I look for weaknesses or risks and try to fix them' },
+          { optionText: 'I try to understand all the facts before deciding', personalityId: 1 }, // DAAA
+          { optionText: 'I like to try different ideas until something works', personalityId: 3 }, // DCS
+          { optionText: 'I look for weaknesses or risks and try to fix them', personalityId: 2 }, // DCDF
         ],
       },
       {
         questionText: 'What kind of stories or movies do you prefer?',
         options: [
-          { optionText: 'Stories about discoveries and innovations' },
-          { optionText: 'Adventures where characters build or invent something new' },
-          { optionText: 'Thrillers or mysteries involving secrets and investigations' },
+          { optionText: 'Stories about discoveries and innovations', personalityId: 1 }, // DAAA
+          { optionText: 'Adventures where characters build or invent something new', personalityId: 3 }, // DCS
+          { optionText: 'Thrillers or mysteries involving secrets and investigations', personalityId: 2 }, // DCDF
         ],
       },
       {
         questionText: 'If you had to choose, which sounds most interesting?',
         options: [
-          { optionText: 'Finding useful patterns in everyday information' },
-          { optionText: 'Designing and building a new tool or app' },
-          { optionText: 'Tracking down a mystery or stopping a bad actor' },
+          { optionText: 'Finding useful patterns in everyday information', personalityId: 1 }, // DAAA
+          { optionText: 'Designing and building a new tool or app', personalityId: 3 }, // DCS
+          { optionText: 'Tracking down a mystery or stopping a bad actor', personalityId: 2 }, // DCDF
         ],
       },
       {
         questionText: 'What skill would you like to get better at?',
         options: [
-          { optionText: 'Understanding data and how to use it wisely' },
-          { optionText: 'Creating and building new things' },
-          { optionText: 'Protecting others and solving tricky problems' },
+          { optionText: 'Understanding data and how to use it wisely', personalityId: 1 }, // DAAA
+          { optionText: 'Creating and building new things', personalityId: 3 }, // DCS
+          { optionText: 'Protecting others and solving tricky problems', personalityId: 2 }, // DCDF
         ],
       },
       {
         questionText: 'What’s your preferred way to learn?',
         options: [
-          { optionText: 'By analyzing facts and figures' },
-          { optionText: 'By making and doing hands-on projects' },
-          { optionText: 'By practicing real-life problem solving and investigation' },
+          { optionText: 'By analyzing facts and figures', personalityId: 1 }, // DAAA
+          { optionText: 'By making and doing hands-on projects', personalityId: 3 }, // DCS
+          { optionText: 'By practicing real-life problem solving and investigation', personalityId: 2 }, // DCDF
         ],
       },
     ];

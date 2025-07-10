@@ -27,32 +27,17 @@ router.use(sanitizeRequest);
 //////////////////////////////////////////////////////
 router.get('/', quizController.getAllQuizQuestions);
 
-// [POST] Submit quiz answer by question ID
+router.get('/:questionId', quizController.getQuizQuestionById);
+
+// [POST] Submit quiz answers and calculate personality for logged-in user
 router.post(
-  '/:questionId/submit',
+  '/submit',
   jwtMiddleware.verifyAccessToken,
-  quizController.submitQuizAnswerById
-);
-
-// [GET] Calculate personality trait for logged-in user
-router.get(
-  '/personality',
-  jwtMiddleware.verifyAccessToken,
-  quizController.getPersonalityResultByUserId
+  quizController.submitQuizAndCalculatePersonality
 );
 
 //////////////////////////////////////////////////////
-// DEFINE ROUTES FOR QUIZ (PLAYER & ADMIN)
-//////////////////////////////////////////////////////
-router.get(
-  '/results/user/:userId',
-  jwtMiddleware.verifyAccessToken,
-  verifyRole([4, 5]),
-  quizController.getQuizResultsByUserId
-);
-
-//////////////////////////////////////////////////////
-// DEFINE ROUTES FOR QUIZ (CONTENT MANAGER, ADMIN AND SUPER ADMIN)
+// DEFINE ROUTES FOR QUIZ (CONTENT MANAGER, ADMIN, AND SUPER ADMIN)
 //////////////////////////////////////////////////////
 router.post(
   '/',
@@ -74,15 +59,6 @@ router.delete(
   verifyRole([3, 4, 5]),
   quizController.deleteQuizQuestionById
 );
-
-router.get(
-  '/results/question/:questionId',
-  jwtMiddleware.verifyAccessToken,
-  verifyRole([3, 4, 5]),
-  quizController.getQuizResultsByQuestionId
-);
-
-router.get('/:questionId', quizController.getQuizQuestionById);
 
 //////////////////////////////////////////////////////
 // EXPORT ROUTER
