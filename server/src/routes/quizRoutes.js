@@ -25,17 +25,7 @@ router.use(sanitizeRequest);
 //////////////////////////////////////////////////////
 // DEFINE ROUTES FOR QUIZ (PLAYER)
 //////////////////////////////////////////////////////
-// [GET] Get all quiz questions
-router.get(
-  '/',
-  quizController.getAllQuizQuestions
-);  
-
-// [GET] Get quiz question by ID
-router.get( 
-  '/:questionId',
-  quizController.getQuizQuestionById
-);
+router.get('/', quizController.getAllQuizQuestions);
 
 // [POST] Submit quiz answer by question ID
 router.post(
@@ -46,34 +36,31 @@ router.post(
 
 // [GET] Calculate personality trait for logged-in user
 router.get(
-  '/personality-result',
+  '/personality',
   jwtMiddleware.verifyAccessToken,
-  quizController.calculatePersonalityTrait
+  quizController.getPersonalityResultByUserId
 );
 
 //////////////////////////////////////////////////////
 // DEFINE ROUTES FOR QUIZ (PLAYER & ADMIN)
 //////////////////////////////////////////////////////
-// [GET] Get quiz results by user ID
-router.get( 
+router.get(
   '/results/user/:userId',
   jwtMiddleware.verifyAccessToken,
-  verifyRole([4, 5]), 
+  verifyRole([4, 5]),
   quizController.getQuizResultsByUserId
 );
 
 //////////////////////////////////////////////////////
 // DEFINE ROUTES FOR QUIZ (CONTENT MANAGER, ADMIN AND SUPER ADMIN)
 //////////////////////////////////////////////////////
-// [POST] Create a new quiz question 
 router.post(
   '/',
   jwtMiddleware.verifyAccessToken,
-  verifyRole([3, 4, 5]), 
+  verifyRole([3, 4, 5]),
   quizController.createQuizQuestion
 );
 
-// [PUT] Update a quiz question by ID
 router.put(
   '/:questionId',
   jwtMiddleware.verifyAccessToken,
@@ -81,7 +68,6 @@ router.put(
   quizController.updateQuizQuestionById
 );
 
-// [DELETE] Delete a quiz question by ID
 router.delete(
   '/:questionId',
   jwtMiddleware.verifyAccessToken,
@@ -89,12 +75,14 @@ router.delete(
   quizController.deleteQuizQuestionById
 );
 
-router.get( 
+router.get(
   '/results/question/:questionId',
   jwtMiddleware.verifyAccessToken,
-  verifyRole([3, 4, 5]), 
+  verifyRole([3, 4, 5]),
   quizController.getQuizResultsByQuestionId
 );
+
+router.get('/:questionId', quizController.getQuizQuestionById);
 
 //////////////////////////////////////////////////////
 // EXPORT ROUTER
