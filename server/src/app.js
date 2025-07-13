@@ -3,7 +3,13 @@
 //////////////////////////////////////////////////////
 const express = require("express");
 const cors = require("cors");
-const logger = require("./logger"); // logger for logging requests and errors
+const logger = require("./logger");
+const notFound = require("./middlewares/notFound");
+const errorHandler = require("./middlewares/errorHandler");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const cookieParser = require("cookie-parser");
+const { sanitizeResponse } = require("./middlewares/sanitizers");
 
 //////////////////////////////////////////////////////
 // CREATE APP
@@ -21,15 +27,10 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
-const { sanitizeResponse } = require("../src/middlewares/sanitizers");
-const helmet = require("helmet");
-const rateLimit = require("express-rate-limit"); // for rate limiting
-
-const cookieParser = require("cookie-parser");
 app.use(cookieParser());
+
 //////////////////////////////////////////////////////
-// SETUP STATIC FILES
+// SECURITY MIDDLEWARE
 //////////////////////////////////////////////////////
 app.use(helmet());
 app.use(
@@ -48,59 +49,35 @@ app.use(
   })
 );
 
-// rate limiting
+// Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: "Too many requests from this IP, please try again after 15 minutes",
-  standardHeaders: true, // return rate limit info in the `RateLimit-*` headers
+  max: 100, // Limit each IP to 100 requests per windowMs
+  handler: (req, res, next) => {
+    next(new AppError("Too many requests from this IP, please try again after 15 minutes", 429));
+  },
+  standardHeaders: true,
   legacyHeaders: false,
 });
-app.use(limiter); // rate limiting to all requests
+app.use(limiter);
 
 //////////////////////////////////////////////////////
-// Logging Middleware
+// LOGGING MIDDLEWARE
 //////////////////////////////////////////////////////
-app.
-  use((req, res, next) => {
-    const start = Date.now();
-
-    res.on("finish", () => {
-      const responeTime = Date.now() - start;
-      logger.info("Request processed", {
-        method: req.method,
-        path: req.originalUrl,
-        statusCode: res.statusCode,
-        responseTime: `${responeTime}ms`,
-        ip: req.ip,
-      });
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on("finish", () => {
+    const responseTime = Date.now() - start;
+    logger.info("Request processed", {
+      method: req.method,
+      path: req.originalUrl,
+      statusCode: res.statusCode,
+      responseTime: `${responseTime}ms`,
+      ip: req.ip,
     });
-
-    next();
   });
-//////////////////////////////////////////////////////
-// ERROR HANDLING
-//////////////////////////////////////////////////////
-// app.use((req, res, next) => {
-//   res.status(404).json({
-//     error: "Not Found",
-//     message: "The requested resource could not be found.",
-//   });
-// });
-
-// app.use((err, req, res, next) => {
-//   logger.error("Error occurred", {
-//     message: err.message,
-//     stack: err.stack,
-//     method: req.method,
-//     path: req.path,
-//   });
-
-//   res.status(500).json({
-//     error: "Internal Server Error",
-//     message: "An unexpected error occurred. Please try again later.",
-//   });
-// });
+  next();
+});
 
 //////////////////////////////////////////////////////
 // API ROUTES
@@ -108,8 +85,21 @@ app.
 const mainRoutes = require("./routes/mainRoutes");
 app.use("/api", mainRoutes);
 
+//////////////////////////////////////////////////////
+// SETUP STATIC FILES
+//////////////////////////////////////////////////////
 app.use("/", express.static("public"));
+
+//////////////////////////////////////////////////////
+// RESPONSE SANITIZATION
+//////////////////////////////////////////////////////
 app.use(sanitizeResponse);
+
+//////////////////////////////////////////////////////
+// ERROR HANDLING
+//////////////////////////////////////////////////////
+app.use(notFound); // Handle unmatched routes
+app.use(errorHandler); // Handle all errors
 
 //////////////////////////////////////////////////////
 // EXPORT APP
