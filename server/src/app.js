@@ -90,6 +90,10 @@ app.use("/api", mainRoutes);
 //////////////////////////////////////////////////////
 app.use("/", express.static("public"));
 
+// Serve uploaded images statically
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 //////////////////////////////////////////////////////
 // RESPONSE SANITIZATION
 //////////////////////////////////////////////////////

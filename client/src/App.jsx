@@ -6,7 +6,7 @@ import QuizPage from "./pages/QuizPage";
 // import LeaderboardPage from "./pages/LeaderboardPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
-import ARViewer from "./components/ARViewer";
+import FaceFilterPage from "./pages/FaceFilterPage";
 
 function App() {
   return (
@@ -18,7 +18,7 @@ function App() {
         {/* <Route path="/leaderboard" element={<LeaderboardPage />} /> */}
         <Route path='/login' element={<LoginPage />} />
         <Route path='/register' element={<RegisterPage />} />
-        <Route path='/face-filter' element={<ARViewer />} />
+        <Route path='/face-filter' element={<FaceFilterPage />} />
       </Routes>
     </Router>
   );

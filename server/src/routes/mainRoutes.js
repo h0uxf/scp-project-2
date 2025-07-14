@@ -107,6 +107,10 @@ router.use('/quiz', quizRoutes);
 const adminRoutes = require('../routes/adminRoutes.js');
 router.use('/admin', adminRoutes);
 
+// routes for users to upload images from face filter 
+const imageRoutes = require('../routes/imageRoutes.js');
+router.use('/images', imageRoutes);
+
 //////////////////////////////////////////////////////
 // EXPORT ROUTER
 //////////////////////////////////////////////////////
