@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, Share2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -30,7 +30,6 @@ class QuizErrorBoundary extends React.Component {
 }
 
 const QuizPage = () => {
-  ////// STATE //////
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
@@ -40,8 +39,15 @@ const QuizPage = () => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch quiz questions from the server
   useEffect(() => {
+    const savedResult = localStorage.getItem("personalityResult");
+    if (savedResult) {
+      setPersonalityResult(JSON.parse(savedResult));
+      setQuizCompleted(true);
+      setLoading(false);
+      return;
+    }
+
     const fetchQuestions = async () => {
       try {
         setLoading(true);
@@ -102,7 +108,7 @@ const QuizPage = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ answers }),
-        credentials: "include", // Include cookies for authentication
+        credentials: "include",
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -113,6 +119,7 @@ const QuizPage = () => {
         throw new Error(result.message || "Failed to calculate personality");
       }
       setPersonalityResult(result.data || []);
+      localStorage.setItem("personalityResult", JSON.stringify(result.data || []));
       setError(null);
     } catch (err) {
       console.error("Error calculating personality:", err);
@@ -121,12 +128,34 @@ const QuizPage = () => {
   };
 
   const handleRetakeQuiz = () => {
+    localStorage.removeItem("personalityResult");
     setCurrentIndex(0);
     setSelectedOption(null);
     setAnswers([]);
     setQuizCompleted(false);
     setPersonalityResult(null);
     setError(null);
+    window.location.reload();
+  };
+
+  const handleShareResult = async () => {
+    if (personalityResult?.length > 0) {
+      const shareText = `The Diploma I got is ${personalityResult[0].name}! Take the quiz to find your ideal course in SoC!\n${window.location.origin}/quiz`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: "My Diploma Course Recommendation",
+            text: shareText,
+          });
+        } catch (error) {
+          console.error("Sharing failed:", error);
+        }
+      } else {
+        await navigator.clipboard.writeText(shareText);
+        alert("Result copied to clipboard. You can now share it!");
+      }
+    }
   };
 
   if (loading) {
@@ -153,17 +182,6 @@ const QuizPage = () => {
     );
   }
 
-  if (questions.length === 0) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-20 px-6 text-white text-center">
-        <h1 className="text-4xl font-bold mb-4">Diploma Course Finder</h1>
-        <p className="text-xl text-gray-300">
-          No questions available yet! Check back soon to find your ideal diploma course.
-        </p>
-      </div>
-    );
-  }
-
   if (quizCompleted && personalityResult) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-20 px-6 text-white text-center">
@@ -176,8 +194,7 @@ const QuizPage = () => {
                 {personalityResult.length > 1 && " (Tied Result)"}
               </h3>
               <p className="text-lg text-gray-200">
-                Based on your answers, the {personalityResult[0].name} diploma course is best suited for you.{" "}
-                {personalityResult[0].description}
+                Based on your answers, the {personalityResult[0].name} diploma course is best suited for you. {personalityResult[0].description}
               </p>
               {personalityResult.length > 1 && (
                 <div className="mt-4">
@@ -198,7 +215,7 @@ const QuizPage = () => {
               No diploma course recommendation could be determined based on your answers.
             </p>
           )}
-          <div className="mt-8 flex justify-center gap-4">
+          <div className="mt-8 flex justify-center gap-4 flex-wrap">
             <button
               onClick={handleRetakeQuiz}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full transition-all duration-300"
@@ -211,6 +228,12 @@ const QuizPage = () => {
             >
               Explore All Diploma Courses
             </Link>
+            <button
+              onClick={handleShareResult}
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-full transition-all duration-300 flex items-center gap-2"
+            >
+              <Share2 /> Share Result
+            </button>
           </div>
         </div>
       </div>
@@ -242,8 +265,7 @@ const QuizPage = () => {
               transition={{ duration: 0.5 }}
             >
               <h2 className="text-2xl font-semibold mb-6 flex justify-center items-center gap-2">
-                <HelpCircle className="text-yellow-400" />{" "}
-                {currentQuestion?.questionText || "Question not available"}
+                <HelpCircle className="text-yellow-400" /> {currentQuestion?.questionText || "Question not available"}
               </h2>
               <div className="grid gap-4">
                 {currentQuestion?.options?.map((opt, i) => (

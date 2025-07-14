@@ -16,7 +16,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     async function fetchMe() {
       try {
-        const res = await fetch("http://localhost:3000/api/me", {
+        const res = await fetch("http://localhost:5000/api/me", {
           credentials: "include",
         });
 
@@ -38,7 +38,7 @@ export function AuthProvider({ children }) {
 
   async function handleLogin(credentials) {
     console.log("Logging in with credentials:", credentials);
-    const res = await fetch("http://localhost:3000/api/login", {
+    const res = await fetch("http://localhost:5000/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -59,7 +59,7 @@ export function AuthProvider({ children }) {
 
   async function handleRegister(credentials) {
     console.log("Registering with credentials:", credentials);
-    const res = await fetch("http://localhost:3000/api/register", {
+    const res = await fetch("http://localhost:5000/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -86,7 +86,7 @@ export function AuthProvider({ children }) {
 
   async function handleLogout() {
     console.log("Logging out...");
-    await fetch("http://localhost:3000/api/logout", {
+    await fetch("http://localhost:5000/api/logout", {
       method: "POST",
       credentials: "include",
     });
