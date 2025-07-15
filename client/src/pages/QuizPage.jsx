@@ -230,12 +230,12 @@ const QuizPage = () => {
             >
               Retake Quiz
             </button>
-            <Link
-              to=""
+            <button
+              onClick={() => window.open("https://www.sp.edu.sg/courses/schools/soc#section-2", "_blank")}
               className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-full transition-all duration-300"
             >
               Explore All Diploma Courses
-            </Link>
+            </button>
             <button
               onClick={handleShareResult}
               className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-full transition-all duration-300 flex items-center gap-2"
