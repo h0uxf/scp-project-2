@@ -39,7 +39,6 @@ router.get('/:questionId', quizController.getQuizQuestionById);
 router.post(
     '/submit',
     jwtMiddleware.verifyAccessToken,
-    quizResultValidationRules(prisma), 
     validate,                           
     quizController.submitQuizAndCalculatePersonality
 );

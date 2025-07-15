@@ -111,6 +111,7 @@ const QuizPage = () => {
 
   const calculatePersonality = async () => {
     try {
+      console.log("Submitting answers:", answers);
       const response = await fetch("http://localhost:5000/api/quiz/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
