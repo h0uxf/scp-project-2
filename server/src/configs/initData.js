@@ -368,6 +368,22 @@ async function initializeData() {
         console.log(`Quiz question '${q.questionText}' already exists, skipping.`);
       }
     }
+
+    // --- Create Location Information ---
+    const locationsToCreate = [
+      {
+        name: 'Applied AI and Analytics Lab',
+        description: 'A state-of-the-art lab for AI and data analytics projects, with advanced powered computing resources.',
+        code: 'T2134',
+        points: 10,
+      },
+      {
+        name: 'Cyber Wargame Center',
+        description: 'A lab for cybersecurity training and digital forensics exercises, equipped with a custom server for simulations.',
+        code: 'T2035',
+        points: 10,
+    },
+    ];
   } catch (error) {
     console.error('Error initializing data:', error);
     process.exit(1);
