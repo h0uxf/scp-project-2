@@ -82,7 +82,14 @@ const QuizPage = () => {
 
   const handleOptionClick = (option) => {
     setSelectedOption(option);
-    setAnswers((prev) => [...prev, option.optionText]);
+    // Save questionId and optionId in answers array
+    setAnswers((prev) => [
+      ...prev,
+      {
+        questionId: questions[currentIndex].questionId,
+        optionId: option.optionId,
+      },
+    ]);
   };
 
   const handleNextQuestion = async () => {
@@ -223,7 +230,7 @@ const QuizPage = () => {
               Retake Quiz
             </button>
             <Link
-              to="/diplomas"
+              to=""
               className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-full transition-all duration-300"
             >
               Explore All Diploma Courses
@@ -273,7 +280,7 @@ const QuizPage = () => {
                     key={i}
                     onClick={() => handleOptionClick(opt)}
                     className={`px-6 py-3 rounded-xl text-lg font-medium transition-all duration-300 shadow-md ${
-                      selectedOption?.optionText === opt.optionText
+                      selectedOption?.optionId === opt.optionId
                         ? "bg-purple-700/80 scale-105"
                         : "bg-gradient-to-r from-purple-600 to-pink-600 hover:scale-105"
                     }`}

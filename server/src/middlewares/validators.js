@@ -1,3 +1,5 @@
+const { body, validationResult } = require('express-validator');
+
 const validate = (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -34,7 +36,7 @@ const questionValidationRules = () => {
             .withMessage('Question text cannot be empty.')
             .isString()
             .withMessage('Question text must be a string.')
-            .isLength({ max: 500 }) // Example max length
+            .isLength({ max: 500 }) 
             .withMessage('Question text cannot exceed 500 characters.'),
     ];
 };

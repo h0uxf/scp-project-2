@@ -3,7 +3,7 @@
 // REQUIRED MODULES
 //////////////////////////////////////////////////////
 const express = require('express');
-const prisma = require('../config/prismaClient'); 
+const prisma = require('@prisma/client'); 
 
 //////////////////////////////////////////////////////
 // IMPORT CONTROLLERS
