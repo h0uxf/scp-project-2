@@ -40,8 +40,8 @@ const LandingPage = () => {
     setNavOpen(false);
   };
 
-  const handleButtonClick = (action) => {
-    navigate(`/${action}`);
+  const handleButtonClick = () => {
+    navigate(`/login`);
   };
 
   return (
@@ -72,29 +72,6 @@ const LandingPage = () => {
             <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
               EXPLORING SP GAME
             </h1>
-          </div>
-          
-          {/* Desktop Navigation - Expanded Horizontally */}
-          <div className="hidden lg:flex items-center space-x-2">
-            {[
-              { href: "home", icon: Home, text: "Home", color: "from-blue-500 to-cyan-500" },
-              { href: "about", icon: GraduationCap, text: "About", color: "from-purple-500 to-pink-500" },
-              { href: "scan", icon: Play, text: "Scan", color: "from-green-500 to-emerald-500" },
-              { href: "quiz", icon: HelpCircle, text: "Quiz", color: "from-yellow-500 to-orange-500" },
-              { href: "leaderboard", icon: Crown, text: "Leaderboard", color: "from-pink-500 to-rose-500" }
-            ].map(({ href, icon: Icon, text, color }) => (
-              <button 
-                key={href}
-                onClick={() => handleNavClick(href)}
-                className={`group relative bg-gradient-to-r ${color} text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 font-medium overflow-hidden`}
-              >
-                <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
-                <span className="relative z-10 flex items-center gap-2">
-                  <Icon className="group-hover:rotate-12 transition-transform duration-300" />
-                  {text}
-                </span>
-              </button>
-            ))}
           </div>
 
           {/* Mobile Menu Button */}
@@ -134,7 +111,7 @@ const LandingPage = () => {
       </nav>
 
       {/* Hero Section */}
-      <section id="home" className="py-24 px-4 sm:px-8 text-center relative">
+      <section id="home" className="py-20 px-4 sm:px-8 text-center relative">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-5xl sm:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-fadeInUp">
             Welcome to Singapore Poly
@@ -144,7 +121,7 @@ const LandingPage = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fadeInUp" style={{ animationDelay: '0.4s' }}>
             <button 
-              onClick={() => handleButtonClick('scan')}
+              onClick={() => handleButtonClick()}
               className="group relative bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-full shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105 overflow-hidden"
             >
               <span className="relative z-10 flex items-center gap-2 font-semibold">
@@ -154,7 +131,7 @@ const LandingPage = () => {
               <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </button>
             <button 
-              onClick={() => handleButtonClick('about')}
+              onClick={() => handleButtonClick()}
               className="group bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-8 py-4 rounded-full shadow-2xl hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-105"
             >
               <span className="flex items-center gap-2 font-semibold">
@@ -167,7 +144,7 @@ const LandingPage = () => {
       </section>
 
       {/* About Section */}
-      <section id="about" className="py-20 px-4 sm:px-8 relative">
+      <section id="about" className="py-10 px-4 sm:px-8 relative">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl sm:text-5xl font-bold mb-8 text-white">
             About <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">SP & SoC</span>
@@ -184,7 +161,7 @@ const LandingPage = () => {
       </section>
 
       {/* Scan Section */}
-      <section id="scan" className="py-20 px-4 sm:px-8 text-center relative">
+      <section id="scan" className="py-10 px-4 sm:px-8 text-center relative">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-4xl sm:text-5xl font-bold mb-8 text-white">
             Start Your <span className="bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">Exploration</span>
@@ -197,7 +174,7 @@ const LandingPage = () => {
                 Use your device camera to discover hidden content and interactive experiences throughout the School of Computing.
               </p>
               <button 
-                onClick={() => handleButtonClick('scan')}
+                onClick={() => handleButtonClick()}
                 className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-full shadow-lg hover:scale-105 transition-transform duration-300"
               >
                 Begin Scanning
@@ -224,7 +201,7 @@ const LandingPage = () => {
       </section>
 
       {/* Quiz Section */}
-      <section id="quiz" className="py-20 px-4 sm:px-8 text-center relative">
+      <section id="quiz" className="py-10 px-4 sm:px-8 text-center relative">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-4xl sm:text-5xl font-bold mb-8 text-white">
             Test Your <span className="bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">Knowledge</span>
@@ -248,7 +225,7 @@ const LandingPage = () => {
       </section>
 
       {/* Leaderboard Section */}
-      <section id="leaderboard" className="py-20 px-4 sm:px-8 text-center relative">
+      <section id="leaderboard" className="py-10 px-4 sm:px-8 text-center relative">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-4xl sm:text-5xl font-bold mb-12 text-white">
             <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Leaderboard</span>
@@ -292,7 +269,7 @@ const LandingPage = () => {
           </div>
           
           <button 
-            onClick={() => handleButtonClick('leaderboard')}
+            onClick={() => handleButtonClick()}
             className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-full shadow-lg hover:scale-105 transition-all duration-300 font-semibold"
           >
             <span className="flex items-center gap-2">

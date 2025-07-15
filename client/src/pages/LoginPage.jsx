@@ -17,7 +17,7 @@ const LoginPage = () => {
     setLoading(true);
     try {
       await handleLogin({ username, password });
-      navigate("/"); // Redirect to homepage or dashboard on success
+      navigate("/quiz"); 
     } catch (err) {
       setError(err.message || "Login failed");
     } finally {

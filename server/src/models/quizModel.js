@@ -60,30 +60,44 @@ module.exports = {
     }
   },
 
-  // quizModel.js, in calculatePersonalityFromAnswers
   calculatePersonalityFromAnswers: async (answers, userId = null) => {
     try {
       if (!Array.isArray(answers) || answers.length === 0) {
         throw new Error('Answers must be a non-empty array.');
       }
 
+      // answers expected as array of { questionId: number, optionId: number }
       const personalityCounts = new Map();
-      for (const optionText of answers) {
-        console.log(`Checking option: ${optionText}`);
-        const option = await prisma.option.findFirst({
-          where: { optionText: optionText },
-          select: { personalityId: true },
-        });
-        if (!option) {
-          console.log(`No match for option: ${optionText}`);
+
+      for (const answer of answers) {
+        if (
+          typeof answer !== 'object' ||
+          typeof answer.questionId !== 'number' ||
+          typeof answer.optionId !== 'number'
+        ) {
+          console.log(`Skipping invalid answer format: ${JSON.stringify(answer)}`);
           continue;
         }
+
+        const option = await prisma.option.findFirst({
+          where: {
+            questionId: answer.questionId,
+            optionId: answer.optionId,
+          },
+          select: { personalityId: true },
+        });
+
+        if (!option) {
+          console.log(`No option found for questionId=${answer.questionId} optionId=${answer.optionId}`);
+          continue;
+        }
+
         if (option.personalityId !== null) {
           const pId = option.personalityId;
           personalityCounts.set(pId, (personalityCounts.get(pId) || 0) + 1);
-          console.log(`Matched personalityId ${pId} for ${optionText}`);
+          console.log(`Matched personalityId ${pId} for questionId=${answer.questionId} optionId=${answer.optionId}`);
         } else {
-          console.log(`No personalityId for ${optionText}`);
+          console.log(`No personalityId for questionId=${answer.questionId} optionId=${answer.optionId}`);
         }
       }
 
@@ -99,6 +113,7 @@ module.exports = {
       }
 
       console.log(`Top personality IDs: ${topPersonalityIds}, Max count: ${maxCount}`);
+
       if (topPersonalityIds.length === 0) {
         console.log("No personality determined due to empty counts");
         return [];
