@@ -209,4 +209,25 @@ module.exports = {
       throw error;
     }
   },
+
+  reorderQuizQuestions: async (questionIds) => {
+    try {
+      if (!Array.isArray(questionIds) || questionIds.length === 0) {
+        throw new Error('Question IDs must be a non-empty array.');
+      }
+
+      const updatedQuestions = await prisma.$transaction(
+        questionIds.map((id, index) =>
+          prisma.question.update({
+            where: { questionId: parseInt(id, 10) },
+            data: { order: index + 1 },
+          })
+        )
+      );
+
+      return updatedQuestions;
+    } catch (error) {
+      throw error;
+    }
+  },  
 };

@@ -71,6 +71,13 @@ router.delete(
     quizController.deleteQuizQuestionById
 );
 
+router.put(
+    '/reorder',
+    jwtMiddleware.verifyAccessToken,
+    verifyRole([3, 4, 5]),
+    quizController.reorderQuizQuestions
+)
+
 //////////////////////////////////////////////////////
 // EXPORT ROUTER
 //////////////////////////////////////////////////////

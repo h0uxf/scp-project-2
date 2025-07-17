@@ -101,4 +101,21 @@ module.exports = {
     logger.info(`Quiz question with ID ${questionId} deleted`);
     res.status(200).json({ status: "success", message: "Quiz question deleted successfully" });
   }),
+
+  reorderQuizQuestions: catchAsync(async (req, res, next) => {
+    const { questionIds } = req.body;
+
+    if (!Array.isArray(questionIds) || questionIds.length === 0) {
+      logger.warn("Reorder quiz questions failed: Missing or invalid question IDs");
+      return next(new AppError("Question IDs must be a non-empty array", 400));
+    }
+
+    const reorderedQuestions = await quizModel.reorderQuizQuestions(questionIds);
+    if (!reorderedQuestions) {
+      logger.warn("Failed to reorder quiz questions");
+      return next(new AppError("Failed to reorder quiz questions", 500));
+    }
+    logger.info("Quiz questions reordered successfully");
+    res.status(200).json({ status: "success", data: reorderedQuestions });
+  })
 };

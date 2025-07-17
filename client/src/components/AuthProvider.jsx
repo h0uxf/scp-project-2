@@ -100,8 +100,12 @@ export function AuthProvider({ children }) {
     return roleIds.includes(currentRole);
   }
 
+  function isContentManager() {
+    return hasRole(3);
+  }
+
   function isAdmin() {
-    return Number(currentUser?.role_id) === 1;
+    return Number(currentUser?.role_id) === 4;
   }
 
   return (
