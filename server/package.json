@@ -5,14 +5,14 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/index.js",
-    "start": "node src/index.js",
+    "start": "node index.js",
     "init_data": "node src/configs/initData.js"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@prisma/client": "^6.11.1",
+    "@prisma/client": "^6.10.1",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -27,5 +27,8 @@
     "nodemon": "^3.1.10",
     "winston": "^3.17.0",
     "xss": "^1.0.15"
+  },
+  "devDependencies": {
+    "prisma": "^6.12.0"
   }
 }
