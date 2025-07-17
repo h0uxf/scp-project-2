@@ -103,6 +103,10 @@ router.post("/refresh", jwtMiddleware.refreshTokenHandler);
 const quizRoutes = require('../routes/quizRoutes.js');
 router.use('/quiz', quizRoutes);
 
+// routes for leaderboard
+const leaderboardRoutes = require('../routes/leaderboardRoutes.js');
+router.use('/leaderboard', leaderboardRoutes);
+
 // routes for admin to manage user
 const adminRoutes = require('../routes/adminRoutes.js');
 router.use('/admin', adminRoutes);

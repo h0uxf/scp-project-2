@@ -73,12 +73,13 @@ model QuizResult {
 
 model PersonalityType {
   id           Int           @id @default(autoincrement())
-  code         String        @unique // e.g., "AI", "CS", "Cyber"
-  name         String        // Full name like "Diploma in Computer Science"
+  code         String        @unique
+  name         String
   description  String
   options      Option[]
-  userResults  UserResult[]
+  userResults  UserResult[]  
 }
+
 
 model UserResult {
   id             Int              @id @default(autoincrement())

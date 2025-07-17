@@ -37,6 +37,6 @@
     "prisma": "^6.10.1"
   },
   "prisma": {
-    "schema": "./prisma/schema.prisma"
+    "schema": "./server/prisma/schema.prisma"
   }
 }
