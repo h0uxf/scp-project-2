@@ -37,6 +37,7 @@ module.exports = {
                 data: {
                     username: data.username,
                     passwordHash: data.password, 
+                    points: 0,
                 },
                 select: {
                     userId: true,

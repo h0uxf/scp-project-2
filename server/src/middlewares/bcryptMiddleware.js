@@ -38,9 +38,7 @@ module.exports = {
                 console.error(`Error Bcrypt : ${err}`);
                 res.status(500).json(err);
             } else {
-
-                // after successful hashing it stores in res.locals and calls the next middleware function
-                res.locals.hash = hash; 
+                req.body.password = hash; 
                 next();
             };
         };

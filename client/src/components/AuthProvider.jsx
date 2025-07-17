@@ -58,7 +58,6 @@ export function AuthProvider({ children }) {
   }
 
   async function handleRegister(credentials) {
-    console.log("Registering with credentials:", credentials);
     const res = await fetch("http://localhost:5000/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
