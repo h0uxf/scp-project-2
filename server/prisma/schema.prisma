@@ -41,10 +41,11 @@ model WordClue {
 model Question {
   questionId    Int        @id @default(autoincrement()) @map("question_id")
   questionText  String     @map("question_text")
-  options       Option[]
+  options       Option[]   @relation("QuestionOptions")
   quizResults   QuizResult[]
   createdAt     DateTime   @default(now()) @map("created_at")
   updatedAt     DateTime   @updatedAt @map("updated_at")
+  order         Int        @default(0) 
 }
 
 model Option {
@@ -54,9 +55,10 @@ model Option {
   personalityId Int?            @map("personality_id")
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime        @updatedAt @map("updated_at")
-  question      Question        @relation(fields: [questionId], references: [questionId], onDelete: Cascade)
+  question      Question        @relation("QuestionOptions", fields: [questionId], references: [questionId], onDelete: Cascade)
   questionId    Int             @map("question_id")
   quizResults   QuizResult[]
+  order         Int             @default(0) 
 }
 
 model QuizResult {

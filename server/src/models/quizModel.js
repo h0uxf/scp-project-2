@@ -138,63 +138,223 @@ module.exports = {
   },
 
   // Admin quiz endpoints
-  createQuizQuestion: async (questionData) => {
-    try {
-      const { questionText, options } = questionData;
+  findQuestionsByIds: async (questionIds) => {
+    return await prisma.question.findMany({
+      where: questionIds.length > 0 ? { questionId: { in: questionIds } } : {},
+      include: { options: { orderBy: { order: 'asc' } } },
+      orderBy: { order: 'asc' },
+    });
+  },
 
-      if (!options || options.length === 0) {
-        throw new Error('At least one option is required.');
+  findQuestionById: async (questionId) => {
+    return await prisma.question.findUnique({
+      where: { questionId: parseInt(questionId, 10) },
+      include: { options: { orderBy: { order: 'asc' } } },
+    });
+  },
+
+  reorderQuizQuestions: async (questionIds) => {
+    try {
+      if (!Array.isArray(questionIds) || questionIds.length === 0) {
+        throw new Error('Question IDs must be a non-empty array.');
+      }
+
+      // Validate integer IDs
+      const parsedIds = questionIds.map(id => parseInt(id, 10));
+      if (parsedIds.some(id => isNaN(id))) {
+        throw new Error('All question IDs must be integers.');
+      }
+
+      // Verify all questionIds exist
+      const existingQuestions = await prisma.question.findMany({
+        where: { questionId: { in: parsedIds } },
+        include: { options: { orderBy: { order: 'asc' } } },
+      });
+      if (existingQuestions.length !== questionIds.length) {
+        throw new Error('One or more question IDs not found.');
+      }
+
+      // Update order in a transaction
+      const updatedQuestions = await prisma.$transaction(
+        parsedIds.map((id, index) =>
+          prisma.question.update({
+            where: { questionId: id },
+            data: { order: index + 1 },
+            include: { options: { orderBy: { order: 'asc' } } },
+          })
+        )
+      );
+
+      // Normalize to 3 options
+      return updatedQuestions.map((question) => ({
+        ...question,
+        questionId: question.questionId,
+        options: question.options
+          .slice(0, 3)
+          .map((opt) => ({
+            optionId: opt.optionId,
+            optionText: opt.optionText || '',
+            personalityId: opt.personalityId,
+          }))
+          .concat(
+            Array(3 - question.options.length)
+              .fill()
+              .map(() => ({ optionId: null, optionText: '', personalityId: null }))
+          )
+          .slice(0, 3),
+      }));
+    } catch (error) {
+      throw new Error(`Failed to reorder questions: ${error.message}`);
+    }
+  },
+
+  reorderQuizOptionsById: async (questionId, optionIds) => {
+    try {
+      if (!questionId || !Array.isArray(optionIds) || optionIds.length !== 3) {
+        throw new Error('Question ID and exactly 3 option IDs are required.');
+      }
+
+      // Validate integer IDs
+      const parsedQuestionId = parseInt(questionId, 10);
+      const parsedOptionIds = optionIds.map(id => parseInt(id, 10));
+      if (isNaN(parsedQuestionId) || parsedOptionIds.some(id => isNaN(id))) {
+        throw new Error('Question ID and option IDs must be integers.');
+      }
+
+      // Verify question exists
+      const question = await prisma.question.findUnique({
+        where: { questionId: parsedQuestionId },
+        include: { options: { orderBy: { order: 'asc' } } },
+      });
+      if (!question) {
+        throw new Error(`Question ID ${questionId} not found.`);
+      }
+
+      // Verify all optionIds belong to the question
+      const existingOptionIds = question.options.map((opt) => opt.optionId);
+      if (!parsedOptionIds.every((id) => existingOptionIds.includes(id))) {
+        throw new Error('One or more option IDs not found for this question.');
+      }
+
+      // Update order in a transaction
+      const updatedOptions = await prisma.$transaction(
+        parsedOptionIds.map((id, index) =>
+          prisma.option.update({
+            where: { optionId: id },
+            data: { order: index + 1 },
+          })
+        )
+      );
+
+      // Normalize to 3 options
+      return updatedOptions
+        .slice(0, 3)
+        .map((opt) => ({
+          optionId: opt.optionId,
+          optionText: opt.optionText || '',
+          personalityId: opt.personalityId,
+        }))
+        .concat(
+          Array(3 - updatedOptions.length)
+            .fill()
+            .map(() => ({ optionId: null, optionText: '', personalityId: null }))
+        )
+        .slice(0, 3);
+    } catch (error) {
+      throw new Error(`Failed to reorder options: ${error.message}`);
+    }
+  },
+
+  createQuizQuestion: async (questionText, options) => {
+    try {
+      if (!questionText || !Array.isArray(options) || options.length !== 3 || options.some((opt) => !opt.optionText)) {
+        throw new Error('Question must have exactly 3 non-empty options.');
       }
 
       const newQuestion = await prisma.question.create({
         data: {
           questionText,
+          order: (await prisma.question.count()) + 1,
           options: {
-            create: options.map(option => ({
-              optionText: option.optionText,
-              personalityId: option.personalityId,
+            create: options.map((opt, index) => ({
+              optionText: opt.optionText,
+              personalityId: opt.personalityId ? parseInt(opt.personalityId, 10) : null,
+              order: index + 1,
             })),
           },
         },
+        include: { options: { orderBy: { order: 'asc' } } },
       });
 
-      return newQuestion;
+      return {
+        ...newQuestion,
+        questionId: newQuestion.questionId,
+        options: newQuestion.options
+          .slice(0, 3)
+          .map((opt) => ({
+            optionId: opt.optionId,
+            optionText: opt.optionText || '',
+            personalityId: opt.personalityId,
+          })),
+      };
     } catch (error) {
-      throw error;
+      throw new Error(`Failed to create question: ${error.message}`);
     }
   },
 
-  updateQuizQuestion: async (questionId, questionData) => {
+  updateQuizQuestion: async (questionId, questionText, options) => {
     try {
-      const { questionText, options } = questionData;
-
-      if (!options || options.length === 0) {
-        throw new Error('At least one option is required.');
+      if (!questionText || !Array.isArray(options) || options.length !== 3 || options.some((opt) => !opt.optionText)) {
+        throw new Error('Question must have exactly 3 non-empty options.');
       }
 
+      // Validate integer questionId
+      const parsedQuestionId = parseInt(questionId, 10);
+      if (isNaN(parsedQuestionId)) {
+        throw new Error('Question ID must be an integer.');
+      }
+
+      // Delete existing options and create new ones
+      await prisma.option.deleteMany({ where: { question: { questionId: parsedQuestionId } } });
       const updatedQuestion = await prisma.question.update({
-        where: { questionId: parseInt(questionId, 10) },
+        where: { questionId: parsedQuestionId },
         data: {
           questionText,
           options: {
-            upsert: options.map(option => ({
-              where: { optionId: option.optionId || 0 },
-              create: {
-                optionText: option.optionText,
-                personalityId: option.personalityId,
-              },
-              update: {
-                optionText: option.optionText,
-                personalityId: option.personalityId,
-              },
+            create: options.map((opt, index) => ({
+              optionText: opt.optionText,
+              personalityId: opt.personalityId ? parseInt(opt.personalityId, 10) : null,
+              order: index + 1,
             })),
           },
         },
+        include: { options: { orderBy: { order: 'asc' } } },
       });
 
-      return updatedQuestion;
+      if (!updatedQuestion) {
+        throw new Error(`Question ID ${questionId} not found.`);
+      }
+
+      // Normalize to 3 options
+      return {
+        ...updatedQuestion,
+        questionId: updatedQuestion.questionId,
+        options: updatedQuestion.options
+          .slice(0, 3)
+          .map((opt) => ({
+            optionId: opt.optionId,
+            optionText: opt.optionText || '',
+            personalityId: opt.personalityId,
+          }))
+          .concat(
+            Array(3 - updatedQuestion.options.length)
+              .fill()
+              .map(() => ({ optionId: null, optionText: '', personalityId: null }))
+          )
+          .slice(0, 3),
+      };
     } catch (error) {
-      throw error;
+      throw new Error(`Failed to update question: ${error.message}`);
     }
   },
 
@@ -210,24 +370,4 @@ module.exports = {
     }
   },
 
-  reorderQuizQuestions: async (questionIds) => {
-    try {
-      if (!Array.isArray(questionIds) || questionIds.length === 0) {
-        throw new Error('Question IDs must be a non-empty array.');
-      }
-
-      const updatedQuestions = await prisma.$transaction(
-        questionIds.map((id, index) =>
-          prisma.question.update({
-            where: { questionId: parseInt(id, 10) },
-            data: { order: index + 1 },
-          })
-        )
-      );
-
-      return updatedQuestions;
-    } catch (error) {
-      throw error;
-    }
-  },  
 };

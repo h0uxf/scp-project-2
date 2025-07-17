@@ -1,3 +1,4 @@
+// QuizPage.jsx
 import React, { useState, useEffect } from "react";
 import { HelpCircle, Share2, ArrowUp, ArrowDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -43,9 +44,25 @@ const QuizPage = () => {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [newQuestion, setNewQuestion] = useState({
     questionText: "",
-    options: [{ optionText: "" }, { optionText: "" }, { optionText: "" }, { optionText: "" }],
+    options: [{ optionText: "" }, { optionText: "" }, { optionText: "" }],
   });
   const [editingQuestionId, setEditingQuestionId] = useState(null);
+
+  // Normalize options to ensure exactly 3 options
+  const normalizeOptions = (options) => {
+    if (!Array.isArray(options)) {
+      return [{ optionText: "", optionId: null }, { optionText: "", optionId: null }, { optionText: "", optionId: null }];
+    }
+    const normalized = options.map((opt) => ({
+      optionId: opt.optionId ? parseInt(opt.optionId, 10) : null,
+      optionText: opt.optionText || "",
+      personalityId: opt.personalityId || null,
+    }));
+    while (normalized.length < 3) {
+      normalized.push({ optionText: "", optionId: null, personalityId: null });
+    }
+    return normalized.slice(0, 3); // Ensure exactly 3 options
+  };
 
   // Fetch questions or load saved result
   useEffect(() => {
@@ -71,10 +88,20 @@ const QuizPage = () => {
         if (data.status !== "success") {
           throw new Error(data.message || "Failed to fetch questions");
         }
-        setQuestions(data.data || []);
+        // Normalize questions to ensure valid options and integer IDs
+        const validQuestions = (data.data || []).map((question) => ({
+          ...question,
+          questionId: parseInt(question.questionId, 10),
+          options: normalizeOptions(question.options),
+        })).filter((question) => question.questionId && !isNaN(question.questionId) && question.questionText);
+        setQuestions(validQuestions);
+        if (validQuestions.length === 0 && data.data?.length > 0) {
+          toast.error("No valid questions found. Please contact an administrator.");
+        }
       } catch (err) {
         console.error("Failed to fetch questions:", err);
         toast.error(err.message);
+        setError(err.message);
       } finally {
         setLoading(false);
       }
@@ -178,6 +205,10 @@ const QuizPage = () => {
 
   // Handle question creation
   const handleCreateQuestion = async () => {
+    if (!newQuestion.questionText || newQuestion.options.some((opt) => !opt.optionText)) {
+      toast.error("Please fill in all fields");
+      return;
+    }
     try {
       const response = await fetch("http://localhost:5000/api/quiz", {
         method: "POST",
@@ -190,10 +221,11 @@ const QuizPage = () => {
         throw new Error(errorData.message || "Failed to create question");
       }
       const result = await response.json();
-      setQuestions([...questions, result.data]);
+      console.log("Created question:", result.data);
+      setQuestions([...questions, { ...result.data, options: normalizeOptions(result.data.options) }]);
       setNewQuestion({
         questionText: "",
-        options: [{ optionText: "" }, { optionText: "" }, { optionText: "" }, { optionText: "" }],
+        options: [{ optionText: "" }, { optionText: "" }, { optionText: "" }],
       });
       toast.success("Question created successfully!");
     } catch (err) {
@@ -204,22 +236,29 @@ const QuizPage = () => {
 
   // Handle question update
   const handleUpdateQuestion = async (questionId) => {
+    if (!newQuestion.questionText || newQuestion.options.some((opt) => !opt.optionText)) {
+      toast.error("Please fill in all fields");
+      return;
+    }
     try {
       const response = await fetch(`http://localhost:5000/api/quiz/${questionId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(newQuestion),
+        body: JSON.stringify({ ...newQuestion, options: newQuestion.options.slice(0, 3) }), // Fixed to 3 options
       });
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to update question");
       }
       const result = await response.json();
-      setQuestions(questions.map((q) => (q.questionId === questionId ? result.data : q)));
+      console.log("Updated question:", result.data);
+      setQuestions(questions.map((q) =>
+        q.questionId === questionId ? { ...result.data, options: normalizeOptions(result.data.options) } : q
+      ));
       setNewQuestion({
         questionText: "",
-        options: [{ optionText: "" }, { optionText: "" }, { optionText: "" }, { optionText: "" }],
+        options: [{ optionText: "" }, { optionText: "" }, { optionText: "" }],
       });
       setEditingQuestionId(null);
       toast.success("Question updated successfully!");
@@ -256,19 +295,36 @@ const QuizPage = () => {
     if (newIndex < 0 || newIndex >= questions.length) return;
 
     [newQuestions[index], newQuestions[newIndex]] = [newQuestions[newIndex], newQuestions[index]];
-    setQuestions(newQuestions);
+    
+    // Validate questionIds
+    const questionIds = newQuestions.map((q) => q.questionId);
+    if (questionIds.some(id => !id || isNaN(parseInt(id, 10)))) {
+      console.error("Invalid question IDs:", questionIds);
+      toast.error("Cannot reorder questions: Invalid question IDs");
+      return;
+    }
 
     try {
+      console.log("Sending questionIds to reorder:", questionIds); // Debug
       const response = await fetch("http://localhost:5000/api/quiz/reorder", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ questionIds: newQuestions.map((q) => q.questionId) }),
+        body: JSON.stringify({ questionIds }),
       });
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("Reorder response error:", errorData); // Debug
         throw new Error(errorData.message || "Failed to reorder questions");
       }
+      const result = await response.json();
+      console.log("Reorder response:", result.data); // Debug
+      // Update questions state with normalized response
+      setQuestions(result.data.map((question) => ({
+        ...question,
+        questionId: parseInt(question.questionId, 10),
+        options: normalizeOptions(question.options),
+      })));
       toast.success("Question order updated!");
     } catch (err) {
       console.error("Error reordering questions:", err);
@@ -277,9 +333,8 @@ const QuizPage = () => {
   };
 
   // Handle option reordering
-  const handleMoveOption = (questionId, optionIndex, direction) => {
+  const handleMoveOption = async (questionId, optionIndex, direction) => {
     if (questionId === "new") {
-      // Handle reordering in the creation form (no API call needed)
       const updatedOptions = [...newQuestion.options];
       const newOptionIndex = direction === "up" ? optionIndex - 1 : optionIndex + 1;
       if (newOptionIndex < 0 || newOptionIndex >= updatedOptions.length) return;
@@ -292,7 +347,6 @@ const QuizPage = () => {
       return;
     }
 
-    // Handle reordering for existing questions
     const questionIndex = questions.findIndex((q) => q.questionId === questionId);
     if (questionIndex === -1) return;
 
@@ -303,28 +357,35 @@ const QuizPage = () => {
     if (newOptionIndex < 0 || newOptionIndex >= options.length) return;
 
     [options[optionIndex], options[newOptionIndex]] = [options[newOptionIndex], options[optionIndex]];
-    question.options = options;
+    question.options = normalizeOptions(options); // Ensure 3 options
     newQuestions[questionIndex] = question;
     setQuestions(newQuestions);
 
-    fetch(`http://localhost:5000/api/quiz/${questionId}/options/reorder`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ optionIds: options.map((opt) => opt.optionId) }),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          return response.json().then((errorData) => {
-            throw new Error(errorData.message || "Failed to reorder options");
-          });
-        }
-        toast.success("Option order updated!");
-      })
-      .catch((err) => {
-        console.error("Error reordering options:", err);
-        toast.error(err.message);
+    // Validate optionIds
+    const optionIds = options.map((opt) => opt.optionId);
+    if (optionIds.some(id => !id || isNaN(parseInt(id, 10)))) {
+      console.error("Invalid option IDs:", optionIds);
+      toast.error("Cannot reorder options: Invalid option IDs");
+      return;
+    }
+
+    try {
+      console.log("Sending optionIds to reorder:", optionIds); // Debug
+      const response = await fetch(`http://localhost:5000/api/quiz/${questionId}/options/reorder`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ optionIds }),
       });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to reorder options");
+      }
+      toast.success("Option order updated!");
+    } catch (err) {
+      console.error("Error reordering options:", err);
+      toast.error(err.message);
+    }
   };
 
   // Handle launching updates
@@ -359,10 +420,14 @@ const QuizPage = () => {
 
   // Start editing a question
   const startEditingQuestion = (question) => {
+    if (!Array.isArray(question.options)) {
+      toast.error("Cannot edit question: Invalid options");
+      return;
+    }
     setEditingQuestionId(question.questionId);
     setNewQuestion({
-      questionText: question.questionText,
-      options: question.options.map((opt) => ({ optionText: opt.optionText })),
+      questionText: question.questionText || "",
+      options: normalizeOptions(question.options),
     });
   };
 
@@ -506,7 +571,8 @@ const QuizPage = () => {
               <div className="flex justify-center gap-4 mt-4">
                 <button
                   onClick={editingQuestionId ? () => handleUpdateQuestion(editingQuestionId) : handleCreateQuestion}
-                  className="bg-green-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full transition-all duration-300"
+                  disabled={!newQuestion.questionText || newQuestion.options.some((opt) => !opt.optionText)}
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {editingQuestionId ? "Update Question" : "Create Question"}
                 </button>
@@ -515,7 +581,7 @@ const QuizPage = () => {
                     onClick={() =>
                       setNewQuestion({
                         questionText: "",
-                        options: [{ optionText: "" }, { optionText: "" }, { optionText: "" }, { optionText: "" }],
+                        options: [{ optionText: "" }, { optionText: "" }, { optionText: "" }],
                       }) && setEditingQuestionId(null)
                     }
                     className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full transition-all duration-300"
@@ -551,7 +617,8 @@ const QuizPage = () => {
                     </button>
                     <button
                       onClick={() => startEditingQuestion(question)}
-                      className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-full transition-all duration-300"
+                      disabled={!Array.isArray(question.options)}
+                      className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Edit
                     </button>
