@@ -1,22 +1,26 @@
 import React, { useEffect, useState } from "react";
 import { Medal, Star, Trophy } from "lucide-react";
 
-const mockLeaderboard = [
-  { name: "Alice", points: 120 },
-  { name: "Bob", points: 110 },
-  { name: "Charlie", points: 100 },
-  { name: "David", points: 90 },
-  { name: "Eva", points: 85 },
-  { name: "Frank", points: 80 },
-  { name: "Grace", points: 75 },
-];
-
 const LeaderboardPage = () => {
   const [topPlayers, setTopPlayers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In a real app this would be fetched from an API
-    setTopPlayers(mockLeaderboard);
+    const fetchLeaderboard = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/leaderboard");
+        if (!response.ok) throw new Error("Failed to fetch leaderboard");
+        const data = await response.json();
+        setTopPlayers(data.data);
+        console.log(topPlayers)
+      } catch (err) {
+        console.error("Error fetching leaderboard:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeaderboard();
   }, []);
 
   const icons = [Trophy, Medal, Star];
@@ -25,6 +29,14 @@ const LeaderboardPage = () => {
     "from-gray-300 to-gray-400",
     "from-orange-400 to-red-400",
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center bg-slate-900 text-white">
+        Loading leaderboard...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-20 px-4 sm:px-8 text-center">
@@ -52,7 +64,7 @@ const LeaderboardPage = () => {
                       <span className="text-white font-bold text-xl">
                         #{index + 1}
                       </span>
-                      <p className="text-gray-300 font-medium">{user.name}</p>
+                      <p className="text-gray-300 font-medium">{user.username}</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -78,7 +90,7 @@ const LeaderboardPage = () => {
                 className="flex justify-between items-center bg-white/5 p-3 rounded-lg hover:bg-white/10 transition"
               >
                 <span className="text-white font-medium">
-                  #{index + 4} {user.name}
+                  #{index + 4} {user.username}
                 </span>
                 <span className="text-gray-300">{user.points} pts</span>
               </li>
