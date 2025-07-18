@@ -1,15 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogIn, XCircle } from "lucide-react";
-import { useAuth } from "../components/AuthProvider";  
+import { useAuth } from "../components/AuthProvider";
 
 const LoginPage = () => {
-  const { handleLogin } = useAuth();
+  const { handleLogin, currentUser, authLoading } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  // Redirect to /quiz if user is already authenticated
+  useEffect(() => {
+    if (!authLoading && currentUser) {
+      navigate("/quiz");
+    }
+  }, [authLoading, currentUser, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,13 +24,24 @@ const LoginPage = () => {
     setLoading(true);
     try {
       await handleLogin({ username, password });
-      navigate("/quiz"); 
+      navigate("/quiz");
     } catch (err) {
       setError(err.message || "Login failed");
     } finally {
       setLoading(false);
     }
   };
+
+  const isFormValid = username.trim() && password.trim();
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col justify-center items-center px-4 sm:px-8">
+        <h1 className="text-4xl font-bold text-white mb-4">Loading...</h1>
+      </div>
+    );
+  }
 
   return (
     <div className="font-sans bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen flex flex-col justify-center items-center px-4 sm:px-8 relative overflow-hidden">
@@ -66,8 +84,10 @@ const LoginPage = () => {
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-full shadow-lg hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105 font-semibold flex justify-center items-center gap-2"
+            disabled={loading || !isFormValid}
+            className={`w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-full shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105 font-semibold flex justify-center items-center gap-2 ${
+              loading || !isFormValid ? "opacity-50 cursor-not-allowed" : ""
+            }`}
           >
             {loading ? "Logging in..." : "Login"}
             <LogIn className="animate-pulse" />
@@ -84,23 +104,6 @@ const LoginPage = () => {
           </button>
         </p>
       </div>
-
-      <style jsx>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fadeInUp {
-          animation: fadeInUp 0.8s ease-out forwards;
-          opacity: 0;
-        }
-      `}</style>
     </div>
   );
 };

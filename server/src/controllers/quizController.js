@@ -54,51 +54,126 @@ module.exports = {
   }),
 
   // Admin quiz endpoints
+  reorderQuizQuestions: catchAsync(async (req, res, next) => {
+    const { questionIds } = req.body;
+
+    if (!Array.isArray(questionIds) || questionIds.length === 0) {
+      logger.warn('Reorder quiz questions failed: Missing or invalid question IDs');
+      return next(new AppError('Question IDs must be a non-empty array', 400));
+    }
+
+    // Validate integer IDs
+    const parsedIds = questionIds.map(id => parseInt(id, 10));
+    if (parsedIds.some(id => isNaN(id))) {
+      logger.warn('Reorder quiz questions failed: Non-integer question IDs');
+      return next(new AppError('All question IDs must be integers', 400));
+    }
+
+    try {
+      const reorderedQuestions = await quizModel.reorderQuizQuestions(parsedIds);
+      logger.info('Quiz questions reordered successfully');
+      res.status(200).json({ status: 'success', data: reorderedQuestions });
+    } catch (error) {
+      logger.warn(`Failed to reorder quiz questions: ${error.message}`);
+      return next(new AppError(error.message, 400));
+    }
+  }),
+
+  updateQuizQuestion: catchAsync(async (req, res, next) => {
+    const { questionId } = req.params;
+    const { questionText, options } = req.body;
+
+    if (!questionText || !Array.isArray(options) || options.length !== 3 || options.some((opt) => !opt.optionText)) {
+      logger.warn(`Update quiz question ${questionId} failed: Invalid question or options`);
+      return next(new AppError('Question must have exactly 3 non-empty options', 400));
+    }
+
+    // Validate integer optionIds if provided
+    if (options.some(opt => opt.optionId && isNaN(parseInt(opt.optionId, 10)))) {
+      logger.warn(`Update quiz question ${questionId} failed: Non-integer option IDs`);
+      return next(new AppError('Option IDs must be integers', 400));
+    }
+
+    try {
+      const updatedQuestion = await quizModel.updateQuizQuestion(questionId, questionText, options);
+      logger.info(`Quiz question ${questionId} updated successfully`);
+      res.status(200).json({ status: 'success', data: updatedQuestion });
+    } catch (error) {
+      logger.warn(`Update quiz question ${questionId} failed: ${error.message}`);
+      return next(new AppError(error.message, 400));
+    }
+  }),
+
   createQuizQuestion: catchAsync(async (req, res, next) => {
     const { questionText, options } = req.body;
 
-    if (!questionText || !Array.isArray(options) || options.length === 0) {
-      logger.warn("Create quiz question failed: Missing question text or options");
-      return next(new AppError("Question text and options are required", 400));
+    if (!questionText || !Array.isArray(options) || options.length !== 3 || options.some((opt) => !opt.optionText)) {
+      logger.warn('Create quiz question failed: Invalid question or options');
+      return next(new AppError('Question must have exactly 3 non-empty options', 400));
     }
 
-    const newQuestion = await quizModel.createQuizQuestion({ questionText, options });
-    logger.info(`Quiz question created with ID ${newQuestion.questionId || newQuestion.id}`);
-    res.status(201).json({ status: "success", data: newQuestion });
+    try {
+      const newQuestion = await quizModel.createQuizQuestion(questionText, options);
+      logger.info(`Quiz question created successfully`);
+      res.status(201).json({ status: 'success', data: newQuestion });
+    } catch (error) {
+      logger.warn(`Create quiz question failed: ${error.message}`);
+      return next(new AppError(error.message, 400));
+    }
   }),
 
-  updateQuizQuestionById: catchAsync(async (req, res, next) => {
-    const { questionId } = req.params;
-    const { questionText, options } = req.body;
-
-    if (!questionId || !questionText || !Array.isArray(options) || options.length === 0) {
-      logger.warn("Update quiz question failed: Missing question ID, text, or options");
-      return next(new AppError("Question ID, text, and options are required", 400));
+  getAllQuizQuestions: catchAsync(async (req, res, next) => {
+    try {
+      const questions = await quizModel.findQuestionsByIds([]);
+      logger.info('Quiz questions fetched successfully');
+      res.status(200).json({ status: 'success', data: questions });
+    } catch (error) {
+      logger.warn(`Failed to fetch quiz questions: ${error.message}`);
+      return next(new AppError(error.message, 400));
     }
-
-    const updatedQuestion = await quizModel.updateQuizQuestion(questionId, { questionText, options });
-    if (!updatedQuestion) {
-      logger.warn(`Quiz question with ID ${questionId} not found`);
-      return next(new AppError(`Quiz question with ID ${questionId} not found`, 404));
-    }
-    logger.info(`Quiz question with ID ${questionId} updated`);
-    res.status(200).json({ status: "success", data: updatedQuestion });
   }),
 
-  deleteQuizQuestionById: catchAsync(async (req, res, next) => {
+  deleteQuizQuestion: catchAsync(async (req, res, next) => {
     const { questionId } = req.params;
 
-    if (!questionId) {
-      logger.warn("Delete quiz question failed: Missing question ID");
-      return next(new AppError("Question ID is required", 400));
+    try {
+      const question = await quizModel.findQuestionById(questionId);
+      if (!question) {
+        logger.warn(`Delete quiz question ${questionId} failed: Question not found`);
+        return next(new AppError(`Question ID ${questionId} not found`, 404));
+      }
+      await prisma.question.delete({ where: { questionId: parseInt(questionId, 10) } });
+      logger.info(`Quiz question ${questionId} deleted successfully`);
+      res.status(204).json({ status: 'success', data: null });
+    } catch (error) {
+      logger.warn(`Delete quiz question ${questionId} failed: ${error.message}`);
+      return next(new AppError(error.message, 400));
+    }
+  }),
+
+  reorderQuizOptionsById: catchAsync(async (req, res, next) => {
+    const { questionId } = req.params;
+    const { optionIds } = req.body;
+
+    if (!questionId || !Array.isArray(optionIds) || optionIds.length !== 3) {
+      logger.warn(`Reorder quiz options failed: Invalid question ID ${questionId} or option IDs count (${optionIds?.length})`);
+      return next(new AppError('Question ID and exactly 3 option IDs are required', 400));
     }
 
-    const deletedQuestion = await quizModel.deleteQuizQuestion(questionId);
-    if (!deletedQuestion) {
-      logger.warn(`Quiz question with ID ${questionId} not found`);
-      return next(new AppError(`Quiz question with ID ${questionId} not found`, 404));
+    // Validate integer IDs
+    const parsedOptionIds = optionIds.map(id => parseInt(id, 10));
+    if (parsedOptionIds.some(id => isNaN(id))) {
+      logger.warn(`Reorder quiz options failed: Non-integer option IDs`);
+      return next(new AppError('All option IDs must be integers', 400));
     }
-    logger.info(`Quiz question with ID ${questionId} deleted`);
-    res.status(200).json({ status: "success", message: "Quiz question deleted successfully" });
+
+    try {
+      const reorderedOptions = await quizModel.reorderQuizOptionsById(questionId, parsedOptionIds);
+      logger.info(`Quiz options for question ID ${questionId} reordered successfully`);
+      res.status(200).json({ status: 'success', data: reorderedOptions });
+    } catch (error) {
+      logger.warn(`Failed to reorder options for question ID ${questionId}: ${error.message}`);
+      return next(new AppError(error.message, 400));
+    }
   }),
 };

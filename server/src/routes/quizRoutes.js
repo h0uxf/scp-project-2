@@ -46,6 +46,13 @@ router.post(
 //////////////////////////////////////////////////////
 // DEFINE ROUTES FOR QUIZ (CONTENT MANAGER, ADMIN, AND SUPER ADMIN)
 //////////////////////////////////////////////////////
+router.put(
+    '/reorder',
+    jwtMiddleware.verifyAccessToken,
+    verifyRole([3, 4, 5]),
+    quizController.reorderQuizQuestions
+)
+
 router.post(
     '/',
     jwtMiddleware.verifyAccessToken,
@@ -61,14 +68,21 @@ router.put(
     verifyRole([3, 4, 5]),
     questionValidationRules(), 
     validate,                  
-    quizController.updateQuizQuestionById
+    quizController.updateQuizQuestion
 );
 
 router.delete(
     '/:questionId',
     jwtMiddleware.verifyAccessToken,
     verifyRole([3, 4, 5]),
-    quizController.deleteQuizQuestionById
+    quizController.deleteQuizQuestion
+);
+
+router.put(
+    '/:questionId/options/reorder',
+    jwtMiddleware.verifyAccessToken,
+    verifyRole([3, 4, 5]),
+    quizController.reorderQuizOptionsById
 );
 
 //////////////////////////////////////////////////////
