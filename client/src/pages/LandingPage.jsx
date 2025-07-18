@@ -385,7 +385,7 @@ const LandingPage = () => {
           </div>
 
           <button
-            onClick={() => handleButtonClick()}
+            onClick={() => navigate("/leaderboard")}
             className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-full shadow-lg hover:scale-105 transition-all duration-300 font-semibold"
           >
             <span className="flex items-center gap-2">
