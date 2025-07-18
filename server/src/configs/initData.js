@@ -272,7 +272,7 @@
     const personalityMap = {};
     const personalityRecords = await prisma.personalityType.findMany();
     for (const record of personalityRecords) {
-      personalityMap[record.code] = record.personalityTypeId;
+      personalityMap[record.code] = record.id;
     }
 
     const quizQuestions = [

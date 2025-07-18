@@ -34,16 +34,27 @@ module.exports = {
     createNewUser: async (data) => {
         try {
             const newUser = await prisma.user.create({
-                data: {
-                    username: data.username,
-                    passwordHash: data.password, 
-                    points: 0,
+            data: {
+                username: data.username,
+                passwordHash: data.password,
+                points: 0,
+                userRole: {
+                create: {
+                    roleId: 1,
                 },
+                },
+            },
+            select: {
+                userId: true,
+                username: true,
+                userRole: {
                 select: {
-                    userId: true,
-                    username: true,
+                    roleId: true,
                 },
+                },
+            },
             });
+            
             return newUser;
         } catch (error) {
             throw error;

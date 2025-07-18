@@ -46,8 +46,7 @@ module.exports = {
     res.locals.message = `User ${data.username} successfully created`;
     res.locals.user_id = results.userId;
     res.locals.username = results.username;
-    res.locals.hash = results.passwordHash;
-    res.locals.role_id = results.roleId || null;
+    res.locals.role_id = results.userRole.length > 0 ? results.userRole[0].roleId : null;
     next();
   }),
 

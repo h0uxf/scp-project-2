@@ -124,6 +124,11 @@ module.exports = {
         select: { id: true, code: true, name: true, description: true },
       });
 
+      const userExists = await prisma.user.findUnique({ where: { userId } });
+      if (!userExists) {
+        throw new Error(`User with ID ${userId} does not exist.`);
+      }
+
       if (userId && topPersonalities.length > 0) {
         await prisma.userResult.create({
           data: { userId, personalityId: topPersonalities[0].id },
