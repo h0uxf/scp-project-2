@@ -115,6 +115,10 @@ router.use('/admin', adminRoutes);
 const imageRoutes = require('../routes/imageRoutes.js');
 router.use('/images', imageRoutes);
 
+// routes for activities
+const activityRoutes = require('../routes/activityRoutes.js');
+router.use('/activities', activityRoutes);  
+
 //////////////////////////////////////////////////////
 // EXPORT ROUTER
 //////////////////////////////////////////////////////

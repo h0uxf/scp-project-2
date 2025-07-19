@@ -113,6 +113,7 @@ model Activity {
   updatedAt    DateTime @updatedAt @map("updated_at")
   feature      Location? @relation(fields: [locationId], references: [locationId], onDelete: Cascade)
   locationId   Int?      @map("location_id")
+  order        Int       @default(0)
   userActivities UserActivities[] 
 }
 

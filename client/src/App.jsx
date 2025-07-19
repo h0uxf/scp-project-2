@@ -7,6 +7,7 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import FaceFilterPage from "./pages/FaceFilterPage";
+import ActivitiesPage from "./pages/ActivitiesPage";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path='/login' element={<LoginPage />} />
         <Route path='/register' element={<RegisterPage />} />
         <Route path='/face-filter' element={<FaceFilterPage />} />
+        <Route path="/activities" element={<ActivitiesPage />} />
       </Routes>
     </Router>
   );
