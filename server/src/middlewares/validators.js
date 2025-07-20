@@ -148,6 +148,32 @@ const quizResultValidationRules = (prisma) => {
     ];
 };
 
+const activityValidationRules = () => {
+    return [
+        body('name')
+            .trim()
+            .notEmpty()
+            .withMessage('Activity name is required.')
+            .isString()
+            .withMessage('Activity name must be a string.')
+            .isLength({ max: 100 })
+            .withMessage('Activity name cannot exceed 100 characters.'),
+        body('description')
+            .trim()
+            .notEmpty()
+            .withMessage('Activity description is required.')
+            .isString()
+            .withMessage('Activity description must be a string.')
+            .isLength({ max: 500 })
+            .withMessage('Activity description cannot exceed 500 characters.'),
+        body('route')
+            .optional()
+            .trim()
+            .matches(/^\/[a-zA-Z0-9-_/:]*$/)
+            .withMessage('Route must start with "/" and contain only letters, numbers, hyphens, underscores, or colons.'),
+    ];
+};
+
 
 module.exports = {
     validate,
@@ -155,4 +181,5 @@ module.exports = {
     questionValidationRules,
     optionValidationRules,
     quizResultValidationRules,
+    activityValidationRules
 };

@@ -14,6 +14,7 @@ const roleMiddleware = require('../middlewares/roleMiddleware.js');
 // IMPORT MIDDLEWARES FOR INPUT VALIDATION
 //////////////////////////////////////////////////////
 const { sanitizeRequest, sanitizeResponse } = require('../middlewares/sanitizers.js');
+const { activityValidationRules, validate } = require('../middlewares/validators.js');
 
 //////////////////////////////////////////////////////
 // CREATE ROUTER
@@ -53,6 +54,8 @@ router.post(
     '/',
     jwtMiddleware.verifyAccessToken,
     roleMiddleware([3, 4, 5]),
+    activityValidationRules(),
+    validate,
     activityController.createActivity
 );
 
@@ -61,6 +64,8 @@ router.put(
     '/:activityId',
     jwtMiddleware.verifyAccessToken,
     roleMiddleware([3, 4, 5]),
+    activityValidationRules(),
+    validate,
     activityController.updateActivity
 );
 
