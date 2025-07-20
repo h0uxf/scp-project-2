@@ -142,7 +142,7 @@ module.exports = {
         logger.warn(`Delete quiz question ${questionId} failed: Question not found`);
         return next(new AppError(`Question ID ${questionId} not found`, 404));
       }
-      await prisma.question.delete({ where: { questionId: parseInt(questionId, 10) } });
+      await quizModel.deleteQuizQuestion(questionId);
       logger.info(`Quiz question ${questionId} deleted successfully`);
       res.status(204).json({ status: 'success', data: null });
     } catch (error) {

@@ -1,6 +1,5 @@
-// QuizPage.jsx
 import React, { useState, useEffect } from "react";
-import { HelpCircle, Share2, ArrowUp, ArrowDown } from "lucide-react";
+import { HelpCircle, Share2, ArrowUp, ArrowDown, Edit } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../components/AuthProvider";
 import toast, { Toaster } from "react-hot-toast";
@@ -229,6 +228,7 @@ const QuizPage = () => {
         options: [{ optionText: "" }, { optionText: "" }, { optionText: "" }],
       });
       toast.success("Question created successfully!");
+      setIsPreviewMode(true); // Switch to preview mode after saving
     } catch (err) {
       console.error("Error creating question:", err);
       toast.error(err.message);
@@ -246,7 +246,7 @@ const QuizPage = () => {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ ...newQuestion, options: newQuestion.options.slice(0, 3) }), // Fixed to 3 options
+        body: JSON.stringify({ ...newQuestion, options: newQuestion.options.slice(0, 3) }),
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -263,6 +263,7 @@ const QuizPage = () => {
       });
       setEditingQuestionId(null);
       toast.success("Question updated successfully!");
+      setIsPreviewMode(true); // Switch to preview mode after saving
     } catch (err) {
       console.error("Error updating question:", err);
       toast.error(err.message);
@@ -306,7 +307,7 @@ const QuizPage = () => {
     }
 
     try {
-      console.log("Sending questionIds to reorder:", questionIds); // Debug
+      console.log("Sending questionIds to reorder:", questionIds);
       const response = await fetch("http://localhost:5000/api/quiz/reorder", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -315,12 +316,11 @@ const QuizPage = () => {
       });
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("Reorder response error:", errorData); // Debug
+        console.error("Reorder response error:", errorData);
         throw new Error(errorData.message || "Failed to reorder questions");
       }
       const result = await response.json();
-      console.log("Reorder response:", result.data); // Debug
-      // Update questions state with normalized response
+      console.log("Reorder response:", result.data);
       setQuestions(result.data.map((question) => ({
         ...question,
         questionId: parseInt(question.questionId, 10),
@@ -358,11 +358,10 @@ const QuizPage = () => {
     if (newOptionIndex < 0 || newOptionIndex >= options.length) return;
 
     [options[optionIndex], options[newOptionIndex]] = [options[newOptionIndex], options[optionIndex]];
-    question.options = normalizeOptions(options); // Ensure 3 options
+    question.options = normalizeOptions(options);
     newQuestions[questionIndex] = question;
     setQuestions(newQuestions);
 
-    // Validate optionIds
     const optionIds = options.map((opt) => opt.optionId);
     if (optionIds.some(id => !id || isNaN(parseInt(id, 10)))) {
       console.error("Invalid option IDs:", optionIds);
@@ -371,7 +370,7 @@ const QuizPage = () => {
     }
 
     try {
-      console.log("Sending optionIds to reorder:", optionIds); // Debug
+      console.log("Sending optionIds to reorder:", optionIds);
       const response = await fetch(`http://localhost:5000/api/quiz/${questionId}/options/reorder`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -389,23 +388,14 @@ const QuizPage = () => {
     }
   };
 
-  // Handle launching updates
-  const handleLaunchUpdates = async () => {
-    try {
-      const response = await fetch("http://localhost:5000/api/quiz/publish", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to launch updates");
-      }
-      toast.success("Updates launched successfully!");
-    } catch (err) {
-      console.error("Error launching updates:", err);
-      toast.error(err.message);
+  // Handle save and preview
+  const handleSaveAndPreview = () => {
+    if (editingQuestionId) {
+      handleUpdateQuestion(editingQuestionId);
+    } else {
+      handleCreateQuestion();
     }
+    // Preview mode is set in handleCreateQuestion or handleUpdateQuestion
   };
 
   // Handle form input changes
@@ -571,11 +561,11 @@ const QuizPage = () => {
               ))}
               <div className="flex justify-center gap-4 mt-4">
                 <button
-                  onClick={editingQuestionId ? () => handleUpdateQuestion(editingQuestionId) : handleCreateQuestion}
+                  onClick={handleSaveAndPreview}
                   disabled={!newQuestion.questionText || newQuestion.options.some((opt) => !opt.optionText)}
                   className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {editingQuestionId ? "Update Question" : "Create Question"}
+                  Save and Preview
                 </button>
                 {editingQuestionId && (
                   <button
@@ -633,15 +623,6 @@ const QuizPage = () => {
                 </div>
               ))}
             </div>
-            {/* Launch Updates Button */}
-            <div className="mt-6">
-              <button
-                onClick={handleLaunchUpdates}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-full transition-all duration-300"
-              >
-                Launch Updates
-              </button>
-            </div>
           </div>
         )}
 
@@ -652,9 +633,9 @@ const QuizPage = () => {
               <div className="flex justify-end mb-4">
                 <button
                   onClick={() => setIsPreviewMode(false)}
-                  className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-full transition-all duration-300"
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-full transition-all duration-300 flex items-center gap-2"
                 >
-                  Exit Preview Mode
+                  <Edit size={20} /> Edit Questions
                 </button>
               </div>
             )}

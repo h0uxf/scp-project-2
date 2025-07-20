@@ -18,8 +18,7 @@ const verifyRole = require('../middlewares/roleMiddleware.js');
 const { sanitizeRequest, sanitizeResponse } = require('../middlewares/sanitizers.js');
 const {
     validate,
-    questionValidationRules,
-    quizResultValidationRules,
+    questionValidationRules
 } = require('../middlewares/validators'); 
 
 //////////////////////////////////////////////////////
