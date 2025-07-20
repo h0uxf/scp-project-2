@@ -114,6 +114,7 @@ model Activity {
   feature      Location? @relation(fields: [locationId], references: [locationId], onDelete: Cascade)
   locationId   Int?      @map("location_id")
   order        Int       @default(0)
+  route        String?
   userActivities UserActivities[] 
 }
 

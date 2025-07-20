@@ -9,11 +9,14 @@ module.exports = {
                     activityId: true,
                     name: true,
                     description: true,
+                    route: true, // Include route field
                     createdAt: true,
                     updatedAt: true,
+                    locationId: true,
+                    order: true,
                 },
                 orderBy: {
-                    createdAt: 'desc',
+                    order: 'asc', // Use order field for consistent sorting
                 },
             });
 
@@ -23,7 +26,7 @@ module.exports = {
 
             return activities;
         } catch (error) {
-            throw error;
+            throw new Error(`Failed to fetch activities: ${error.message}`);
         }
     },
 
@@ -39,9 +42,12 @@ module.exports = {
                 select: {
                     activityId: true,
                     name: true,
-                    description: true, 
+                    description: true,
+                    route: true, // Include route field
                     createdAt: true,
                     updatedAt: true,
+                    locationId: true,
+                    order: true,
                 },
             });
 
@@ -51,15 +57,20 @@ module.exports = {
 
             return activity;
         } catch (error) {
-            throw error;
+            throw new Error(`Failed to fetch activity: ${error.message}`);
         }
     },
 
     createActivity: async (activityData) => {
-        const { name, description } = activityData;
+        const { name, description, route } = activityData;
 
         if (!name || !description) {
             throw new Error('Invalid activity data. Ensure name and description are provided.');
+        }
+
+        // Validate route format if provided
+        if (route && !route.match(/^\/[a-zA-Z0-9-_/:]*$/)) {
+            throw new Error('Invalid route format. Route must start with "/" and contain only letters, numbers, hyphens, underscores, or colons.');
         }
 
         try {
@@ -67,13 +78,14 @@ module.exports = {
                 data: {
                     name,
                     description,
+                    route: route || null,
                     order: 0, // Default order
                 },
             });
 
             return newActivity;
         } catch (error) {
-            throw error;
+            throw new Error(`Failed to create activity: ${error.message}`);
         }
     },
 
@@ -83,15 +95,30 @@ module.exports = {
             throw new Error('Invalid activity ID. It must be a number.');
         }
 
+        const { name, description, route, locationId } = activityData;
+
+        if (!name || !description) {
+            throw new Error('Invalid activity data. Ensure name and description are provided.');
+        }
+
+        // Validate route format if provided
+        if (route && !route.match(/^\/[a-zA-Z0-9-_/:]*$/)) {
+            throw new Error('Invalid route format. Route must start with "/" and contain only letters, numbers, hyphens, underscores, or colons.');
+        }
+
         try {
             const updatedActivity = await prisma.activity.update({
                 where: { activityId: id },
-                data: activityData,
+                data: {
+                    name,
+                    description,
+                    route: route || null,
+                },
             });
 
             return updatedActivity;
         } catch (error) {
-            throw error;
+            throw new Error(`Failed to update activity: ${error.message}`);
         }
     },
 
@@ -108,7 +135,7 @@ module.exports = {
 
             return deletedActivity;
         } catch (error) {
-            throw error;
+            throw new Error(`Failed to delete activity: ${error.message}`);
         }
     },
 
@@ -118,28 +145,37 @@ module.exports = {
             throw new Error('Invalid input: activities must be a non-empty array.');
         }
 
-        // Validate activity objects
-        if (!activities.every(activity => activity && typeof activity === 'object' && 'activityId' in activity)) {
-            throw new Error('Invalid input: all activities must have an activityId property.');
+        // Validate activity objects and parse activityId
+        if (!activities.every(activity => activity && typeof activity === 'object' && 'activityId' in activity && !isNaN(parseInt(activity.activityId, 10)))) {
+            throw new Error('Invalid input: all activities must have a valid numeric activityId.');
         }
 
         try {
-            const updatedActivities = await prisma.$transaction(
-                activities.map((activity, index) =>
-                    prisma.activity.update({
-                        where: { activityId: activity.activityId },
-                        data: { order: index },
-                    })
-                )
+            const updates = activities.map((activity, index) =>
+                prisma.activity.update({
+                    where: { activityId: parseInt(activity.activityId, 10) },
+                    data: { order: index },
+                })
             );
 
-            return updatedActivities;
-        } catch (error) {
-            // Log error for debugging (in a production environment, use a proper logging service)
-            console.error('Failed to reorder activities:', error);
+            await prisma.$transaction(updates);
 
-            // Throw a more specific error
+            // Return the updated list of activities in order
+            return prisma.activity.findMany({
+                select: {
+                    activityId: true,
+                    name: true,
+                    description: true,
+                    route: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    locationId: true,
+                    order: true,
+                },
+                orderBy: { order: 'asc' },
+            });
+        } catch (error) {
             throw new Error(`Failed to reorder activities: ${error.message}`);
         }
     },
-}
+};

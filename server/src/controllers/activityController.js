@@ -32,19 +32,23 @@ module.exports = {
 
     // Admin activity endpoints
     createActivity: catchAsync(async (req, res, next) => {
-        const { name, description } = req.body;
+        const { name, description, route } = req.body;
         if (!name || !description) {
             logger.warn("Create activity failed: Missing name or description");
             return next(new AppError("Name and description are required", 400));
         }
 
-        const newActivity = await activityModel.createActivity({ name, description });
+        const newActivity = await activityModel.createActivity({
+            name,
+            description,
+            route: route || null,
+        });
         res.status(201).json({ status: "success", data: newActivity });
     }),
 
     updateActivity: catchAsync(async (req, res, next) => {
         const { activityId } = req.params;
-        const { name, description } = req.body;
+        const { name, description, route } = req.body;
         if (!activityId) {
             logger.warn("Update activity failed: Missing activity ID");
             return next(new AppError("Activity ID is required", 400));
@@ -54,7 +58,15 @@ module.exports = {
             return next(new AppError("Name and description are required", 400));
         }
 
-        const updatedActivity = await activityModel.updateActivity(activityId, { name, description });
+        const updatedActivity = await activityModel.updateActivity(activityId, {
+            name,
+            description,
+            route: route || null,
+        });
+        if (!updatedActivity) {
+            logger.warn(`Update activity ${activityId} failed: Activity not found`);
+            return next(new AppError(`Activity with ID ${activityId} not found`, 404));
+        }
         res.status(200).json({ status: "success", data: updatedActivity });
     }),
 

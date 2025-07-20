@@ -34,7 +34,7 @@ class ActivityErrorBoundary extends React.Component {
 const ActivitiesPage = () => {
   const { currentUser, hasRole, loading: authLoading } = useAuth();
   const [activities, setActivities] = useState([]);
-  const [newActivity, setNewActivity] = useState({ name: "", description: "" });
+  const [newActivity, setNewActivity] = useState({ name: "", description: "", route: "" });
   const [editingActivityId, setEditingActivityId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -75,7 +75,11 @@ const ActivitiesPage = () => {
   // Handle activity creation
   const handleCreateActivity = async () => {
     if (!newActivity.name || !newActivity.description) {
-      toast.error("Please fill in all fields");
+      toast.error("Please fill in name and description fields");
+      return;
+    }
+    if (newActivity.route && !newActivity.route.match(/^\/[a-zA-Z0-9-_/:]*$/)) {
+      toast.error("Route must start with '/' and contain only letters, numbers, hyphens, underscores, or colons");
       return;
     }
     try {
@@ -92,7 +96,7 @@ const ActivitiesPage = () => {
       const result = await response.json();
       console.log("Created activity:", result.data);
       setActivities([...activities, { ...result.data, activityId: parseInt(result.data.activityId, 10) }]);
-      setNewActivity({ name: "", description: "" });
+      setNewActivity({ name: "", description: "", route: "" });
       toast.success("Activity created successfully!");
     } catch (err) {
       console.error("Error creating activity:", err);
@@ -103,7 +107,11 @@ const ActivitiesPage = () => {
   // Handle activity update
   const handleUpdateActivity = async (activityId) => {
     if (!newActivity.name || !newActivity.description) {
-      toast.error("Please fill in all fields");
+      toast.error("Please fill in name and description fields");
+      return;
+    }
+    if (newActivity.route && !newActivity.route.match(/^\/[a-zA-Z0-9-_/:]*$/)) {
+      toast.error("Route must start with '/' and contain only letters, numbers, hyphens, underscores, or colons");
       return;
     }
     try {
@@ -122,7 +130,7 @@ const ActivitiesPage = () => {
       setActivities(activities.map((a) =>
         a.activityId === activityId ? { ...result.data, activityId: parseInt(result.data.activityId, 10) } : a
       ));
-      setNewActivity({ name: "", description: "" });
+      setNewActivity({ name: "", description: "", route: "" });
       setEditingActivityId(null);
       toast.success("Activity updated successfully!");
     } catch (err) {
@@ -158,7 +166,7 @@ const ActivitiesPage = () => {
     if (newIndex < 0 || newIndex >= activities.length) return;
 
     [newActivities[index], newActivities[newIndex]] = [newActivities[newIndex], newActivities[index]];
-    
+
     const activityIds = newActivities.map((a) => a.activityId);
     if (activityIds.some(id => !id || isNaN(parseInt(id, 10)))) {
       console.error("Invalid activity IDs:", activityIds);
@@ -198,15 +206,21 @@ const ActivitiesPage = () => {
     setNewActivity({
       name: activity.name || "",
       description: activity.description || "",
+      route: activity.route || "",
     });
   };
 
   // Navigate to detailed edit page
-  const handleEditMoreDetails = (activityName) => {
-    navigate(`/${activityName}`);
+  const handleEditMoreDetails = (activity) => {
+    const targetRoute = activity.route || `/activity/${activity.name.toLowerCase().replace(/\s+/g, '-')}`;
+    if (!targetRoute) {
+      toast.error("No valid route defined for this activity.");
+      return;
+    }
+    navigate(targetRoute);
   };
 
-  // Fetch activities on mount for admins only, or set loading to false for non-admins
+  // Fetch activities on mount for admins only
   useEffect(() => {
     if (!authLoading) {
       if (hasRole(3, 4, 5)) {
@@ -275,6 +289,13 @@ const ActivitiesPage = () => {
               className="w-full bg-white/10 text-white p-3 rounded-lg mb-4"
               rows="4"
             />
+            <input
+              type="text"
+              value={newActivity.route}
+              onChange={(e) => setNewActivity({ ...newActivity, route: e.target.value })}
+              placeholder="Enter activity route (e.g., /quiz)"
+              className="w-full bg-white/10 text-white p-3 rounded-lg mb-4"
+            />
             <div className="flex justify-center gap-4">
               <button
                 onClick={editingActivityId ? () => handleUpdateActivity(editingActivityId) : handleCreateActivity}
@@ -286,7 +307,7 @@ const ActivitiesPage = () => {
               {editingActivityId && (
                 <button
                   onClick={() => {
-                    setNewActivity({ name: "", description: "" });
+                    setNewActivity({ name: "", description: "", route: "" });
                     setEditingActivityId(null);
                   }}
                   className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full transition-all duration-300"
@@ -312,6 +333,7 @@ const ActivitiesPage = () => {
                   <div className="text-left">
                     <span className="font-medium">{activity.name || "Unnamed Activity"}</span>
                     <p className="text-sm text-gray-300">{activity.description || "No description available"}</p>
+                    <p className="text-sm text-gray-400">Route: {activity.route || "Not set"}</p>
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -335,7 +357,7 @@ const ActivitiesPage = () => {
                       Edit
                     </button>
                     <button
-                      onClick={() => handleEditMoreDetails(activity.activityName)}
+                      onClick={() => handleEditMoreDetails(activity)}
                       className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full transition-all duration-300"
                     >
                       <Edit2 size={20} />

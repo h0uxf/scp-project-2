@@ -195,7 +195,7 @@
       const activitiesToCreate = [
         {
           name: 'NPC Interation (Introduction)',
-          description: 'Learn more about the game and how to play.'
+          description: 'Learn more about the game and how to play.',
         },
         {
           name: 'Computing Crash Course',
@@ -207,11 +207,13 @@
         },
         {
           name: 'SoC Personality Quiz',
-          description: 'Take a quiz to discover your most suitable SoC diploma based on your personality.'
+          description: 'Take a quiz to discover your most suitable SoC diploma based on your personality.',
+          route: '/quiz'
         },
         {
           name: 'AR Selfie Challenge',
-          description: 'Take a selfie with an AR filter and share it on social media.'
+          description: 'Take a selfie with an AR filter and share it on social media.',
+          route: '/face-filter'
         }
       ];
 
@@ -223,7 +225,8 @@
           const created = await prisma.activity.create({
             data: {
               name: a.name,
-              description: a.description
+              description: a.description,
+              route: a.route
             },
           });
           console.log(`Activity created: ${created.name}`);
