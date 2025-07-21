@@ -119,6 +119,10 @@ router.use('/images', imageRoutes);
 const activityRoutes = require('../routes/activityRoutes.js');
 router.use('/activities', activityRoutes);  
 
+// routes for crossword puzzles
+const crosswordRoutes = require('../routes/crosswordRoutes.js');
+router.use('/crossword', crosswordRoutes);
+
 //////////////////////////////////////////////////////
 // EXPORT ROUTER
 //////////////////////////////////////////////////////
