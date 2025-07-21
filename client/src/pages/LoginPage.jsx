@@ -4,38 +4,41 @@ import { LogIn, XCircle } from "lucide-react";
 import { useAuth } from "../components/AuthProvider";
 
 const LoginPage = () => {
-  const { handleLogin, currentUser, authLoading } = useAuth();
+  const { handleLogin, currentUser, loading } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [localLoading, setLocalLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Redirect to /quiz if user is already authenticated
   useEffect(() => {
-    if (!authLoading && currentUser) {
-      navigate("/quiz");
+    if (!loading && currentUser) {
+      const role = currentUser.role_id;
+      if ([3, 4, 5].includes(role)) {
+        navigate("/activities");
+      } else {
+        navigate("/scan");
+      }
     }
-  }, [authLoading, currentUser, navigate]);
+  }, [loading, currentUser, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
+    setLocalLoading(true);
     try {
       await handleLogin({ username, password });
-      navigate("/quiz");
+      // navigation will happen automatically in useEffect
     } catch (err) {
       setError(err.message || "Login failed");
     } finally {
-      setLoading(false);
+      setLocalLoading(false);
     }
   };
 
   const isFormValid = username.trim() && password.trim();
 
-  // Show loading state while checking authentication
-  if (authLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col justify-center items-center px-4 sm:px-8">
         <h1 className="text-4xl font-bold text-white mb-4">Loading...</h1>
@@ -84,12 +87,12 @@ const LoginPage = () => {
 
           <button
             type="submit"
-            disabled={loading || !isFormValid}
+            disabled={localLoading || !isFormValid}
             className={`w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-full shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105 font-semibold flex justify-center items-center gap-2 ${
-              loading || !isFormValid ? "opacity-50 cursor-not-allowed" : ""
+              localLoading || !isFormValid ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
-            {loading ? "Logging in..." : "Login"}
+            {localLoading ? "Logging in..." : "Login"}
             <LogIn className="animate-pulse" />
           </button>
         </form>

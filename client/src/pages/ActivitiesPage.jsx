@@ -200,15 +200,15 @@ const ActivitiesPage = () => {
     }
   };
 
-  // Start editing an activity
-  const startEditingActivity = (activity) => {
-    setEditingActivityId(activity.activityId);
-    setNewActivity({
-      name: activity.name || "",
-      description: activity.description || "",
-      route: activity.route || "",
-    });
-  };
+  // // Start editing an activity
+  // const startEditingActivity = (activity) => {
+  //   setEditingActivityId(activity.activityId);
+  //   setNewActivity({
+  //     name: activity.name || "",
+  //     description: activity.description || "",
+  //     route: activity.route || "",
+  //   });
+  // };
 
   // Navigate to detailed edit page
   const handleEditMoreDetails = (activity) => {
@@ -272,7 +272,7 @@ const ActivitiesPage = () => {
 
         {/* Admin Controls */}
         <div className="max-w-3xl mx-auto bg-white/5 border border-white/20 rounded-2xl p-8 shadow-xl mb-8">
-          <h2 className="text-2xl font-semibold mb-6">Add or Edit Activity</h2>
+          <h2 className="text-2xl font-semibold mb-6">Add Activity</h2>
           {/* Activity Creation/Update Form */}
           <div className="mb-6">
             <input
@@ -304,17 +304,6 @@ const ActivitiesPage = () => {
               >
                 {editingActivityId ? "Update Activity" : "Create Activity"}
               </button>
-              {editingActivityId && (
-                <button
-                  onClick={() => {
-                    setNewActivity({ name: "", description: "", route: "" });
-                    setEditingActivityId(null);
-                  }}
-                  className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full transition-all duration-300"
-                >
-                  Cancel Editing
-                </button>
-              )}
             </div>
           </div>
           {/* Existing Activities */}
@@ -349,12 +338,6 @@ const ActivitiesPage = () => {
                       className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-full disabled:opacity-50"
                     >
                       <ArrowDown size={20} />
-                    </button>
-                    <button
-                      onClick={() => startEditingActivity(activity)}
-                      className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-full transition-all duration-300"
-                    >
-                      Edit
                     </button>
                     <button
                       onClick={() => handleEditMoreDetails(activity)}
