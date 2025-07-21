@@ -103,6 +103,10 @@ router.post("/refresh", jwtMiddleware.refreshTokenHandler);
 const quizRoutes = require('../routes/quizRoutes.js');
 router.use('/quiz', quizRoutes);
 
+// routes for leaderboard
+const leaderboardRoutes = require('../routes/leaderboardRoutes.js');
+router.use('/leaderboard', leaderboardRoutes);
+
 // routes for admin to manage user
 const adminRoutes = require('../routes/adminRoutes.js');
 router.use('/admin', adminRoutes);
@@ -110,6 +114,14 @@ router.use('/admin', adminRoutes);
 // routes for users to upload images from face filter 
 const imageRoutes = require('../routes/imageRoutes.js');
 router.use('/images', imageRoutes);
+
+// routes for activities
+const activityRoutes = require('../routes/activityRoutes.js');
+router.use('/activities', activityRoutes);  
+
+// routes for crossword puzzles
+const crosswordRoutes = require('../routes/crosswordRoutes.js');
+router.use('/crossword', crosswordRoutes);
 
 // routes for locations
 const locationRoutes = require('../routes/locationRoutes.js');

@@ -1,22 +1,27 @@
 import React, { useState, useEffect } from "react";
-import { Menu, X, Crown, Play, HelpCircle, Home, GraduationCap, Star, Trophy, Medal } from "lucide-react";
+import {
+  Menu,
+  X,
+  Crown,
+  Play,
+  HelpCircle,
+  Home,
+  GraduationCap,
+  Star,
+  Trophy,
+  Medal,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const top3 = [
-  { name: "Alice", points: 120 },
-  { name: "Bob", points: 110 },
-  { name: "Charlie", points: 100 },
-];
-
 const FloatingShape = ({ className, delay = 0 }) => (
-  <div 
+  <div
     className={`absolute opacity-20 animate-bounce ${className}`}
-    style={{ animationDelay: `${delay}s`, animationDuration: '3s' }}
+    style={{ animationDelay: `${delay}s`, animationDuration: "3s" }}
   />
 );
 
 const GlowingOrb = ({ size, color, position, delay = 0 }) => (
-  <div 
+  <div
     className={`absolute ${position} ${size} ${color} rounded-full blur-xl opacity-30 animate-pulse`}
     style={{ animationDelay: `${delay}s` }}
   />
@@ -26,17 +31,30 @@ const LandingPage = () => {
   const [navOpen, setNavOpen] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const navigate = useNavigate();
-  
+  const [leaderboard, setLeaderboard] = useState([]);
+
   useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const fetchLeaderboard = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/leaderboard");
+        const result = await response.json();
+        if (result.status === "success" && Array.isArray(result.data)) {
+          setLeaderboard(result.data);
+        } else {
+          console.error("Unexpected API response format", result);
+        }
+      } catch (err) {
+        console.error("Failed to fetch leaderboard", err);
+      }
+    };
+
+    fetchLeaderboard();
   }, []);
 
   const toggleMenu = () => setNavOpen(!navOpen);
 
   const handleNavClick = (targetId) => {
-    document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth' });
+    document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth" });
     setNavOpen(false);
   };
 
@@ -48,19 +66,45 @@ const LandingPage = () => {
     <div className="font-sans bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen scroll-smooth relative overflow-hidden">
       {/* Animated Background Elements */}
       <div className="fixed inset-0 pointer-events-none">
-        <GlowingOrb size="w-96 h-96" color="bg-blue-500" position="top-10 -left-48" delay={0} />
-        <GlowingOrb size="w-64 h-64" color="bg-purple-500" position="top-1/3 right-10" delay={1} />
-        <GlowingOrb size="w-80 h-80" color="bg-indigo-500" position="bottom-20 left-20" delay={2} />
-        
-        <FloatingShape className="w-4 h-4 bg-white rounded-full top-20 left-1/4" delay={0} />
-        <FloatingShape className="w-6 h-6 bg-blue-300 rounded-full top-1/2 right-1/4" delay={1} />
-        <FloatingShape className="w-3 h-3 bg-purple-300 rounded-full bottom-1/3 left-3/4" delay={2} />
+        <GlowingOrb
+          size="w-96 h-96"
+          color="bg-blue-500"
+          position="top-10 -left-48"
+          delay={0}
+        />
+        <GlowingOrb
+          size="w-64 h-64"
+          color="bg-purple-500"
+          position="top-1/3 right-10"
+          delay={1}
+        />
+        <GlowingOrb
+          size="w-80 h-80"
+          color="bg-indigo-500"
+          position="bottom-20 left-20"
+          delay={2}
+        />
+
+        <FloatingShape
+          className="w-4 h-4 bg-white rounded-full top-20 left-1/4"
+          delay={0}
+        />
+        <FloatingShape
+          className="w-6 h-6 bg-blue-300 rounded-full top-1/2 right-1/4"
+          delay={1}
+        />
+        <FloatingShape
+          className="w-3 h-3 bg-purple-300 rounded-full bottom-1/3 left-3/4"
+          delay={2}
+        />
       </div>
 
       {/* NavBar */}
-      <nav 
+      <nav
         className={`bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-lg border-b border-white/20 px-4 sm:px-6 py-4 sticky top-0 z-20 transition-all duration-300 ${
-          scrollY > 50 ? 'bg-gradient-to-r from-blue-600/40 via-purple-600/40 to-pink-600/40 shadow-2xl' : ''
+          scrollY > 50
+            ? "bg-gradient-to-r from-blue-600/40 via-purple-600/40 to-pink-600/40 shadow-2xl"
+            : ""
         }`}
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -75,7 +119,7 @@ const LandingPage = () => {
           </div>
 
           {/* Mobile Menu Button */}
-          <button 
+          <button
             onClick={toggleMenu}
             className="lg:hidden relative bg-gradient-to-r from-blue-500 to-purple-500 text-white p-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
           >
@@ -88,13 +132,38 @@ const LandingPage = () => {
           <div className="lg:hidden mt-4 bg-gradient-to-r from-blue-600/30 via-purple-600/30 to-pink-600/30 backdrop-blur-lg rounded-2xl border border-white/20 p-4 animate-fadeIn">
             <div className="space-y-2">
               {[
-                { href: "home", icon: Home, text: "Home", color: "from-blue-500 to-cyan-500" },
-                { href: "about", icon: GraduationCap, text: "About", color: "from-purple-500 to-pink-500" },
-                { href: "scan", icon: Play, text: "Scan", color: "from-green-500 to-emerald-500" },
-                { href: "quiz", icon: HelpCircle, text: "Quiz", color: "from-yellow-500 to-orange-500" },
-                { href: "leaderboard", icon: Crown, text: "Leaderboard", color: "from-pink-500 to-rose-500" }
+                {
+                  href: "home",
+                  icon: Home,
+                  text: "Home",
+                  color: "from-blue-500 to-cyan-500",
+                },
+                {
+                  href: "about",
+                  icon: GraduationCap,
+                  text: "About",
+                  color: "from-purple-500 to-pink-500",
+                },
+                {
+                  href: "scan",
+                  icon: Play,
+                  text: "Scan",
+                  color: "from-green-500 to-emerald-500",
+                },
+                {
+                  href: "quiz",
+                  icon: HelpCircle,
+                  text: "Quiz",
+                  color: "from-yellow-500 to-orange-500",
+                },
+                {
+                  href: "leaderboard",
+                  icon: Crown,
+                  text: "Leaderboard",
+                  color: "from-pink-500 to-rose-500",
+                },
               ].map(({ href, icon: Icon, text, color }) => (
-                <button 
+                <button
                   key={href}
                   onClick={() => handleNavClick(href)}
                   className={`w-full group bg-gradient-to-r ${color} text-white p-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 font-medium`}
@@ -116,11 +185,17 @@ const LandingPage = () => {
           <h2 className="text-5xl sm:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-fadeInUp">
             Welcome to Singapore Poly
           </h2>
-          <p className="text-gray-300 text-xl sm:text-2xl mb-8 leading-relaxed animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
+          <p
+            className="text-gray-300 text-xl sm:text-2xl mb-8 leading-relaxed animate-fadeInUp"
+            style={{ animationDelay: "0.2s" }}
+          >
             Discover the future of computing through immersive AR experiences
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fadeInUp" style={{ animationDelay: '0.4s' }}>
-            <button 
+          <div
+            className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fadeInUp"
+            style={{ animationDelay: "0.4s" }}
+          >
+            <button
               onClick={() => handleButtonClick()}
               className="group relative bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-full shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105 overflow-hidden"
             >
@@ -130,7 +205,7 @@ const LandingPage = () => {
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </button>
-            <button 
+            <button
               onClick={() => handleButtonClick()}
               className="group bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-8 py-4 rounded-full shadow-2xl hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-105"
             >
@@ -147,14 +222,20 @@ const LandingPage = () => {
       <section id="about" className="py-10 px-4 sm:px-8 relative">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl sm:text-5xl font-bold mb-8 text-white">
-            About <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">SP & SoC</span>
+            About{" "}
+            <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+              SP & SoC
+            </span>
           </h2>
           <div className="bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20 shadow-2xl">
             <p className="text-gray-300 text-lg sm:text-xl leading-relaxed mb-6">
-              The School of Computing (SoC) at SP offers cutting-edge diploma courses and flexible pathways to shape your future in technology.
+              The School of Computing (SoC) at SP offers cutting-edge diploma
+              courses and flexible pathways to shape your future in technology.
             </p>
             <p className="text-gray-300 text-lg sm:text-xl leading-relaxed">
-              Explore SoC through our revolutionary AR game — scan markers, complete challenges, and earn real rewards while discovering your passion for computing!
+              Explore SoC through our revolutionary AR game — scan markers,
+              complete challenges, and earn real rewards while discovering your
+              passion for computing!
             </p>
           </div>
         </div>
@@ -164,16 +245,22 @@ const LandingPage = () => {
       <section id="scan" className="py-10 px-4 sm:px-8 text-center relative">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-4xl sm:text-5xl font-bold mb-8 text-white">
-            Start Your <span className="bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">Exploration</span>
+            Start Your{" "}
+            <span className="bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
+              Exploration
+            </span>
           </h2>
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div className="bg-gradient-to-br from-green-500/20 to-blue-500/20 backdrop-blur-lg rounded-3xl p-8 border border-white/20">
               <Play className="text-6xl text-green-400 mx-auto mb-4 animate-pulse" />
-              <h3 className="text-2xl font-semibold text-white mb-4">AR Scanning</h3>
+              <h3 className="text-2xl font-semibold text-white mb-4">
+                AR Scanning
+              </h3>
               <p className="text-gray-300 mb-6">
-                Use your device camera to discover hidden content and interactive experiences throughout the School of Computing.
+                Use your device camera to discover hidden content and
+                interactive experiences throughout the School of Computing.
               </p>
-              <button 
+              <button
                 onClick={() => handleButtonClick()}
                 className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-full shadow-lg hover:scale-105 transition-transform duration-300"
               >
@@ -182,13 +269,27 @@ const LandingPage = () => {
             </div>
             <div className="space-y-4">
               {[
-                { feature: 'Discover Hidden Content', color: 'from-blue-500 to-purple-500' },
-                { feature: 'Interactive Experiences', color: 'from-purple-500 to-pink-500' },
-                { feature: 'Real-time Rewards', color: 'from-pink-500 to-rose-500' }
+                {
+                  feature: "Discover Hidden Content",
+                  color: "from-blue-500 to-purple-500",
+                },
+                {
+                  feature: "Interactive Experiences",
+                  color: "from-purple-500 to-pink-500",
+                },
+                {
+                  feature: "Real-time Rewards",
+                  color: "from-pink-500 to-rose-500",
+                },
               ].map(({ feature, color }, i) => (
-                <div key={i} className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20 hover:bg-gradient-to-r hover:from-white/10 hover:to-white/15 transition-all duration-300">
+                <div
+                  key={i}
+                  className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20 hover:bg-gradient-to-r hover:from-white/10 hover:to-white/15 transition-all duration-300"
+                >
                   <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 bg-gradient-to-r ${color} rounded-full flex items-center justify-center`}>
+                    <div
+                      className={`w-8 h-8 bg-gradient-to-r ${color} rounded-full flex items-center justify-center`}
+                    >
                       <Star className="text-white text-sm" />
                     </div>
                     <span className="text-white font-medium">{feature}</span>
@@ -204,15 +305,19 @@ const LandingPage = () => {
       <section id="quiz" className="py-10 px-4 sm:px-8 text-center relative">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-4xl sm:text-5xl font-bold mb-8 text-white">
-            Test Your <span className="bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">Knowledge</span>
+            Test Your{" "}
+            <span className="bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+              Knowledge
+            </span>
           </h2>
           <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 backdrop-blur-lg rounded-3xl p-8 border border-white/20">
             <HelpCircle className="text-6xl text-yellow-400 mx-auto mb-6 animate-bounce" />
             <p className="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">
-              Challenge yourself with our interactive computing quiz. Test your knowledge, learn new concepts, and compete with fellow students!
+              Challenge yourself with our interactive computing quiz. Test your
+              knowledge, learn new concepts, and compete with fellow students!
             </p>
-            <button 
-              onClick={() => navigate('/quiz')}
+            <button
+              onClick={() => navigate("/quiz")}
               className="group bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-8 py-4 rounded-full shadow-lg hover:scale-105 transition-all duration-300 font-semibold"
             >
               <span className="flex items-center gap-2">
@@ -225,22 +330,27 @@ const LandingPage = () => {
       </section>
 
       {/* Leaderboard Section */}
-      <section id="leaderboard" className="py-10 px-4 sm:px-8 text-center relative">
+      <section
+        id="leaderboard"
+        className="py-10 px-4 sm:px-8 text-center relative"
+      >
         <div className="max-w-4xl mx-auto">
           <h2 className="text-4xl sm:text-5xl font-bold mb-12 text-white">
-            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Leaderboard</span>
+            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              Leaderboard
+            </span>
           </h2>
-          
+
           <div className="max-w-2xl mx-auto space-y-4 mb-8">
-            {top3.map((user, index) => {
+            {leaderboard.slice(0, 3).map((user, index) => {
               const icons = [Trophy, Medal, Star];
               const Icon = icons[index];
               const colors = [
-                'from-yellow-400 to-orange-400',
-                'from-gray-300 to-gray-400', 
-                'from-orange-400 to-red-400'
+                "from-yellow-400 to-orange-400",
+                "from-gray-300 to-gray-400",
+                "from-orange-400 to-red-400",
               ];
-              
+
               return (
                 <div
                   key={index}
@@ -248,16 +358,22 @@ const LandingPage = () => {
                 >
                   <div className="bg-black/80 backdrop-blur-lg p-6 rounded-2xl flex justify-between items-center">
                     <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 bg-gradient-to-r ${colors[index]} rounded-full flex items-center justify-center`}>
+                      <div
+                        className={`w-12 h-12 bg-gradient-to-r ${colors[index]} rounded-full flex items-center justify-center`}
+                      >
                         <Icon className="text-white text-xl" />
                       </div>
                       <div className="text-left">
-                        <span className="text-white font-bold text-xl">#{index + 1}</span>
+                        <span className="text-white font-bold text-xl">
+                          #{index + 1}
+                        </span>
                         <p className="text-gray-300 font-medium">{user.name}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className={`bg-gradient-to-r ${colors[index]} bg-clip-text text-transparent font-bold text-2xl`}>
+                      <span
+                        className={`bg-gradient-to-r ${colors[index]} bg-clip-text text-transparent font-bold text-2xl`}
+                      >
                         {user.points}
                       </span>
                       <p className="text-gray-400 text-sm">points</p>
@@ -267,9 +383,9 @@ const LandingPage = () => {
               );
             })}
           </div>
-          
-          <button 
-            onClick={() => handleButtonClick()}
+
+          <button
+            onClick={() => navigate("/leaderboard")}
             className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-full shadow-lg hover:scale-105 transition-all duration-300 font-semibold"
           >
             <span className="flex items-center gap-2">
@@ -292,7 +408,8 @@ const LandingPage = () => {
             </h3>
           </div>
           <p className="text-gray-400 mb-6">
-            Exploring the future of computing education through immersive AR experiences.
+            Exploring the future of computing education through immersive AR
+            experiences.
           </p>
           <div className="flex justify-center space-x-6 text-gray-400">
             <span>© 2024 Singapore Polytechnic</span>

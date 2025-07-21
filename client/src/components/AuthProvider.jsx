@@ -58,7 +58,6 @@ export function AuthProvider({ children }) {
   }
 
   async function handleRegister(credentials) {
-    console.log("Registering with credentials:", credentials);
     const res = await fetch("http://localhost:5000/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -100,8 +99,12 @@ export function AuthProvider({ children }) {
     return roleIds.includes(currentRole);
   }
 
+  function isContentManager() {
+    return hasRole(3);
+  }
+
   function isAdmin() {
-    return Number(currentUser?.role_id) === 1;
+    return Number(currentUser?.role_id) === 4;
   }
 
   return (
