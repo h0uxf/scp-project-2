@@ -103,7 +103,8 @@ const RewardsPage = () => {
           {completionStatus.allCompleted ? (
             <p>
               Congratulations! You've completed all activities (
-              {completionStatus.completedCount}/{completionStatus.totalCount}).
+              {completionStatus.completedCount}/{completionStatus.totalCount}) <br /><br />
+              Please head to the vending machine beside Food Court 6 (on the second floor) to claim your reward.
             </p>
           ) : (
             <p>
