@@ -3,6 +3,8 @@ const logger = require("../logger.js");
 const quizModel = require("../models/quizModel.js");
 const AppError = require("../utils/AppError");
 const catchAsync = require("../utils/catchAsync");
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 module.exports = {
   // Player quiz endpoints
