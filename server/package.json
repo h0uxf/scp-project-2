@@ -27,5 +27,8 @@
     "nodemon": "^3.1.10",
     "winston": "^3.17.0",
     "xss": "^1.0.15"
+  },
+  "devDependencies": {
+    "prisma": "^6.11.1"
   }
 }

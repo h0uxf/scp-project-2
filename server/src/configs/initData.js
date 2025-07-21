@@ -384,6 +384,25 @@ async function initializeData() {
         points: 10,
     },
     ];
+
+    for (const loc of locationsToCreate) {
+      const existing = await prisma.location.findUnique({
+        where: { code: loc.code },
+      });
+      if (!existing) {
+        const created = await prisma.location.create({
+          data: {
+            name: loc.name,
+            description: loc.description,
+            code: loc.code,
+            points: loc.points,
+          },
+        });
+        console.log(`Location created: ${created.name}`);
+      } else {
+        console.log(`Location '${loc.name}' already exists, skipping.`);
+      }
+    }
   } catch (error) {
     console.error('Error initializing data:', error);
     process.exit(1);
