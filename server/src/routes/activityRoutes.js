@@ -23,9 +23,15 @@ const router = express.Router();
 router.use(sanitizeRequest); 
 
 //////////////////////////////////////////////////////
-
 // DEFINE ROUTES FOR MANAGING ACTIVITIES (ADMIN)
 //////////////////////////////////////////////////////
+router.get(
+    '/check-completion', 
+    jwtMiddleware.verifyAccessToken,
+    roleMiddleware([3, 4, 5]),
+    activityController.checkCompletion
+);
+
 // [PUT] Reorder activities
 router.put(
     '/reorder',

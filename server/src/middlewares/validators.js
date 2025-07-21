@@ -1,4 +1,4 @@
-const { body, validationResult } = require('express-validator');
+const { body, validationResult, query } = require('express-validator');
 
 const validate = (req, res, next) => {
     const errors = validationResult(req);
@@ -177,10 +177,22 @@ const activityValidationRules = () => {
     ];
 };
 
+const rewardValidationRules = () => {
+  return [
+    body('qrToken').optional().isString().notEmpty().withMessage('QR token must be a non-empty string'),
+    query('qrToken').optional().isString().notEmpty().withMessage('QR token must be a non-empty string'),
+  ];
+};
+
+module.exports = { rewardValidationRules };
+
 
 module.exports = {
     validate,
     userValidationRules,
     questionValidationRules,
-    activityValidationRules
+    activityValidationRules,
+    // optionValidationRules,
+    // quizResultValidationRules,
+    rewardValidationRules,
 };

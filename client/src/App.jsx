@@ -8,6 +8,7 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import FaceFilterPage from "./pages/FaceFilterPage";
 import ActivitiesPage from "./pages/ActivitiesPage";
+import RewardsPage from "./pages/RewardsPage";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path='/register' element={<RegisterPage />} />
         <Route path='/face-filter' element={<FaceFilterPage />} />
         <Route path="/activities" element={<ActivitiesPage />} />
+        <Route path='/rewards' element={<RewardsPage />} />
       </Routes>
     </Router>
   );

@@ -178,4 +178,46 @@ module.exports = {
             throw new Error(`Failed to reorder activities: ${error.message}`);
         }
     },
+
+    checkCompletion: async (userId) => {
+        try {
+        // Validate userId
+        const parsedUserId = parseInt(userId, 10);
+        if (isNaN(parsedUserId)) {
+            throw new Error('Invalid user ID. It must be a number.');
+        }
+
+        // Get all activities
+        const activities = await prisma.activity.findMany({
+            select: { activityId: true },
+        });
+
+        if (activities.length === 0) {
+            throw new Error('No activities found in the system.');
+        }
+
+        // Get completed activities for the user
+        const completedActivities = await prisma.userActivities.findMany({
+            where: {
+            userId: parsedUserId,
+            activityId: { in: activities.map(a => a.activityId) },
+            },
+            select: { activityId: true },
+        });
+
+        // Check if all activities are completed
+        const allCompleted = activities.length === completedActivities.length;
+
+        logger.debug(`Completion check for user ID ${parsedUserId}: ${completedActivities.length}/${activities.length} activities completed`);
+
+        return {
+            allCompleted,
+            completedCount: completedActivities.length,
+            totalCount: activities.length,
+        };
+        } catch (error) {
+        logger.error(`Error checking completion for user ID ${userId}: ${error.message}`);
+        throw new Error(`Failed to check completion: ${error.message}`);
+        }
+    },
 };

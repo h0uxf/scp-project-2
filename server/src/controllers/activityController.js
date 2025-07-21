@@ -104,4 +104,31 @@ module.exports = {
         const reorderedActivities = await activityModel.reorderActivities(activities);
         res.status(200).json({ status: "success", data: reorderedActivities });
     }),
+
+    checkCompletion: catchAsync(async (req, res, next) => {
+        const { userId } = req.query;
+
+        if (!userId) {
+        logger.warn("Check completion failed: Missing user ID");
+        return next(new AppError("User ID is required", 400));
+        }
+
+        try {
+        const completionStatus = await activityModel.checkCompletion(userId);
+        logger.debug(`Completion check successful for user ID ${userId}`);
+        res.status(200).json({
+            status: "success",
+            data: completionStatus,
+        });
+        } catch (error) {
+        logger.error(`Error checking completion for user ID ${userId}: ${error.message}`);
+        if (error.message.includes("No activities found")) {
+            return next(new AppError("No activities found in the system", 404));
+        }
+        if (error.message.includes("Invalid user ID")) {
+            return next(new AppError("Invalid user ID", 400));
+        }
+        return next(new AppError(`Failed to check completion: ${error.message}`, 500));
+        }
+    }),
 };

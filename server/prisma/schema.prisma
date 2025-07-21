@@ -175,6 +175,7 @@ model Activity {
   order        Int       @default(0)
   route        String?
   userActivities UserActivities[] 
+  rewards      Reward[]
 }
 
 model User {
@@ -192,6 +193,7 @@ model User {
   userResults    UserResult[]
 
   puzzleProgress UserPuzzleProgress[]
+  rewards        Reward[]
 }
 
 model UserLocation {
@@ -256,4 +258,17 @@ model Permission {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
   rolePermission RolePermission[]
+}
+
+model Reward {
+  rewardId    Int      @id @default(autoincrement()) @map("reward_id")
+  userId      Int      @map("user_id")
+  activityId  Int      @map("activity_id")
+  qrToken     String   @unique @map("qr_token")
+  isRedeemed  Boolean  @default(false) @map("is_redeemed")
+  createdAt   DateTime @default(now()) @map("created_at")
+  redeemedAt  DateTime? @map("redeemed_at")
+  expiresAt   DateTime? @map("expires_at")
+  user        User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  activity    Activity @relation(fields: [activityId], references: [activityId], onDelete: Cascade)
 }
