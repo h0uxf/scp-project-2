@@ -11,7 +11,6 @@ const prisma = require('@prisma/client');
 const rewardController = require('../controllers/rewardController.js');
 const jwtMiddleware = require('../middlewares/jwtMiddleware.js');
 const roleMiddleware = require('../middlewares/roleMiddleware.js');
-const activityController = require('../controllers/activityController.js')
 
 //////////////////////////////////////////////////////
 // IMPORT MIDDLEWARES FOR INPUT VALIDATION
@@ -39,7 +38,7 @@ router.get('/:rewardId', rewardController.getRewardById);
 router.post(
     '/generate',
     jwtMiddleware.verifyAccessToken,
-    activityController.checkCompletion,
+    rewardController.checkCompletion,
     rewardValidationRules(),
     validate,
     rewardController.generateReward

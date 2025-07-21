@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const logger = require("../logger.js");
 
 module.exports = {
     getAllActivities: async () => {

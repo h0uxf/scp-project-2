@@ -106,7 +106,7 @@ module.exports = {
     }),
 
     checkCompletion: catchAsync(async (req, res, next) => {
-        const { userId } = req.query;
+        const userId = res.locals.user_id;
 
         if (!userId) {
         logger.warn("Check completion failed: Missing user ID");

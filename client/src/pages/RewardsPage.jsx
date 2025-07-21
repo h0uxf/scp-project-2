@@ -25,11 +25,10 @@ const RewardsPage = () => {
       // Fetch completion status
       const fetchCompletionStatus = async () => {
         try {
-          const response = await axios.get("/api/activities/check-completion", {
-            params: { userId: currentUser.user_id },
-            headers: { Authorization: `Bearer ${currentUser.accessToken}` },
+          const response = await axios.get("http://localhost:5000/api/activities/check-completion", {
+            withCredentials: true,
           });
-          setCompletionStatus(response.data);
+          setCompletionStatus(response.data.data);
         } catch (err) {
           setError(err.response?.data?.error || "Failed to check activity completion");
         }
@@ -42,7 +41,7 @@ const RewardsPage = () => {
     if (!qrToken) return;
     const checkRewardStatus = async () => {
       try {
-        const response = await axios.get(`/api/rewards/status?qrToken=${qrToken}`);
+        const response = await axios.get(`http://localhost:5000/api/rewards/status?qrToken=${qrToken}`);
         if (response.data.data.isRedeemed) {
           setQrCodeUrl("");
           setQrToken("");
@@ -61,9 +60,9 @@ const RewardsPage = () => {
     setLocalLoading(true);
     try {
       const response = await axios.post(
-        "/api/rewards/generate",
+        "http://localhost:5000/api/rewards/generate",
         {},
-        { headers: { Authorization: `Bearer ${currentUser.accessToken}` } }
+        { withCredentials: true }
       );
       setQrCodeUrl(response.data.data.qrCodeUrl);
       // Extract qrToken from URL
