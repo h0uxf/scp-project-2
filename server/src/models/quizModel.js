@@ -153,7 +153,7 @@ module.exports = {
           },
         });
 
-        // Find or create an activity for completing the personality quiz
+        // Find activity for completing the personality quiz
         let activity = await prisma.activity.findFirst({
           where: {
             activityId: 4,
@@ -164,30 +164,32 @@ module.exports = {
           throw new Error(`Activity with ID 4 does not exist.`);
         }
 
-        // Add 5 points to UserActivities for this activity
-        const userActivity = await prisma.userActivities.upsert({
+        // Check if user already has points for this activity (user can only get points once)
+        const existingUserActivity = await prisma.userActivities.findUnique({
           where: {
             userId_activityId: {
               userId,
               activityId: activity.activityId,
             },
           },
-          update: {
-            points: {
-              increment: 5,
-            },
-            updatedAt: new Date(),
-          },
-          create: {
-            userId,
-            activityId: activity.activityId,
-            points: 5,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
+          select: { points: true },
         });
 
-        console.log(`Added 5 points to user ${userId} for activity ${activity.activityId}`);
+        if (!existingUserActivity) {
+          // Create new UserActivities record with 5 points
+          const userActivity = await prisma.userActivities.create({
+            data: {
+              userId,
+              activityId: activity.activityId,
+              points: 5,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          });
+          console.log(`Added 5 points to user ${userId} for activity ${activity.activityId}`);
+        } else {
+          console.log(`User ${userId} already has ${existingUserActivity.points} points for activity ${activity.activityId}; no additional points awarded`);
+        }
       }
 
       return topPersonalities;

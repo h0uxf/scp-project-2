@@ -53,16 +53,37 @@ module.exports = {
         return next(new AppError("No personality determined from provided answers", 404));
       }
 
+      // Check if points were awarded (first quiz completion)
+      const userActivity = await prisma.userActivities.findUnique({
+        where: {
+          userId_activityId: {
+            userId,
+            activityId: 4,
+          },
+        },
+        select: { points: true },
+      });
+
+      const pointsMessage = userActivity
+        ? "points already awarded for previous quiz completion"
+        : "5 points awarded for first quiz completion";
+
       logger.info(
-        `Successfully calculated personality for user ID ${userId}, saved quiz answers to QuizResult, and added 5 points to activity ID 4`
+        `Successfully calculated personality for user ID ${userId}, saved quiz answers to QuizResult, and ${pointsMessage}`
       );
       res.status(200).json({
         status: "success",
-        message: "Personality calculated, quiz answers saved, and 5 points awarded for quiz completion",
+        message: `Personality calculated, quiz answers saved, and ${pointsMessage}`,
         data: personalityResults,
       });
     } catch (error) {
       logger.error(`Error processing quiz for user ID ${userId}: ${error.message}`);
+      if (error.message === "Activity with ID 4 does not exist.") {
+        return next(new AppError("Quiz activity configuration missing", 500));
+      }
+      if (error.message === `User with ID ${userId} does not exist.`) {
+        return next(new AppError("User not found", 404));
+      }
       return next(new AppError(`Failed to process quiz: ${error.message}`, 500));
     }
   }),
