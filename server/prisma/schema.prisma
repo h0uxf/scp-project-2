@@ -12,32 +12,91 @@ model Word {
   wordId     Int      @id @default(autoincrement()) @map("word_id")
   wordText   String   @map("word_text")
   wordLength Int      @map("word_length")
+  difficulty String?  // Easy, Medium, Hard
+  category   String?  // Theme/category of the word
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
-  wordClues  WordClue[]
+  
+  wordClues   WordClue[]
+  puzzleWords PuzzleWord[]
 }
 
 model Clue {
   clueId     Int      @id @default(autoincrement()) @map("clue_id")
   clueText   String   @map("clue_text")
-  clueType   String   @map("clue_type")
+  clueType   String   @map("clue_type") // "DEFINITION", "CRYPTIC", "FILL_IN", etc.
+  difficulty String?  // Easy, Medium, Hard
+  category   String?  // Theme/category
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
-  wordClues  WordClue[]
+  
+  wordClues   WordClue[]
+  puzzleWords PuzzleWord[]
 }
 
 model WordClue {
   wordId      Int      @map("word_id")
   clueId      Int      @map("clue_id")
-  gridNumber  Int      @map("grid_number")
+  gridNumber  Int?     @map("grid_number") // Make optional
+  isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
+  
   word        Word     @relation(fields: [wordId], references: [wordId], onDelete: Cascade)
   clue        Clue     @relation(fields: [clueId], references: [clueId], onDelete: Cascade)
 
   @@id([wordId, clueId])
 }
 
+model CrosswordPuzzle {
+  puzzleId    Int      @id @default(autoincrement()) @map("puzzle_id")
+  title       String
+  difficulty  String   // Easy, Medium, Hard
+  gridSize    Int      @map("grid_size") // e.g., 15 for 15x15
+  createdBy   Int?     @map("created_by")
+  isPublished Boolean  @default(false) @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  puzzleWords PuzzleWord[]
+  userProgress UserPuzzleProgress[]
+}
+
+model PuzzleWord {
+  puzzleId    Int      @map("puzzle_id")
+  wordId      Int      @map("word_id")
+  clueId      Int      @map("clue_id")
+  startRow    Int      @map("start_row")
+  startCol    Int      @map("start_col")
+  direction   String   // "ACROSS" or "DOWN"
+  clueNumber  Int      @map("clue_number")
+  
+  puzzle      CrosswordPuzzle @relation(fields: [puzzleId], references: [puzzleId], onDelete: Cascade)
+  word        Word     @relation(fields: [wordId], references: [wordId])
+  clue        Clue     @relation(fields: [clueId], references: [clueId])
+  
+  @@id([puzzleId, wordId, clueId])
+}
+
+model UserPuzzleProgress {
+  userId      Int      @map("user_id")
+  puzzleId    Int      @map("puzzle_id")
+  currentGrid String?  @map("current_grid") // JSON string of current state
+  isCompleted Boolean  @default(false) @map("is_completed")
+  completedAt DateTime? @map("completed_at")
+  timeSpent   Int?     @map("time_spent") // in seconds
+  hintsUsed   Int      @default(0) @map("hints_used")
+  score       Int?
+  startedAt   DateTime @default(now()) @map("started_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  user        User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  puzzle      CrosswordPuzzle @relation(fields: [puzzleId], references: [puzzleId], onDelete: Cascade)
+  
+  @@id([userId, puzzleId])
+}
+
+// Entities for quiz feature
 model Question {
   questionId    Int        @id @default(autoincrement()) @map("question_id")
   questionText  String     @map("question_text")
@@ -131,6 +190,8 @@ model User {
 
   quizResults    QuizResult[]
   userResults    UserResult[]
+
+  puzzleProgress UserPuzzleProgress[]
 }
 
 model UserLocation {
