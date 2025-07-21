@@ -39,18 +39,32 @@ module.exports = {
       logger.warn("Submit quiz answers failed: Answers must be a non-empty array");
       return next(new AppError("Answers must be a non-empty array", 400));
     }
+
     if (!userId) {
       logger.warn("Submit quiz answers failed: Missing user ID");
       return next(new AppError("User ID is required", 400));
     }
 
-    const personalityResults = await quizModel.calculatePersonalityFromAnswers(answers, userId);
-    if (!personalityResults) {
-      logger.warn("No personality determined from provided answers");
-      return next(new AppError("No personality determined from provided answers", 404));
+    try {
+      const personalityResults = await quizModel.calculatePersonalityFromAnswers(answers, userId);
+
+      if (personalityResults.length === 0) {
+        logger.warn(`No personality determined for user ID ${userId} from provided answers`);
+        return next(new AppError("No personality determined from provided answers", 404));
+      }
+
+      logger.info(
+        `Successfully calculated personality for user ID ${userId}, saved quiz answers to QuizResult, and added 5 points to activity ID 4`
+      );
+      res.status(200).json({
+        status: "success",
+        message: "Personality calculated, quiz answers saved, and 5 points awarded for quiz completion",
+        data: personalityResults,
+      });
+    } catch (error) {
+      logger.error(`Error processing quiz for user ID ${userId}: ${error.message}`);
+      return next(new AppError(`Failed to process quiz: ${error.message}`, 500));
     }
-    logger.info(`Calculated personality for user ID ${userId}`);
-    res.status(200).json({ status: "success", data: personalityResults });
   }),
 
   // Admin quiz endpoints

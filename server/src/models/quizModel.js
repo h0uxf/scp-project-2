@@ -69,6 +69,7 @@ module.exports = {
       // answers expected as array of { questionId: number, optionId: number }
       const personalityCounts = new Map();
 
+      // Save quiz answers to QuizResult and count personality scores
       for (const answer of answers) {
         if (
           typeof answer !== 'object' ||
@@ -90,6 +91,19 @@ module.exports = {
         if (!option) {
           console.log(`No option found for questionId=${answer.questionId} optionId=${answer.optionId}`);
           continue;
+        }
+
+        // Save the answer to QuizResult if userId is provided
+        if (userId) {
+          await prisma.quizResult.create({
+            data: {
+              userId,
+              questionId: answer.questionId,
+              optionId: answer.optionId,
+              submittedAt: new Date(),
+            },
+          });
+          console.log(`Saved quiz result for userId=${userId}, questionId=${answer.questionId}, optionId=${answer.optionId}`);
         }
 
         if (option.personalityId !== null) {
@@ -130,9 +144,50 @@ module.exports = {
       }
 
       if (userId && topPersonalities.length > 0) {
-        await prisma.userResult.create({
-          data: { userId, personalityId: topPersonalities[0].id },
+        // Save the personality result in UserResult
+        const userResult = await prisma.userResult.create({
+          data: {
+            userId,
+            personalityId: topPersonalities[0].id,
+            calculatedAt: new Date(),
+          },
         });
+
+        // Find or create an activity for completing the personality quiz
+        let activity = await prisma.activity.findFirst({
+          where: {
+            activityId: 4,
+          },
+        });
+
+        if (!activity) {
+          throw new Error(`Activity with ID 4 does not exist.`);
+        }
+
+        // Add 5 points to UserActivities for this activity
+        const userActivity = await prisma.userActivities.upsert({
+          where: {
+            userId_activityId: {
+              userId,
+              activityId: activity.activityId,
+            },
+          },
+          update: {
+            points: {
+              increment: 5,
+            },
+            updatedAt: new Date(),
+          },
+          create: {
+            userId,
+            activityId: activity.activityId,
+            points: 5,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        });
+
+        console.log(`Added 5 points to user ${userId} for activity ${activity.activityId}`);
       }
 
       return topPersonalities;
