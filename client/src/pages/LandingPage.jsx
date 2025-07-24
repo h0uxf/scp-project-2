@@ -206,7 +206,10 @@ const LandingPage = () => {
               <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </button>
             <button
-              onClick={() => handleButtonClick()}
+              onClick={() => {
+                window.location.href =
+                  "https://singaporepoly.8thwall.app/demo/";
+              }}
               className="group bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-8 py-4 rounded-full shadow-2xl hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-105"
             >
               <span className="flex items-center gap-2 font-semibold">
