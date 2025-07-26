@@ -687,6 +687,45 @@
       console.log(`- Clues: ${createdClues.length}`);
       console.log(`- Puzzles: ${createdPuzzles.length}`);
       console.log(`- Puzzle word placements: ${puzzleWordsData.length}`);
+
+      // Populate data into UserActivities table 
+      console.log('Populating UserActivities for userId: 1...');
+      const user = await prisma.user.findUnique({
+        where: { userId: 1 },
+      });
+      if (!user) {
+        console.error('User with userId: 1 does not exist. Cannot populate UserActivities.');
+        return;
+      }
+
+      for (const a of activitiesToCreate) {
+        const existing = await prisma.activity.findFirst({
+          where: { name: a.name },
+        });
+        if (existing) {
+          const existingUserActivity = await prisma.userActivities.findFirst({
+            where: {
+              userId: 1,
+              activityId: existing.activityId,
+              points: 0
+            },
+          });
+          if (!existingUserActivity) {
+            await prisma.userActivities.create({
+              data: {
+                userId: 1,
+                activityId: existing.activityId,
+                points: 0
+              },
+            });
+            console.log(`UserActivities entry created for userId: 1 and activity: ${existing.name}`);
+          } else {
+            console.log(`UserActivities entry for userId: 1 and activity: ${existing.name} already exists, skipping.`);
+          }
+        } else {
+          console.log(`Activity ${a.name} not found, skipping UserActivities entry.`);
+        }
+      }
     } catch (error) {
       console.error('Error initializing data:', error);
       process.exit(1);

@@ -32,6 +32,14 @@ router.use(sanitizeRequest);
 //////////////////////////////////////////////////////
 router.get('/', rewardController.getAllRewards);
 
+// [GET] Check reward status (no auth required for frontend polling)
+router.get(
+    '/status',
+    rewardValidationRules(),
+    validate,
+    rewardController.getRewardStatus
+);
+
 router.get('/:rewardId', rewardController.getRewardById);
 
 // [POST] Generate reward and QR code for logged-in user
@@ -50,14 +58,6 @@ router.post(
     rewardValidationRules(),
     validate,
     rewardController.redeemReward
-);
-
-// [GET] Check reward status (no auth required for frontend polling)
-router.get(
-    '/status',
-    rewardValidationRules(),
-    validate,
-    rewardController.getRewardStatus
 );
 
 //////////////////////////////////////////////////////

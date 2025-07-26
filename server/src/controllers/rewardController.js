@@ -58,7 +58,7 @@ module.exports = {
 
   // Generate a reward and QR code
   generateReward: catchAsync(async (req, res, next) => {
-    const userId = res.locals.user_id; // Set by jwtMiddleware
+    const userId = res.locals.user_id; 
 
     if (!userId) {
       logger.warn("Generate reward failed: Missing user ID");
@@ -78,7 +78,7 @@ module.exports = {
       if (error.message.includes("No activities found")) {
         return next(new AppError("No activities found in the system", 404));
       }
-      return next(new AppError(`Failed to generate reward: ${error.message}`, 500));
+      return next(new AppError(`${error.message}`, 500));
     }
   }),
 
@@ -115,9 +115,9 @@ module.exports = {
   getRewardStatus: catchAsync(async (req, res, next) => {
     const { qrToken } = req.query;
 
-    if (!qrToken) {
-      logger.warn("Fetch reward status failed: Missing QR token");
-      return next(new AppError("QR token is required", 400));
+    if (!qrToken || typeof qrToken !== "string") {
+      logger.warn("Fetch reward status failed: Missing or invalid QR token");
+      return next(new AppError("QR token is required and must be a string", 400));
     }
 
     try {

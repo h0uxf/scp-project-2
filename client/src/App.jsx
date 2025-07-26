@@ -9,6 +9,7 @@ import RegisterPage from "./pages/RegisterPage";
 import FaceFilterPage from "./pages/FaceFilterPage";
 import ActivitiesPage from "./pages/ActivitiesPage";
 import RewardsPage from "./pages/RewardsPage";
+import AdminQRScanner from "./pages/AdminQRScanner";
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
         <Route path='/face-filter' element={<FaceFilterPage />} />
         <Route path="/activities" element={<ActivitiesPage />} />
         <Route path='/rewards' element={<RewardsPage />} />
+        <Route path='/admin/rewards/scan' element={<AdminQRScanner />} />
       </Routes>
     </Router>
   );

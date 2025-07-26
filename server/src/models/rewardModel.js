@@ -70,7 +70,17 @@ module.exports = {
     }
 
     try {
-      // Get a representative activityId (e.g., last activity)
+      // Check if user already has a role in rewards table
+      const userRewardCount = await prisma.reward.count({
+        where: {
+          userId: parseInt(userId),
+        },
+      });
+
+      if (userRewardCount > 0) {
+        throw new Error('User already has a reward assigned. Cannot generate new QR token.');
+      }
+
       const activities = await prisma.activity.findMany({
         select: { activityId: true },
         orderBy: { activityId: 'desc' },
@@ -89,7 +99,7 @@ module.exports = {
           userId: parseInt(userId),
           activityId,
           isRedeemed: false,
-          expiresAt: { gte: new Date() }, // Not expired
+          expiresAt: { gte: new Date() }, 
         },
       });
 
