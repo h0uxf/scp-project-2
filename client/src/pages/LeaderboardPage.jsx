@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { Medal, Star, Trophy } from "lucide-react";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+import { Medal, Star, Trophy, Crown } from "lucide-react";
+import { useAuth } from "../components/AuthProvider";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const LeaderboardPage = () => {
   const [topPlayers, setTopPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [userRanking, setUserRanking] = useState(null);
+  const { currentUser } = useAuth();
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
@@ -13,7 +17,7 @@ const LeaderboardPage = () => {
         if (!response.ok) throw new Error("Failed to fetch leaderboard");
         const data = await response.json();
         setTopPlayers(data.data);
-        console.log(topPlayers)
+        console.log(topPlayers);
       } catch (err) {
         console.error("Error fetching leaderboard:", err);
       } finally {
@@ -23,6 +27,28 @@ const LeaderboardPage = () => {
 
     fetchLeaderboard();
   }, []);
+
+  useEffect(() => {
+    const fetchUserRanking = async () => {
+      if (!currentUser) return; // stop fetching if the user does not login (no token)
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/leaderboard/userRanking`, {
+          credentials: "include",
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch user ranking");
+        const json = await res.json();
+        if (json.status === "success") {
+          setUserRanking(json.data);
+        }
+      } catch (error) {
+        console.error("Error fetching user ranking:", error);
+      }
+    };
+
+    fetchUserRanking();
+  }, [currentUser]);
 
   const icons = [Trophy, Medal, Star];
   const colors = [
@@ -65,7 +91,9 @@ const LeaderboardPage = () => {
                       <span className="text-white font-bold text-xl">
                         #{index + 1}
                       </span>
-                      <p className="text-gray-300 font-medium">{user.username}</p>
+                      <p className="text-gray-300 font-medium">
+                        {user.username}
+                      </p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -99,6 +127,38 @@ const LeaderboardPage = () => {
           </ul>
         </div>
       </div>
+      {/* User's ranking */}
+{userRanking && (
+  <div
+    className="
+      fixed bottom-10 left-1/2 transform -translate-x-1/2
+      bg-gradient-to-r from-indigo-500 to-cyan-500
+      p-0.5 rounded-2xl shadow-xl z-50
+      w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl
+      px-1
+    "
+  >
+    <div className="bg-black/80 backdrop-blur-lg p-3 rounded-2xl flex justify-between items-center">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-full flex items-center justify-center">
+          <Crown className="text-white text-lg" />
+        </div>
+        <div className="text-left">
+          <span className="text-white font-bold text-lg">
+            #{userRanking.rank}
+          </span>
+          <p className="text-gray-300 text-sm">{userRanking.username}</p>
+        </div>
+      </div>
+      <div className="text-right">
+        <span className="bg-gradient-to-r from-indigo-500 to-cyan-500 bg-clip-text text-transparent font-bold text-xl">
+          {userRanking.points}
+        </span>
+        <p className="text-gray-400 text-xs">points</p>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };

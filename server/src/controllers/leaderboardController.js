@@ -1,12 +1,12 @@
 // controllers/leaderboardController.js
 const logger = require("../logger.js");
-const adminModel = require("../models/adminModel.js");
+const leaderboardModel = require("../models/leaderboardModel.js");
 const AppError = require("../utils/AppError");
 const catchAsync = require("../utils/catchAsync");
 
 module.exports = {
   getAllPlayers: catchAsync(async (req, res, next) => {
-    let players = await adminModel.readAllUsers();
+    let players = await leaderboardModel.readAllUsers();
 
     if (!players || players.length === 0) {
       logger.warn("No player was found");
@@ -21,13 +21,13 @@ module.exports = {
   }),
 
   getUserInfo: catchAsync(async (req, res, next) => {
-    const { userId } = req.params;
+    const userId = req.user?.user_id;
     if (!userId) {
       logger.warn("Fetch user by ID failed: Missing user ID");
       return next(new AppError("User ID is required", 400));
     }
 
-    const user = await adminModel.readUserById(userId);
+    const user = await leaderboardModel.readUserById(userId);
     if (!user) {
       logger.warn(`Fetch user by ID failed: User with ID ${userId} not found`);
       return next(new AppError(`User with ID ${userId} not found`, 404));
