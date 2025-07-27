@@ -151,12 +151,6 @@ const LandingPage = () => {
                   color: "from-green-500 to-emerald-500",
                 },
                 {
-                  href: "quiz",
-                  icon: HelpCircle,
-                  text: "Quiz",
-                  color: "from-yellow-500 to-orange-500",
-                },
-                {
                   href: "leaderboard",
                   icon: Crown,
                   text: "Leaderboard",
@@ -300,34 +294,6 @@ const LandingPage = () => {
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Quiz Section */}
-      <section id="quiz" className="py-10 px-4 sm:px-8 text-center relative">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-4xl sm:text-5xl font-bold mb-8 text-white">
-            Test Your{" "}
-            <span className="bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
-              Knowledge
-            </span>
-          </h2>
-          <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 backdrop-blur-lg rounded-3xl p-8 border border-white/20">
-            <HelpCircle className="text-6xl text-yellow-400 mx-auto mb-6 animate-bounce" />
-            <p className="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">
-              Challenge yourself with our interactive computing quiz. Test your
-              knowledge, learn new concepts, and compete with fellow students!
-            </p>
-            <button
-              onClick={() => navigate("/quiz")}
-              className="group bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-8 py-4 rounded-full shadow-lg hover:scale-105 transition-all duration-300 font-semibold"
-            >
-              <span className="flex items-center gap-2">
-                <HelpCircle className="group-hover:rotate-12 transition-transform" />
-                Take the Quiz
-              </span>
-            </button>
           </div>
         </div>
       </section>

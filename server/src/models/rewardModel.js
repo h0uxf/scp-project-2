@@ -209,4 +209,28 @@ module.exports = {
       throw new Error(`Failed to fetch reward status: ${error.message}`);
     }
   },
+
+  getRewardStatisticsAggregate: async () => {
+    try {
+      const [totalCount, redeemedCount] = await Promise.all([
+        // Total count
+        prisma.reward.count(),
+        
+        // Redeemed count
+        prisma.reward.count({
+          where: {
+            isRedeemed: true
+          }
+        })
+      ]);
+
+      return {
+        total: totalCount,
+        redeemed: redeemedCount,
+        notRedeemed: totalCount - redeemedCount
+      };
+    } catch (error) {
+      throw new Error(`Failed to fetch reward statistics: ${error.message}`);
+    }
+  },
 };

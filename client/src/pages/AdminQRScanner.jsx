@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import jsQR from "jsqr";
-import { Camera, CheckCircle, XCircle, Users, Gift, AlertCircle, Scan } from "lucide-react";
+import { Camera, CheckCircle, XCircle, Users, Gift, AlertCircle, Scan, RefreshCw } from "lucide-react";
 import { useAuth } from "../components/AuthProvider";
 import { useNavigate } from "react-router-dom";
 
@@ -12,7 +12,8 @@ const AdminQRScanner = () => {
   const [scanResult, setScanResult] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [stats, setStats] = useState({ total: 0, redeemed: 0, pending: 0 });
+  const [stats, setStats] = useState({ total: 0, redeemed: 0, notRedeemed: 0 });
+  const [refreshing, setRefreshing] = useState(false);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -24,15 +25,57 @@ const AdminQRScanner = () => {
     } else if (!loading && hasRole(3, 4, 5)) {
       fetchStats();
     }
-  }, [loading, currentUser, navigate]);
+  }, [loading, currentUser, navigate, hasRole]);
+
+  // Auto-refresh stats when component becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && currentUser && hasRole(3, 4, 5)) {
+        fetchStats();
+      }
+    };
+
+    const handleFocus = () => {
+      if (currentUser && hasRole(3, 4, 5)) {
+        fetchStats();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [currentUser, hasRole]);
 
   const fetchStats = async () => {
     try {
-      // TODO: real endpoint
-      console.log("Fetching reward stats...");
+      const response = await fetch("http://localhost:5000/api/rewards/stats", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch statistics");
+      }
+
+      const data = await response.json();
+      console.log("Admin stats fetched:", data);
+      setStats(data.data);
     } catch (err) {
       console.error("Failed to fetch stats:", err);
       setError("Failed to load statistics");
+    }
+  };
+
+  const handleRefreshStats = async () => {
+    setRefreshing(true);
+    try {
+      await fetchStats();
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -87,11 +130,18 @@ const AdminQRScanner = () => {
     }
   };
 
-  const handleManualInput = async (qrToken) => {
+  const handleManualInput = async (qrTokenOrUrl) => {
     setError("");
     setSuccess("");
 
     try {
+      // Extract qrToken from URL if it's a full URL
+      let qrToken = qrTokenOrUrl;
+      if (qrTokenOrUrl.includes('qrToken=')) {
+        const url = new URL(qrTokenOrUrl);
+        qrToken = url.searchParams.get('qrToken');
+      }
+
       const response = await fetch("http://localhost:5000/api/rewards/redeem", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -101,14 +151,16 @@ const AdminQRScanner = () => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Failed to redeem reward");
+        throw new Error(errorData.error || "Failed to redeem reward");
       }
 
       const data = await response.json();
       const result = data.data;
 
       setScanResult(result);
-      setSuccess(`Reward redeemed successfully for ${result.username || "user"}!`);
+      setSuccess(`Reward redeemed successfully for User ID: ${result.userId}!`);
+      
+      // Refresh stats after successful redemption
       fetchStats();
       stopCamera();
     } catch (err) {
@@ -143,7 +195,19 @@ const AdminQRScanner = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-20 px-6 text-white text-center">
-      <h1 className="text-4xl font-bold mb-8">Admin QR Scanner</h1>
+      <div className="flex justify-between items-center max-w-4xl mx-auto mb-8">
+        <div className="w-full flex justify-center">
+            <h1 className="text-4xl font-bold text-center">Admin QR Scanner</h1>
+        </div>
+        <button
+          onClick={handleRefreshStats}
+          disabled={refreshing}
+          className="p-3 rounded-full bg-purple-600/30 hover:bg-purple-600/50 transition-colors duration-300 disabled:opacity-50"
+          title="Refresh Statistics"
+        >
+          <RefreshCw size={24} className={`text-purple-300 ${refreshing ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
 
       {/* Stats */}
       <div className="max-w-4xl mx-auto mb-8">
@@ -153,7 +217,7 @@ const AdminQRScanner = () => {
               <Gift className="text-blue-400" size={32} />
               <div>
                 <p className="text-gray-300 text-sm">Total Rewards</p>
-                <p className="text-3xl font-bold text-white">{stats.total}</p>
+                <p className="text-3xl font-bold text-white">{stats.total || 0}</p>
               </div>
             </div>
           </div>
@@ -162,7 +226,7 @@ const AdminQRScanner = () => {
               <CheckCircle className="text-green-400" size={32} />
               <div>
                 <p className="text-gray-300 text-sm">Redeemed</p>
-                <p className="text-3xl font-bold text-white">{stats.redeemed}</p>
+                <p className="text-3xl font-bold text-white">{stats.redeemed || 0}</p>
               </div>
             </div>
           </div>
@@ -171,11 +235,28 @@ const AdminQRScanner = () => {
               <Users className="text-orange-400" size={32} />
               <div>
                 <p className="text-gray-300 text-sm">Pending</p>
-                <p className="text-3xl font-bold text-white">{stats.pending}</p>
+                <p className="text-3xl font-bold text-white">{stats.notRedeemed || 0}</p>
               </div>
             </div>
           </div>
         </div>
+        
+        {/* Progress Bar */}
+        {stats.total > 0 && (
+          <div className="mt-6 bg-white/5 border border-white/20 rounded-xl p-4">
+            <div className="text-center mb-3">
+              <span className="text-lg font-semibold text-white">
+                Redemption Rate: {Math.round((stats.redeemed / stats.total) * 100)}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-3">
+              <div 
+                className="bg-gradient-to-r from-green-500 to-blue-500 h-3 rounded-full transition-all duration-500"
+                style={{ width: `${(stats.redeemed / stats.total) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* QR Scanner */}
@@ -264,11 +345,15 @@ const AdminQRScanner = () => {
               <div className="text-center space-y-2">
                 <CheckCircle className="mx-auto mb-4 text-green-400" size={32} />
                 <p className="text-white">
-                  <span className="text-gray-300">User:</span>{" "}
+                  <span className="text-gray-300">User ID:</span>{" "}
                   <span className="font-semibold">{scanResult.userId}</span>
                 </p>
                 <p className="text-white">
-                  <span className="text-gray-300">Time:</span>{" "}
+                  <span className="text-gray-300">Reward ID:</span>{" "}
+                  <span className="font-semibold">{scanResult.rewardId}</span>
+                </p>
+                <p className="text-white">
+                  <span className="text-gray-300">Redeemed At:</span>{" "}
                   <span className="font-semibold">
                     {new Date(scanResult.redeemedAt).toLocaleString()}
                   </span>

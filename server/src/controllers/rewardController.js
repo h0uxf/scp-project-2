@@ -135,4 +135,19 @@ module.exports = {
       return next(new AppError(`Failed to fetch reward status: ${error.message}`, 500));
     }
   }),
+
+  getRewardStatistics: catchAsync(async (req, res, next) => {
+    try {
+      const statistics = await rewardModel.getRewardStatisticsAggregate();
+      logger.debug("Fetching reward statistics");
+      res.status(200).json({
+        status: "success",
+        message: "Reward statistics retrieved successfully",
+        data: statistics,
+      });
+    } catch (error) {
+      logger.error(`Error fetching reward statistics: ${error.message}`);
+      return next(new AppError(`Failed to fetch reward statistics: ${error.message}`, 500));
+    }
+  }),
 };

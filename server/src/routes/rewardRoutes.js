@@ -40,6 +40,15 @@ router.get(
     rewardController.getRewardStatus
 );
 
+
+// [GET] View reward statistics
+router.get(
+    '/stats',
+    jwtMiddleware.verifyAccessToken,
+    roleMiddleware([3, 4, 5]),
+    rewardController.getRewardStatistics
+)
+
 router.get('/:rewardId', rewardController.getRewardById);
 
 // [POST] Generate reward and QR code for logged-in user
