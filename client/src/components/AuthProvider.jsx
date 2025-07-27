@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const AuthContext = createContext(undefined);
 
@@ -10,7 +11,8 @@ export function AuthProvider({ children }) {
   function normalizeUser(user) {
     return {
       ...user,
-      role_id: typeof user.role_id === "string" ? Number(user.role_id) : user.role_id,
+      role_id:
+        typeof user.role_id === "string" ? Number(user.role_id) : user.role_id,
     };
   }
 
@@ -92,6 +94,7 @@ export function AuthProvider({ children }) {
     });
 
     setCurrentUser(null);
+    navigate("/");
   }
 
   function hasRole(...roleIds) {

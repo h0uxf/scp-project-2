@@ -1,32 +1,11 @@
 import React, { useState, useEffect } from "react";
-import {
-  Menu,
-  X,
-  Crown,
-  Play,
-  HelpCircle,
-  Home,
-  GraduationCap,
-  Star,
-  Trophy,
-  Medal,
-} from "lucide-react";
+import { Crown, Play, GraduationCap, Star, Trophy, Medal } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+import NavBar from "../components/NavBar";
+import BackgroundEffects from "../components/BackgroundEffects";
 
-const FloatingShape = ({ className, delay = 0 }) => (
-  <div
-    className={`absolute opacity-20 animate-bounce ${className}`}
-    style={{ animationDelay: `${delay}s`, animationDuration: "3s" }}
-  />
-);
-
-const GlowingOrb = ({ size, color, position, delay = 0 }) => (
-  <div
-    className={`absolute ${position} ${size} ${color} rounded-full blur-xl opacity-30 animate-pulse`}
-    style={{ animationDelay: `${delay}s` }}
-  />
-);
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const LandingPage = () => {
   const [navOpen, setNavOpen] = useState(false);
@@ -52,127 +31,14 @@ const LandingPage = () => {
     fetchLeaderboard();
   }, []);
 
-  const toggleMenu = () => setNavOpen(!navOpen);
-
-  const handleNavClick = (targetId) => {
-    document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth" });
-    setNavOpen(false);
-  };
-
   const handleButtonClick = () => {
     navigate(`/login`);
   };
 
   return (
     <div className="font-sans bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen scroll-smooth relative overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="fixed inset-0 pointer-events-none">
-        <GlowingOrb
-          size="w-96 h-96"
-          color="bg-blue-500"
-          position="top-10 -left-48"
-          delay={0}
-        />
-        <GlowingOrb
-          size="w-64 h-64"
-          color="bg-purple-500"
-          position="top-1/3 right-10"
-          delay={1}
-        />
-        <GlowingOrb
-          size="w-80 h-80"
-          color="bg-indigo-500"
-          position="bottom-20 left-20"
-          delay={2}
-        />
-
-        <FloatingShape
-          className="w-4 h-4 bg-white rounded-full top-20 left-1/4"
-          delay={0}
-        />
-        <FloatingShape
-          className="w-6 h-6 bg-blue-300 rounded-full top-1/2 right-1/4"
-          delay={1}
-        />
-        <FloatingShape
-          className="w-3 h-3 bg-purple-300 rounded-full bottom-1/3 left-3/4"
-          delay={2}
-        />
-      </div>
-
-      {/* NavBar */}
-      <nav
-        className={`bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-lg border-b border-white/20 px-4 sm:px-6 py-4 sticky top-0 z-20 transition-all duration-300 ${
-          scrollY > 50
-            ? "bg-gradient-to-r from-blue-600/40 via-purple-600/40 to-pink-600/40 shadow-2xl"
-            : ""
-        }`}
-      >
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mr-3">
-              <span className="text-white font-bold text-lg">SP</span>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              EXPLORING SP GAME
-            </h1>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={toggleMenu}
-            className="lg:hidden relative bg-gradient-to-r from-blue-500 to-purple-500 text-white p-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
-          >
-            {navOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        </div>
-
-        {/* Mobile Navigation Menu */}
-        {navOpen && (
-          <div className="lg:hidden mt-4 bg-gradient-to-r from-blue-600/30 via-purple-600/30 to-pink-600/30 backdrop-blur-lg rounded-2xl border border-white/20 p-4 animate-fadeIn">
-            <div className="space-y-2">
-              {[
-                {
-                  href: "home",
-                  icon: Home,
-                  text: "Home",
-                  color: "from-blue-500 to-cyan-500",
-                },
-                {
-                  href: "about",
-                  icon: GraduationCap,
-                  text: "About",
-                  color: "from-purple-500 to-pink-500",
-                },
-                {
-                  href: "scan",
-                  icon: Play,
-                  text: "Scan",
-                  color: "from-green-500 to-emerald-500",
-                },
-                {
-                  href: "leaderboard",
-                  icon: Crown,
-                  text: "Leaderboard",
-                  color: "from-pink-500 to-rose-500",
-                },
-              ].map(({ href, icon: Icon, text, color }) => (
-                <button
-                  key={href}
-                  onClick={() => handleNavClick(href)}
-                  className={`w-full group bg-gradient-to-r ${color} text-white p-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 font-medium`}
-                >
-                  <span className="flex items-center gap-3 justify-center">
-                    <Icon className="group-hover:rotate-12 transition-transform duration-300" />
-                    {text}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </nav>
+      <BackgroundEffects />
+      <NavBar />
 
       {/* Hero Section */}
       <section id="home" className="py-20 px-4 sm:px-8 text-center relative">
