@@ -1,0 +1,274 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Entities for crossword puzzle feature
+model Word {
+  wordId     Int      @id @default(autoincrement()) @map("word_id")
+  wordText   String   @map("word_text")
+  wordLength Int      @map("word_length")
+  difficulty String?  // Easy, Medium, Hard
+  category   String?  // Theme/category of the word
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  
+  wordClues   WordClue[]
+  puzzleWords PuzzleWord[]
+}
+
+model Clue {
+  clueId     Int      @id @default(autoincrement()) @map("clue_id")
+  clueText   String   @map("clue_text")
+  clueType   String   @map("clue_type") // "DEFINITION", "CRYPTIC", "FILL_IN", etc.
+  difficulty String?  // Easy, Medium, Hard
+  category   String?  // Theme/category
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  
+  wordClues   WordClue[]
+  puzzleWords PuzzleWord[]
+}
+
+model WordClue {
+  wordId      Int      @map("word_id")
+  clueId      Int      @map("clue_id")
+  gridNumber  Int?     @map("grid_number") // Make optional
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  word        Word     @relation(fields: [wordId], references: [wordId], onDelete: Cascade)
+  clue        Clue     @relation(fields: [clueId], references: [clueId], onDelete: Cascade)
+
+  @@id([wordId, clueId])
+}
+
+model CrosswordPuzzle {
+  puzzleId    Int      @id @default(autoincrement()) @map("puzzle_id")
+  title       String
+  difficulty  String   // Easy, Medium, Hard
+  gridSize    Int      @map("grid_size") // e.g., 15 for 15x15
+  createdBy   Int?     @map("created_by")
+  isPublished Boolean  @default(false) @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  puzzleWords PuzzleWord[]
+  userProgress UserPuzzleProgress[]
+}
+
+model PuzzleWord {
+  puzzleId    Int      @map("puzzle_id")
+  wordId      Int      @map("word_id")
+  clueId      Int      @map("clue_id")
+  startRow    Int      @map("start_row")
+  startCol    Int      @map("start_col")
+  direction   String   // "ACROSS" or "DOWN"
+  clueNumber  Int      @map("clue_number")
+  
+  puzzle      CrosswordPuzzle @relation(fields: [puzzleId], references: [puzzleId], onDelete: Cascade)
+  word        Word     @relation(fields: [wordId], references: [wordId])
+  clue        Clue     @relation(fields: [clueId], references: [clueId])
+  
+  @@id([puzzleId, wordId, clueId])
+}
+
+model UserPuzzleProgress {
+  userId      Int      @map("user_id")
+  puzzleId    Int      @map("puzzle_id")
+  currentGrid String?  @map("current_grid") // JSON string of current state
+  isCompleted Boolean  @default(false) @map("is_completed")
+  completedAt DateTime? @map("completed_at")
+  timeSpent   Int?     @map("time_spent") // in seconds
+  hintsUsed   Int      @default(0) @map("hints_used")
+  score       Int?
+  startedAt   DateTime @default(now()) @map("started_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  user        User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  puzzle      CrosswordPuzzle @relation(fields: [puzzleId], references: [puzzleId], onDelete: Cascade)
+  
+  @@id([userId, puzzleId])
+}
+
+// Entities for quiz feature
+model Question {
+  questionId    Int        @id @default(autoincrement()) @map("question_id")
+  questionText  String     @map("question_text")
+  options       Option[]   @relation("QuestionOptions")
+  quizResults   QuizResult[]
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+  order         Int        @default(0) 
+}
+
+model Option {
+  optionId      Int             @id @default(autoincrement()) @map("option_id")
+  optionText    String          @map("option_text")
+  personality   PersonalityType? @relation(fields: [personalityId], references: [id])
+  personalityId Int?            @map("personality_id")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  question      Question        @relation("QuestionOptions", fields: [questionId], references: [questionId], onDelete: Cascade)
+  questionId    Int             @map("question_id")
+  quizResults   QuizResult[]
+  order         Int             @default(0) 
+}
+
+model QuizResult {
+  resultId     Int      @id @default(autoincrement()) @map("result_id")
+  userId       Int      @map("user_id")
+  question     Question @relation(fields: [questionId], references: [questionId], onDelete: Cascade)
+  questionId   Int      @map("question_id")
+  option       Option   @relation(fields: [optionId], references: [optionId], onDelete: Cascade)
+  optionId     Int      @map("option_id")
+  submittedAt  DateTime @default(now()) @map("submitted_at")
+
+  user         User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+}
+
+model PersonalityType {
+  id           Int           @id @default(autoincrement())
+  code         String        @unique
+  name         String
+  description  String
+  options      Option[]
+  userResults  UserResult[]  
+}
+
+
+model UserResult {
+  id             Int              @id @default(autoincrement())
+  userId         Int              @map("user_id")
+  personality    PersonalityType  @relation(fields: [personalityId], references: [id])
+  personalityId  Int              @map("personality_id")
+  calculatedAt   DateTime         @default(now()) @map("calculated_at")
+
+  user           User             @relation(fields: [userId], references: [userId], onDelete: Cascade)
+}
+
+model Location {
+  locationId   Int      @id @default(autoincrement()) @map("location_id")
+  name         String   
+  description  String   
+  code         String   
+  points       Int      
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  activity     Activity[]
+  userLocations UserLocation[] // Added opposite relation field
+}
+
+model Activity {
+  activityId   Int      @id @default(autoincrement()) @map("activity_id")
+  name         String   
+  description  String   
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  feature      Location? @relation(fields: [locationId], references: [locationId], onDelete: Cascade)
+  locationId   Int?      @map("location_id")
+  order        Int       @default(0)
+  route        String?
+  userActivities UserActivities[] 
+  rewards      Reward[]
+}
+
+model User {
+  userId       Int      @id @default(autoincrement()) @map("user_id")
+  username     String   @unique 
+  passwordHash String   @map("password_hash")
+  points       Int      
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  userLocation UserLocation[]
+  userActivities UserActivities[]
+  userRole     UserRole[]
+
+  quizResults    QuizResult[]
+  userResults    UserResult[]
+
+  puzzleProgress UserPuzzleProgress[]
+  rewards        Reward[]
+}
+
+model UserLocation {
+  userId       Int      @map("user_id")
+  locationId   Int      @map("location_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  user         User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  location     Location @relation(fields: [locationId], references: [locationId], onDelete: Cascade)
+
+  @@id([userId, locationId])
+}
+
+model UserActivities {
+  userId       Int      @map("user_id")
+  activityId   Int      @map("activity_id")
+  points       Int      
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  user         User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  activity     Activity @relation(fields: [activityId], references: [activityId], onDelete: Cascade)
+
+  @@id([userId, activityId])
+}
+
+model UserRole {
+  userId       Int      @map("user_id")
+  roleId       Int      @map("role_id")
+  assignedAt   DateTime @default(now()) @map("assigned_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  user         User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  role         Role     @relation(fields: [roleId], references: [roleId], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+model Role {
+  roleId       Int      @id @default(autoincrement()) @map("role_id")
+  roleName     String   @map("role_name") @unique
+  description  String   
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  userRole     UserRole[]
+  rolePermission RolePermission[]
+}
+
+model RolePermission {
+  roleId       Int      @map("role_id")
+  permissionId Int      @map("permission_id")
+  assignedAt   DateTime @default(now()) @map("assigned_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  role         Role     @relation(fields: [roleId], references: [roleId], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [permissionId], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model Permission {
+  permissionId   Int      @id @default(autoincrement()) @map("permission_id")
+  permissionName String   @map("permission_name") @unique
+  description    String   
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  rolePermission RolePermission[]
+}
+
+model Reward {
+  rewardId    Int      @id @default(autoincrement()) @map("reward_id")
+  userId      Int      @map("user_id")
+  activityId  Int      @map("activity_id")
+  qrToken     String   @unique @map("qr_token") @db.Uuid
+  isRedeemed  Boolean  @default(false) @map("is_redeemed")
+  createdAt   DateTime @default(now()) @map("created_at")
+  redeemedAt  DateTime? @map("redeemed_at")
+  expiresAt   DateTime? @map("expires_at")
+  user        User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  activity    Activity @relation(fields: [activityId], references: [activityId], onDelete: Cascade)
+}

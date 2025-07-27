@@ -12,6 +12,7 @@ import {
   Medal,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 const FloatingShape = ({ className, delay = 0 }) => (
   <div
@@ -36,7 +37,7 @@ const LandingPage = () => {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/leaderboard");
+        const response = await fetch(`${API_BASE_URL}/api/leaderboard`);
         const result = await response.json();
         if (result.status === "success" && Array.isArray(result.data)) {
           setLeaderboard(result.data);

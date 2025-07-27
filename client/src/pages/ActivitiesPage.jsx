@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, ArrowUp, ArrowDown, Edit2 } from "lucide-react";
+import { Plus, Edit2, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../components/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 class ActivityErrorBoundary extends React.Component {
   state = { hasError: false, errorMessage: "" };
@@ -15,12 +16,12 @@ class ActivityErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-20 px-6 text-white text-center">
-          <h1 className="text-4xl font-bold mb-4">Manage Activities</h1>
-          <p className="text-xl text-red-300">{this.state.errorMessage}</p>
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4 sm:px-6 text-white text-center">
+          <h1 className="text-2xl sm:text-4xl font-bold mb-4">Manage Activities</h1>
+          <p className="text-lg sm:text-xl text-red-300">{this.state.errorMessage}</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full transition-all duration-300"
+            className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 text-sm sm:text-base"
           >
             Retry
           </button>
@@ -44,7 +45,7 @@ const ActivitiesPage = () => {
   const fetchActivities = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:5000/api/activities", {
+      const response = await fetch(`${API_BASE_URL}/api/activities`, {
         credentials: "include",
       });
       if (!response.ok) {
@@ -83,7 +84,7 @@ const ActivitiesPage = () => {
       return;
     }
     try {
-      const response = await fetch("http://localhost:5000/api/activities", {
+      const response = await fetch(`${API_BASE_URL}/api/activities`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -115,7 +116,7 @@ const ActivitiesPage = () => {
       return;
     }
     try {
-      const response = await fetch(`http://localhost:5000/api/activities/${activityId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/activities/${activityId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -143,7 +144,7 @@ const ActivitiesPage = () => {
   const handleDeleteActivity = async (activityId) => {
     if (!window.confirm("Are you sure you want to delete this activity?")) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/activities/${activityId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/activities/${activityId}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -176,7 +177,7 @@ const ActivitiesPage = () => {
 
     try {
       console.log("Sending activityIds to reorder:", activityIds);
-      const response = await fetch("http://localhost:5000/api/activities/reorder", {
+      const response = await fetch(`${API_BASE_URL}/api/activities/reorder`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -199,16 +200,6 @@ const ActivitiesPage = () => {
       toast.error(err.message);
     }
   };
-
-  // // Start editing an activity
-  // const startEditingActivity = (activity) => {
-  //   setEditingActivityId(activity.activityId);
-  //   setNewActivity({
-  //     name: activity.name || "",
-  //     description: activity.description || "",
-  //     route: activity.route || "",
-  //   });
-  // };
 
   // Navigate to detailed edit page
   const handleEditMoreDetails = (activity) => {
@@ -233,21 +224,21 @@ const ActivitiesPage = () => {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-20 px-6 text-white text-center">
-        <h1 className="text-4xl font-bold mb-4">Manage Activities</h1>
-        <p className="text-xl text-gray-300">Loading...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4 sm:px-6 text-white text-center">
+        <h1 className="text-2xl sm:text-4xl font-bold mb-4">Manage Activities</h1>
+        <p className="text-lg sm:text-xl text-gray-300">Loading...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-20 px-6 text-white text-center">
-        <h1 className="text-4xl font-bold mb-4">Manage Activities</h1>
-        <p className="text-xl text-red-300">{error}</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4 sm:px-6 text-white text-center">
+        <h1 className="text-2xl sm:text-4xl font-bold mb-4">Manage Activities</h1>
+        <p className="text-lg sm:text-xl text-red-300">{error}</p>
         <button
           onClick={() => window.location.reload()}
-          className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full transition-all duration-300"
+          className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 text-sm sm:text-base"
         >
           Retry
         </button>
@@ -257,22 +248,22 @@ const ActivitiesPage = () => {
 
   if (!hasRole(3, 4, 5)) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-20 px-6 text-white text-center">
-        <h1 className="text-4xl font-bold mb-4">Manage Activities</h1>
-        <p className="text-xl text-red-300">Access Denied: You do not have permission to view this page.</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4 sm:px-6 text-white text-center">
+        <h1 className="text-2xl sm:text-4xl font-bold mb-4">Manage Activities</h1>
+        <p className="text-lg sm:text-xl text-red-300">Access Denied: You do not have permission to view this page.</p>
       </div>
     );
   }
 
   return (
     <ActivityErrorBoundary>
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-20 px-6 text-white text-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4 sm:px-6 text-white text-center">
         <Toaster position="top-right" />
-        <h1 className="text-4xl font-bold mb-8">Manage Activities</h1>
+        <h1 className="text-2xl sm:text-4xl font-bold mb-6 sm:mb-8">Manage Activities</h1>
 
         {/* Admin Controls */}
-        <div className="max-w-3xl mx-auto bg-white/5 border border-white/20 rounded-2xl p-8 shadow-xl mb-8">
-          <h2 className="text-2xl font-semibold mb-6">Add Activity</h2>
+        <div className="max-w-4xl mx-auto bg-white/5 border border-white/20 rounded-2xl p-4 sm:p-6 md:p-8 shadow-xl mb-6 sm:mb-8">
+          <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">Add Activity</h2>
           {/* Activity Creation/Update Form */}
           <div className="mb-6">
             <input
@@ -280,13 +271,13 @@ const ActivitiesPage = () => {
               value={newActivity.name}
               onChange={(e) => setNewActivity({ ...newActivity, name: e.target.value })}
               placeholder="Enter activity name"
-              className="w-full bg-white/10 text-white p-3 rounded-lg mb-4"
+              className="w-full bg-white/10 text-white p-3 rounded-lg mb-4 text-sm sm:text-base"
             />
             <textarea
               value={newActivity.description}
               onChange={(e) => setNewActivity({ ...newActivity, description: e.target.value })}
               placeholder="Enter activity description"
-              className="w-full bg-white/10 text-white p-3 rounded-lg mb-4"
+              className="w-full bg-white/10 text-white p-3 rounded-lg mb-4 text-sm sm:text-base"
               rows="4"
             />
             <input
@@ -294,13 +285,13 @@ const ActivitiesPage = () => {
               value={newActivity.route}
               onChange={(e) => setNewActivity({ ...newActivity, route: e.target.value })}
               placeholder="Enter activity route (e.g., /quiz)"
-              className="w-full bg-white/10 text-white p-3 rounded-lg mb-4"
+              className="w-full bg-white/10 text-white p-3 rounded-lg mb-4 text-sm sm:text-base"
             />
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-center gap-2 sm:gap-4 flex-wrap">
               <button
                 onClick={editingActivityId ? () => handleUpdateActivity(editingActivityId) : handleCreateActivity}
                 disabled={!newActivity.name || !newActivity.description}
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
               >
                 {editingActivityId ? "Update Activity" : "Create Activity"}
               </button>
@@ -308,7 +299,7 @@ const ActivitiesPage = () => {
           </div>
           {/* Existing Activities */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Existing Activities</h3>
+            <h3 className="text-base sm:text-lg font-semibold mb-4">Existing Activities</h3>
             <AnimatePresence>
               {activities.map((activity, index) => (
                 <motion.div
@@ -317,37 +308,37 @@ const ActivitiesPage = () => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
-                  className="flex justify-between items-center bg-white/10 p-4 rounded-lg mb-2"
+                  className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white/10 p-4 rounded-lg mb-2"
                 >
-                  <div className="text-left">
-                    <span className="font-medium">{activity.name || "Unnamed Activity"}</span>
-                    <p className="text-sm text-gray-300">{activity.description || "No description available"}</p>
-                    <p className="text-sm text-gray-400">Route: {activity.route || "Not set"}</p>
+                  <div className="text-left mb-4 sm:mb-0">
+                    <span className="font-medium text-sm sm:text-base">{activity.name || "Unnamed Activity"}</span>
+                    <p className="text-xs sm:text-sm text-gray-300">{activity.description || "No description available"}</p>
+                    <p className="text-xs sm:text-sm text-gray-400">Route: {activity.route || "Not set"}</p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap justify-start sm:justify-end">
                     <button
                       onClick={() => handleMoveActivity(index, "up")}
                       disabled={index === 0}
-                      className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-full disabled:opacity-50"
+                      className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-full disabled:opacity-50 min-w-[40px]"
                     >
-                      <ArrowUp size={20} />
+                      <ArrowUp size={16} />
                     </button>
                     <button
                       onClick={() => handleMoveActivity(index, "down")}
                       disabled={index === activities.length - 1}
-                      className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-full disabled:opacity-50"
+                      className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-full disabled:opacity-50 min-w-[40px]"
                     >
-                      <ArrowDown size={20} />
+                      <ArrowDown size={16} />
                     </button>
                     <button
                       onClick={() => handleEditMoreDetails(activity)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full transition-all duration-300"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-full transition-all duration-300 text-sm sm:text-base min-w-[40px]"
                     >
-                      <Edit2 size={20} />
+                      <Edit2 size={16} />
                     </button>
                     <button
                       onClick={() => handleDeleteActivity(activity.activityId)}
-                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full transition-all duration-300"
+                      className="bg-red-600 hover:bg-red-700 text-white px-3 sm:px-4 py-2 rounded-full transition-all duration-300 text-sm sm:text-base min-w-[80px]"
                     >
                       Delete
                     </button>

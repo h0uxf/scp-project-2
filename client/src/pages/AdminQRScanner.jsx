@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import jsQR from "jsqr";
-import { Camera, CheckCircle, XCircle, Users, Gift, AlertCircle, Scan, RefreshCw } from "lucide-react";
+import { Camera, CheckCircle, XCircle, Users, Gift, AlertCircle, Scan, RefreshCw, X } from "lucide-react";
 import { useAuth } from "../components/AuthProvider";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 const AdminQRScanner = () => {
   const { currentUser, loading, hasRole } = useAuth();
@@ -19,6 +21,12 @@ const AdminQRScanner = () => {
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
 
+  const clearMessage = () => {
+    setError("");
+    setSuccess("");
+    setScanResult(null);
+  };
+
   useEffect(() => {
     if (!loading && (!currentUser || !hasRole(3, 4, 5))) {
       navigate("/login");
@@ -27,7 +35,6 @@ const AdminQRScanner = () => {
     }
   }, [loading, currentUser, navigate, hasRole]);
 
-  // Auto-refresh stats when component becomes visible
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && currentUser && hasRole(3, 4, 5)) {
@@ -52,21 +59,14 @@ const AdminQRScanner = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/rewards/stats", {
-        method: "GET",
-        credentials: "include",
+      const response = await axios.get(`${API_BASE_URL}/api/rewards/stats`, {
+        withCredentials: true,
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch statistics");
-      }
-
-      const data = await response.json();
-      console.log("Admin stats fetched:", data);
-      setStats(data.data);
+      console.log("Admin stats fetched:", response.data);
+      setStats(response.data.data);
     } catch (err) {
       console.error("Failed to fetch stats:", err);
-      setError("Failed to load statistics");
+      setError("Failed to load statistics. Please try again.");
     }
   };
 
@@ -84,6 +84,11 @@ const AdminQRScanner = () => {
     setSuccess("");
     setScanResult(null);
 
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setError("Camera access is not supported on this device or browser. Please use a device with a camera and a compatible browser.");
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" },
@@ -96,7 +101,16 @@ const AdminQRScanner = () => {
       setIsScanning(true);
       scanForQRCode();
     } catch (err) {
-      setError("Camera access denied or not available");
+      console.error("Camera access error:", err);
+      let errorMessage = "Unable to access camera. Please allow camera permissions in your browser settings and try again.";
+      if (err.name === "NotAllowedError") {
+        errorMessage = "Camera access denied. Please enable camera permissions in your browser or device settings and try again.";
+      } else if (err.name === "NotFoundError") {
+        errorMessage = "No camera found on this device. Please use a device with a camera.";
+      } else if (!window.location.protocol.includes("https") && window.location.hostname !== "localhost") {
+        errorMessage = "Camera access requires a secure connection (HTTPS). Please access this page over HTTPS.";
+      }
+      setError(errorMessage);
     }
   };
 
@@ -135,123 +149,124 @@ const AdminQRScanner = () => {
     setSuccess("");
 
     try {
-      // Extract qrToken from URL if it's a full URL
       let qrToken = qrTokenOrUrl;
       if (qrTokenOrUrl.includes('qrToken=')) {
         const url = new URL(qrTokenOrUrl);
         qrToken = url.searchParams.get('qrToken');
       }
 
-      const response = await fetch("http://localhost:5000/api/rewards/redeem", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ qrToken }),
-      });
+      const response = await axios.post(
+        `${API_BASE_URL}/api/rewards/redeem`,
+        { qrToken },
+        { withCredentials: true }
+      );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to redeem reward");
-      }
-
-      const data = await response.json();
-      const result = data.data;
-
+      const result = response.data.data;
       setScanResult(result);
       setSuccess(`Reward redeemed successfully for User ID: ${result.userId}!`);
-      
-      // Refresh stats after successful redemption
       fetchStats();
       stopCamera();
     } catch (err) {
-      const errorMsg = err.message || "Failed to redeem reward";
+      const errorMsg = err.response?.data?.error || "Failed to redeem reward. Please try again.";
       setError(errorMsg);
       setScanResult({ error: errorMsg });
     }
   };
 
-  const simulateQRScan = () => {
-    const mockToken = "0d19b00f-286d-4b25-b2b3-8ae80f239762"; // Use the provided mock QR token
-    handleManualInput(mockToken);
+  const simulateQRScan = async () => {
+    setError("");
+    setSuccess("");
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/rewards/1`, {
+        withCredentials: true,
+      });
+      console.log("Mock QR token response:", response.data);
+      const mockToken = response.data.data.qrToken;
+      if (!mockToken) {
+        throw new Error("No mock QR token received");
+      }
+      handleManualInput(mockToken);
+    } catch (err) {
+      console.error("Error fetching mock QR token:", err);
+      setError(err.response?.data?.error || "Failed to fetch mock QR token. Please try again.");
+    }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-20 px-6 text-white text-center">
-        <h1 className="text-4xl font-bold mb-4">Admin QR Scanner</h1>
-        <p className="text-xl text-gray-300">Loading...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4 sm:px-6 text-white text-center">
+        <h1 className="text-2xl sm:text-4xl font-bold mb-4">Admin QR Scanner</h1>
+        <p className="text-lg sm:text-xl text-gray-300">Loading...</p>
       </div>
     );
   }
 
   if (!currentUser || !hasRole(3, 4, 5)) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-20 px-6 text-white text-center">
-        <h1 className="text-4xl font-bold mb-4">Admin QR Scanner</h1>
-        <p className="text-xl text-red-300">Access Denied: You do not have permission to view this page.</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4 sm:px-6 text-white text-center">
+        <h1 className="text-2xl sm:text-4xl font-bold mb-4">Admin QR Scanner</h1>
+        <p className="text-lg sm:text-xl text-red-200">Access Denied: You do not have permission to view this page.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-20 px-6 text-white text-center">
-      <div className="flex justify-between items-center max-w-4xl mx-auto mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4 sm:px-6 text-white text-center">
+      <div className="flex justify-between items-center max-w-4xl mx-auto mb-6 sm:mb-8">
         <div className="w-full flex justify-center">
-            <h1 className="text-4xl font-bold text-center">Admin QR Scanner</h1>
+          <h1 className="text-2xl sm:text-4xl font-bold text-center">Admin QR Scanner</h1>
         </div>
         <button
           onClick={handleRefreshStats}
           disabled={refreshing}
-          className="p-3 rounded-full bg-purple-600/30 hover:bg-purple-600/50 transition-colors duration-300 disabled:opacity-50"
+          className="p-2 sm:p-3 rounded-full bg-purple-600/30 hover:bg-purple-600/50 transition-colors duration-300 disabled:opacity-50"
           title="Refresh Statistics"
         >
-          <RefreshCw size={24} className={`text-purple-300 ${refreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw size={20} className={`text-purple-300 ${refreshing ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="max-w-4xl mx-auto mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white/5 border border-white/20 rounded-2xl p-6 shadow-xl">
-            <div className="flex items-center justify-center gap-3 mb-3">
-              <Gift className="text-blue-400" size={32} />
+      <div className="max-w-4xl mx-auto mb-6 sm:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+          <div className="bg-white/5 border border-white/20 rounded-2xl p-4 sm:p-6 shadow-xl">
+            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <Gift className="text-blue-400" size={24} />
               <div>
                 <p className="text-gray-300 text-sm">Total Rewards</p>
-                <p className="text-3xl font-bold text-white">{stats.total || 0}</p>
+                <p className="text-xl sm:text-3xl font-bold text-white">{stats.total || 0}</p>
               </div>
             </div>
           </div>
-          <div className="bg-white/5 border border-white/20 rounded-2xl p-6 shadow-xl">
-            <div className="flex items-center justify-center gap-3 mb-3">
-              <CheckCircle className="text-green-400" size={32} />
+          <div className="bg-white/5 border border-white/20 rounded-2xl p-4 sm:p-6 shadow-xl">
+            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <CheckCircle className="text-green-400" size={24} />
               <div>
                 <p className="text-gray-300 text-sm">Redeemed</p>
-                <p className="text-3xl font-bold text-white">{stats.redeemed || 0}</p>
+                <p className="text-xl sm:text-3xl font-bold text-white">{stats.redeemed || 0}</p>
               </div>
             </div>
           </div>
-          <div className="bg-white/5 border border-white/20 rounded-2xl p-6 shadow-xl">
-            <div className="flex items-center justify-center gap-3 mb-3">
-              <Users className="text-orange-400" size={32} />
+          <div className="bg-white/5 border border-white/20 rounded-2xl p-4 sm:p-6 shadow-xl">
+            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <Users className="text-orange-400" size={24} />
               <div>
                 <p className="text-gray-300 text-sm">Pending</p>
-                <p className="text-3xl font-bold text-white">{stats.notRedeemed || 0}</p>
+                <p className="text-xl sm:text-3xl font-bold text-white">{stats.notRedeemed || 0}</p>
               </div>
             </div>
           </div>
         </div>
-        
-        {/* Progress Bar */}
+
         {stats.total > 0 && (
-          <div className="mt-6 bg-white/5 border border-white/20 rounded-xl p-4">
-            <div className="text-center mb-3">
-              <span className="text-lg font-semibold text-white">
+          <div className="mt-4 sm:mt-6 bg-white/5 border border-white/20 rounded-xl p-4">
+            <div className="text-center mb-2 sm:mb-3">
+              <span className="text-base sm:text-lg font-semibold text-white">
                 Redemption Rate: {Math.round((stats.redeemed / stats.total) * 100)}%
               </span>
             </div>
-            <div className="w-full bg-gray-700 rounded-full h-3">
-              <div 
-                className="bg-gradient-to-r from-green-500 to-blue-500 h-3 rounded-full transition-all duration-500"
+            <div className="w-full bg-gray-700 rounded-full h-2 sm:h-3">
+              <div
+                className="bg-gradient-to-r from-green-500 to-blue-500 h-2 sm:h-3 rounded-full transition-all duration-500"
                 style={{ width: `${(stats.redeemed / stats.total) * 100}%` }}
               ></div>
             </div>
@@ -259,24 +274,41 @@ const AdminQRScanner = () => {
         )}
       </div>
 
-      {/* QR Scanner */}
-      <div className="max-w-2xl mx-auto bg-white/5 border border-white/20 rounded-2xl p-8 shadow-xl">
-        <h2 className="text-2xl font-semibold mb-6 flex items-center justify-center gap-2">
-          <Scan className="text-blue-400" />
+      <div className="max-w-2xl mx-auto bg-white/5 border border-white/20 rounded-2xl p-4 sm:p-8 shadow-xl">
+        <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 flex items-center justify-center gap-2">
+          <Scan className="text-blue-400" size={20} />
           QR Code Scanner
         </h2>
 
         {error && (
-          <div className="bg-red-600/20 border border-red-500/50 text-red-200 rounded-lg p-4 mb-6 flex items-center gap-3">
-            <AlertCircle size={20} />
-            <span>{error}</span>
+          <div className="bg-red-600/20 border border-red-500/50 text-red-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <AlertCircle size={16} />
+              <span className="text-sm sm:text-base">{error}</span>
+            </div>
+            <button
+              onClick={clearMessage}
+              className="text-red-200 hover:text-red-100"
+              aria-label="Dismiss message"
+            >
+              <X size={16} />
+            </button>
           </div>
         )}
 
         {success && (
-          <div className="bg-green-600/20 border border-green-500/50 text-green-200 rounded-lg p-4 mb-6 flex items-center gap-3">
-            <CheckCircle size={20} />
-            <span>{success}</span>
+          <div className="bg-green-600/20 border border-green-500/50 text-green-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <CheckCircle size={16} />
+              <span className="text-sm sm:text-base">{success}</span>
+            </div>
+            <button
+              onClick={clearMessage}
+              className="text-green-200 hover:text-green-100"
+              aria-label="Dismiss message"
+            >
+              <X size={16} />
+            </button>
           </div>
         )}
 
@@ -284,18 +316,17 @@ const AdminQRScanner = () => {
           <div className="text-center">
             <button
               onClick={startCamera}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full transition-all duration-300 font-semibold flex items-center justify-center gap-3 mx-auto mb-6"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 sm:px-8 py-2 sm:py-3 rounded-full transition-all duration-300 font-semibold flex items-center justify-center gap-2 mx-auto mb-4 sm:mb-6 text-sm sm:text-base"
             >
-              <Camera size={20} />
+              <Camera size={16} />
               Start Camera Scanner
             </button>
 
-            {/* Manual / Test */}
-            <div className="pt-6 border-t border-white/20">
+            <div className="pt-4 sm:pt-6 border-t border-white/20">
               <p className="text-gray-300 text-sm mb-4">For testing purposes:</p>
               <button
                 onClick={simulateQRScan}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-full transition-all duration-300"
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 sm:px-6 py-2 rounded-full transition-all duration-300 text-sm sm:text-base"
               >
                 Simulate QR Code Scan
               </button>
@@ -307,16 +338,15 @@ const AdminQRScanner = () => {
               <video ref={videoRef} className="w-full rounded-lg" autoPlay playsInline muted />
               <canvas ref={canvasRef} className="hidden" />
 
-              {/* Overlay */}
               <div className="absolute inset-0 border-2 border-blue-400 rounded-lg pointer-events-none">
-                <div className="absolute top-4 left-4 w-8 h-8 border-l-4 border-t-4 border-blue-400"></div>
-                <div className="absolute top-4 right-4 w-8 h-8 border-r-4 border-t-4 border-blue-400"></div>
-                <div className="absolute bottom-4 left-4 w-8 h-8 border-l-4 border-b-4 border-blue-400"></div>
-                <div className="absolute bottom-4 right-4 w-8 h-8 border-r-4 border-b-4 border-blue-400"></div>
+                <div className="absolute top-4 left-4 w-6 sm:w-8 h-6 sm:h-8 border-l-4 border-t-4 border-blue-400"></div>
+                <div className="absolute top-4 right-4 w-6 sm:w-8 h-6 sm:h-8 border-r-4 border-t-4 border-blue-400"></div>
+                <div className="absolute bottom-4 left-4 w-6 sm:w-8 h-6 sm:h-8 border-l-4 border-b-4 border-blue-400"></div>
+                <div className="absolute bottom-4 right-4 w-6 sm:w-8 h-6 sm:h-8 border-r-4 border-b-4 border-blue-400"></div>
                 <div className="absolute inset-x-0 top-1/2 h-0.5 bg-blue-400 opacity-75"></div>
               </div>
 
-              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-full text-sm">
+              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                   Scanning...
@@ -326,7 +356,7 @@ const AdminQRScanner = () => {
 
             <button
               onClick={stopCamera}
-              className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full transition-all duration-300 font-semibold"
+              className="bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 font-semibold text-sm sm:text-base"
             >
               Stop Scanner
             </button>
@@ -334,25 +364,25 @@ const AdminQRScanner = () => {
         )}
 
         {scanResult && (
-          <div className="mt-6 p-6 bg-white/10 rounded-lg border border-white/20">
-            <h3 className="text-lg font-semibold mb-4 text-center">Scan Result</h3>
+          <div className="mt-4 sm:mt-6 p-4 sm:p-6 bg-white/10 rounded-lg border border-white/20">
+            <h3 className="text-base sm:text-lg font-semibold mb-4 text-center">Scan Result</h3>
             {scanResult.error ? (
               <div className="text-center">
-                <XCircle className="mx-auto mb-3 text-red-400" size={32} />
-                <p className="text-red-300">{scanResult.error}</p>
+                <XCircle className="mx-auto mb-3 text-red-400" size={24} />
+                <p className="text-red-200 text-sm sm:text-base">{scanResult.error}</p>
               </div>
             ) : (
               <div className="text-center space-y-2">
-                <CheckCircle className="mx-auto mb-4 text-green-400" size={32} />
-                <p className="text-white">
+                <CheckCircle className="mx-auto mb-4 text-green-400" size={24} />
+                <p className="text-white text-sm sm:text-base">
                   <span className="text-gray-300">User ID:</span>{" "}
                   <span className="font-semibold">{scanResult.userId}</span>
                 </p>
-                <p className="text-white">
+                <p className="text-white text-sm sm:text-base">
                   <span className="text-gray-300">Reward ID:</span>{" "}
                   <span className="font-semibold">{scanResult.rewardId}</span>
                 </p>
-                <p className="text-white">
+                <p className="text-white text-sm sm:text-base">
                   <span className="text-gray-300">Redeemed At:</span>{" "}
                   <span className="font-semibold">
                     {new Date(scanResult.redeemedAt).toLocaleString()}
@@ -364,8 +394,8 @@ const AdminQRScanner = () => {
         )}
       </div>
 
-      <div className="mt-8">
-        <p className="text-gray-300">
+      <div className="mt-6 sm:mt-8">
+        <p className="text-gray-300 text-sm sm:text-base">
           Back to{" "}
           <button
             onClick={() => navigate("/admin")}

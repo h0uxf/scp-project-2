@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 const AuthContext = createContext(undefined);
 
@@ -16,7 +17,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     async function fetchMe() {
       try {
-        const res = await fetch("http://localhost:5000/api/me", {
+        const res = await fetch(`${API_BASE_URL}/api/me`, {
           credentials: "include",
         });
 
@@ -38,7 +39,7 @@ export function AuthProvider({ children }) {
 
   async function handleLogin(credentials) {
     console.log("Logging in with credentials:", credentials);
-    const res = await fetch("http://localhost:5000/api/login", {
+    const res = await fetch(`${API_BASE_URL}/api/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -58,7 +59,7 @@ export function AuthProvider({ children }) {
   }
 
   async function handleRegister(credentials) {
-    const res = await fetch("http://localhost:5000/api/register", {
+    const res = await fetch(`${API_BASE_URL}/api/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -85,7 +86,7 @@ export function AuthProvider({ children }) {
 
   async function handleLogout() {
     console.log("Logging out...");
-    await fetch("http://localhost:5000/api/logout", {
+    await fetch(`${API_BASE_URL}/api/logout`, {
       method: "POST",
       credentials: "include",
     });

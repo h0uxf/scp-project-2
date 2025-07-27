@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Medal, Star, Trophy } from "lucide-react";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 const LeaderboardPage = () => {
   const [topPlayers, setTopPlayers] = useState([]);
@@ -8,7 +9,7 @@ const LeaderboardPage = () => {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/leaderboard");
+        const response = await fetch(`${API_BASE_URL}/api/leaderboard`);
         if (!response.ok) throw new Error("Failed to fetch leaderboard");
         const data = await response.json();
         setTopPlayers(data.data);

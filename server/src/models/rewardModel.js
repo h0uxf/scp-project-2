@@ -19,7 +19,7 @@ module.exports = {
           expiresAt: true,
         },
         orderBy: {
-          createdAt: 'desc', // Sort by creation date, newest first
+          createdAt: 'desc',
         },
       });
 
@@ -65,15 +65,16 @@ module.exports = {
   },
 
   createReward: async ({ userId }) => {
-    if (!userId) {
-      throw new Error('Invalid reward data. Ensure userId is provided.');
+    const numericUserId = Number(userId);
+    if (isNaN(numericUserId)) {
+      throw new Error('Invalid userId. It must be a number.');
     }
 
     try {
-      // Check if user already has a role in rewards table
+      // Check if user already has a reward assigned
       const userRewardCount = await prisma.reward.count({
         where: {
-          userId: parseInt(userId),
+          userId: numericUserId,
         },
       });
 
@@ -91,15 +92,18 @@ module.exports = {
         throw new Error('No activities found in the system.');
       }
 
-      const activityId = activities[0].activityId;
+      const activityId = Number(activities[0].activityId);
+      if (isNaN(activityId)) {
+        throw new Error('Invalid activityId obtained from database.');
+      }
 
       // Check if a valid (non-redeemed) reward already exists
       const existingReward = await prisma.reward.findFirst({
         where: {
-          userId: parseInt(userId),
-          activityId,
+          userId: numericUserId,
+          activityId: activityId,
           isRedeemed: false,
-          expiresAt: { gte: new Date() }, 
+          expiresAt: { gte: new Date() },
         },
       });
 
@@ -114,15 +118,14 @@ module.exports = {
       const qrToken = uuidv4();
       const newReward = await prisma.reward.create({
         data: {
-          userId: parseInt(userId),
-          activityId,
+          userId: numericUserId,
+          activityId: activityId,
           qrToken,
           isRedeemed: false,
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24-hour expiry
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
         },
       });
 
-      // Generate QR code
       const qrCodeUrl = await QRCode.toDataURL(`http://localhost:5173/redeem?qrToken=${qrToken}`);
 
       return { ...newReward, qrCodeUrl };
@@ -137,7 +140,6 @@ module.exports = {
     }
 
     try {
-      // Find reward
       const reward = await prisma.reward.findUnique({
         where: { qrToken },
       });
@@ -154,7 +156,6 @@ module.exports = {
         throw new Error('Reward has expired.');
       }
 
-      // Mark as redeemed
       const updatedReward = await prisma.reward.update({
         where: { qrToken },
         data: {
@@ -179,9 +180,44 @@ module.exports = {
     }
   },
 
-  getRewardStatus: async (qrToken) => {
+  getRewardStatus: async (qrToken, userId) => {
     if (!qrToken || typeof qrToken !== 'string') {
-      throw new Error('Invalid QR token. It must be a non-empty string.');
+      // If no qrToken provided, check if user has any reward
+      if (!userId) {
+        throw new Error('Invalid QR token or user ID. One must be provided.');
+      }
+
+      try {
+        const numericUserId = Number(userId);
+        if (isNaN(numericUserId)) {
+          throw new Error('Invalid user ID. It must be a number.');
+        }
+
+        const reward = await prisma.reward.findFirst({
+          where: {
+            userId: numericUserId,
+            isRedeemed: false,
+            expiresAt: { gte: new Date() },
+          },
+          select: {
+            rewardId: true,
+            isRedeemed: true,
+            redeemedAt: true,
+            expiresAt: true,
+            qrToken: true,
+          },
+        });
+
+        return {
+          hasRewardAssigned: !!reward,
+          isRedeemed: reward ? reward.isRedeemed : false,
+          redeemedAt: reward ? reward.redeemedAt : null,
+          isExpired: reward ? reward.expiresAt < new Date() : false,
+          qrToken: reward ? reward.qrToken : null,
+        };
+      } catch (error) {
+        throw new Error(`Failed to fetch reward status: ${error.message}`);
+      }
     }
 
     try {
@@ -192,18 +228,26 @@ module.exports = {
           isRedeemed: true,
           redeemedAt: true,
           expiresAt: true,
+          qrToken: true,
         },
       });
 
       if (!reward) {
-        throw new Error('Reward not found.');
+        return {
+          hasRewardAssigned: false,
+          isRedeemed: false,
+          redeemedAt: null,
+          isExpired: false,
+          qrToken: null,
+        };
       }
 
       return {
-        rewardId: reward.rewardId,
+        hasRewardAssigned: true,
         isRedeemed: reward.isRedeemed,
         redeemedAt: reward.redeemedAt,
         isExpired: reward.expiresAt ? reward.expiresAt < new Date() : false,
+        qrToken: reward.qrToken,
       };
     } catch (error) {
       throw new Error(`Failed to fetch reward status: ${error.message}`);
@@ -213,21 +257,18 @@ module.exports = {
   getRewardStatisticsAggregate: async () => {
     try {
       const [totalCount, redeemedCount] = await Promise.all([
-        // Total count
         prisma.reward.count(),
-        
-        // Redeemed count
         prisma.reward.count({
           where: {
-            isRedeemed: true
-          }
-        })
+            isRedeemed: true,
+          },
+        }),
       ]);
 
       return {
         total: totalCount,
         redeemed: redeemedCount,
-        notRedeemed: totalCount - redeemedCount
+        notRedeemed: totalCount - redeemedCount,
       };
     } catch (error) {
       throw new Error(`Failed to fetch reward statistics: ${error.message}`);

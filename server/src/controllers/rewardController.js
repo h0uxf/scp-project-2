@@ -75,6 +75,9 @@ module.exports = {
       });
     } catch (error) {
       logger.error(`Error generating reward for user ID ${userId}: ${error.message}`);
+      if(error.message.includes("User already has a reward assigned. Cannot generate new QR token")){
+        return next(new AppError(`${error.message}`, 409));
+      }
       if (error.message.includes("No activities found")) {
         return next(new AppError("No activities found in the system", 404));
       }
@@ -105,7 +108,7 @@ module.exports = {
         return next(new AppError("Invalid QR token", 404));
       }
       if (error.message.includes("already redeemed") || error.message.includes("expired")) {
-        return next(new AppError(error.message, 400));
+        return next(new AppError(error.message, 409));
       }
       return next(new AppError(`Failed to redeem reward: ${error.message}`, 500));
     }

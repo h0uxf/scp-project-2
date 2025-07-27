@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import axios from "axios";
 import ARViewer from "../components/ARViewer";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 const FaceFilterPage = () => {
   const uploadBase64Image = async (base64DataUrl) => {
@@ -11,7 +12,7 @@ const FaceFilterPage = () => {
       const formDate = new FormData();
       formDate.append("image", blob, "photo.jpg");
 
-      const uploadRes = await axios.post("http://localhost:5000/api/images/upload", formDate, {
+      const uploadRes = await axios.post(`${API_BASE_URL}/api/images/upload`, formDate, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
