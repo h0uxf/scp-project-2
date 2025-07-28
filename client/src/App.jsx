@@ -14,6 +14,7 @@ import CrosswordListPage from "./pages/CrosswordListPage";
 import CrosswordPage from "./pages/CrosswordPage";
 import CrosswordAdminPage from "./pages/CrosswordAdminPage";
 import NavBar from "./components/NavBar";
+import LearnMoreRedirect from "./components/LearnMoreRedirect";
 
 function App() {
   return (
@@ -21,15 +22,16 @@ function App() {
       <NavBar />
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/learn-more" element={<LearnMoreRedirect />} />
         {/* <Route path="/scan" element={<ScanPage />} /> */}
         <Route path="/quiz" element={<QuizPage />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path='/login' element={<LoginPage />} />
         <Route path='/register' element={<RegisterPage />} />
         <Route path='/face-filter' element={<FaceFilterPage />} />
-        <Route path="/activities" element={<ActivitiesPage />} />
+        <Route path="/admin/activities" element={<ActivitiesPage />} />
         <Route path='/rewards' element={<RewardsPage />} />
-        <Route path='/admin/rewards/scan' element={<AdminQRScanner />} />
+        <Route path='/admin/rewards' element={<AdminQRScanner />} />
         <Route path='/crossword' element={<CrosswordListPage />} />
         <Route path='/crossword/:puzzleId' element={<CrosswordPage />} />
         <Route path='/admin/crossword' element={<CrosswordAdminPage />} />

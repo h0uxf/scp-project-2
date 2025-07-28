@@ -34,6 +34,11 @@ const LandingPage = () => {
     navigate(`/login`);
   };
 
+  const handleLearnMoreClick = () => {
+    // Navigate to localhost route first with parameters
+    navigate('/learn-more?from=landing&section=hero&user_type=visitor');
+  };
+
   return (
     <div className="font-sans bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen scroll-smooth relative overflow-hidden">
       <BackgroundEffects />
@@ -64,10 +69,7 @@ const LandingPage = () => {
               <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </button>
             <button
-              onClick={() => {
-                window.location.href =
-                  "https://singaporepoly.8thwall.app/demo/";
-              }}
+              onClick={handleLearnMoreClick}
               className="group bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-8 py-4 rounded-full shadow-2xl hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-105"
             >
               <span className="flex items-center gap-2 font-semibold">
@@ -321,33 +323,6 @@ const LandingPage = () => {
           </div>
         </div>
       </footer>
-
-      {/* <style jsx>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        
-        .animate-fadeInUp {
-          animation: fadeInUp 0.8s ease-out forwards;
-          opacity: 0;
-        }
-        
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out forwards;
-        }
-      `}</style> */}
     </div>
   );
 };
