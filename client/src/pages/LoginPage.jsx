@@ -19,7 +19,7 @@ const LoginPage = () => {
       if ([3, 4, 5].includes(role)) {
         navigate("/activities");
       } else {
-        navigate("/scan");
+        navigate("/");
       }
     }
   }, [loading, currentUser, navigate]);

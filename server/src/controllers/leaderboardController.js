@@ -5,8 +5,8 @@ const AppError = require("../utils/AppError");
 const catchAsync = require("../utils/catchAsync");
 
 module.exports = {
-  getAllPlayers: catchAsync(async (req, res, next) => {
-    let players = await leaderboardModel.readAllUsers();
+  get100Players: catchAsync(async (req, res, next) => {
+    let players = await leaderboardModel.read100Users();
 
     if (!players || players.length === 0) {
       logger.warn("No player was found");

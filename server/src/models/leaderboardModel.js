@@ -3,7 +3,7 @@ const prisma = new PrismaClient();
 
 module.exports = {
     // Get top 100 users
-    readAllUsers: async () => {
+    read100Users: async () => {
         try {
             const users = await prisma.user.findMany({
                 select: {
@@ -14,6 +14,7 @@ module.exports = {
                 orderBy: {
                     points: 'desc',
                 },
+                take: 100,
             });
 
             if (users.length === 0) {
