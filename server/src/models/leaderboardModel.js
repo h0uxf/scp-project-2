@@ -2,8 +2,8 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 module.exports = {
-    // Get all users
-    readAllUsers: async () => {
+    // Get top 100 users
+    read100Users: async () => {
         try {
             const users = await prisma.user.findMany({
                 select: {
@@ -12,8 +12,9 @@ module.exports = {
                     points: true,
                 },
                 orderBy: {
-                    createdAt: 'desc',
+                    points: 'desc',
                 },
+                take: 100,
             });
 
             if (users.length === 0) {

@@ -103,7 +103,7 @@ const LeaderboardPage = () => {
                   className={`bg-gradient-to-r ${
                     colors[index]
                   } p-0.5 rounded-2xl transform hover:scale-105 transition-all duration-300 ${
-                    isCurrentUser ? "ring-4 ring-indigo-400" : ""
+                    isCurrentUser ? "ring-4 ring-cyan-400" : ""
                   }`}
                 >
                   <div className="bg-black/80 backdrop-blur-lg p-6 rounded-2xl flex justify-between items-center">
@@ -171,18 +171,34 @@ const LeaderboardPage = () => {
         {/* User's ranking */}
         {userRanking && (
           <div
-            className="
-            fixed bottom-10 left-1/2 transform -translate-x-1/2
-            bg-gradient-to-r from-indigo-500 to-cyan-500
-            p-0.5 rounded-2xl shadow-xl z-50
-            max-w-[90vw] sm:max-w-md md:max-w-lg lg:max-w-xl
-            w-full
-          "
+            className={`fixed bottom-10 left-1/2 transform -translate-x-1/2
+      p-0.5 rounded-2xl shadow-xl z-50
+      max-w-[90vw] sm:max-w-md md:max-w-lg lg:max-w-xl
+      w-full
+      ${
+        userRanking.rank <= 3
+          ? `bg-gradient-to-r ${colors[userRanking.rank - 1]}`
+          : "bg-gradient-to-r from-indigo-500 to-cyan-500"
+      }
+    `}
           >
             <div className="bg-black/80 backdrop-blur-lg p-3 rounded-2xl flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-full flex items-center justify-center">
-                  <CircleUserRound className="text-white text-lg" />
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center 
+            ${
+              userRanking.rank <= 3
+                ? `bg-gradient-to-r ${colors[userRanking.rank - 1]}`
+                : "bg-gradient-to-r from-indigo-500 to-cyan-500"
+            }`}
+                >
+                  {userRanking.rank <= 3 ? (
+                    React.createElement(icons[userRanking.rank - 1], {
+                      className: "text-white text-lg",
+                    })
+                  ) : (
+                    <CircleUserRound className="text-white text-lg" />
+                  )}
                 </div>
                 <div className="text-left">
                   <span className="text-white font-bold text-lg">
@@ -194,7 +210,14 @@ const LeaderboardPage = () => {
                 </div>
               </div>
               <div className="text-right">
-                <span className="bg-gradient-to-r from-indigo-500 to-cyan-500 bg-clip-text text-transparent font-bold text-xl">
+                <span
+                  className={`bg-clip-text text-transparent font-bold text-xl 
+            ${
+              userRanking.rank <= 3
+                ? `bg-gradient-to-r ${colors[userRanking.rank - 1]}`
+                : "bg-gradient-to-r from-indigo-500 to-cyan-500"
+            }`}
+                >
                   {userRanking.points}
                 </span>
                 <p className="text-gray-400 text-xs">points</p>
