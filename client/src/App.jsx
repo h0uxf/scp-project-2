@@ -15,6 +15,7 @@ import CrosswordPage from "./pages/CrosswordPage";
 import CrosswordAdminPage from "./pages/CrosswordAdminPage";
 import NavBar from "./components/NavBar";
 import LearnMoreRedirect from "./components/LearnMoreRedirect";
+import Footer from "./components/Footer";
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
         <Route path='/crossword/:puzzleId' element={<CrosswordPage />} />
         <Route path='/admin/crossword' element={<CrosswordAdminPage />} />
       </Routes>
+      <Footer />
     </Router>
   );
 }

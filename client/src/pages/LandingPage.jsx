@@ -46,7 +46,7 @@ const LandingPage = () => {
       <section id="home" className="py-20 px-4 sm:px-8 text-center relative">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-5xl sm:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-fadeInUp">
-            Welcome to Singapore Poly
+            Welcome to School of Computing @ SP
           </h2>
           <p
             className="text-gray-300 text-xl sm:text-2xl mb-8 leading-relaxed animate-fadeInUp"
@@ -301,28 +301,6 @@ const LandingPage = () => {
           </button>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="py-12 px-4 sm:px-8 border-t border-white/20 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="flex items-center justify-center mb-4">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mr-2">
-              <span className="text-white font-bold">S</span>
-            </div>
-            <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              TimeSOC
-            </h3>
-          </div>
-          <p className="text-gray-400 mb-6">
-            Exploring the future of computing education through immersive AR
-            experiences.
-          </p>
-          <div className="flex justify-center space-x-6 text-gray-400">
-            <span>© 2024 Singapore Polytechnic</span>
-            <span>School of Computing</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };
