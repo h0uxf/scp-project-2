@@ -1,56 +1,79 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 module.exports = {
-    // Get top 100 users
-    read100Users: async () => {
-        try {
-            const users = await prisma.user.findMany({
-                select: {
-                    userId: true,
-                    username: true,
-                    points: true,
-                },
-                orderBy: {
-                    points: 'desc',
-                },
-                take: 100,
-            });
+  // Get all users
+  readAllUsersSorted: async () => {
+    try {
+      const users = await prisma.user.findMany({
+        select: {
+          userId: true,
+          username: true,
+          points: true,
+        },
+        orderBy: {
+          points: "desc",
+        },
+      });
 
-            if (users.length === 0) {
-                throw new Error('No users found.');
-            }
+      if (!users || users.length === 0) {
+        throw new Error("No users found.");
+      }
 
-            return users;
-        } catch (error) {
-            throw error;
-        }
-    },
+      return users;
+    } catch (err) {
+      throw err;
+    }
+  },
+  // Get top 100 users
+  read100Users: async () => {
+    try {
+      const users = await prisma.user.findMany({
+        select: {
+          userId: true,
+          username: true,
+          points: true,
+        },
+        orderBy: {
+          points: "desc",
+        },
+        take: 100,
+      });
 
-    // Get user by ID
-    readUserById: async (userId) => {
-        const id = parseInt(userId, 10);
-        if (isNaN(id)) {
-            throw new Error('Invalid user ID. It must be a number.');
-        }
+      if (users.length === 0) {
+        throw new Error("No users found.");
+      }
 
-        try {
-            const user = await prisma.user.findUnique({
-                where: { userId: id },
-                select: {
-                    userId: true,
-                    username: true,
-                    points: true,
-                },
-            });
+      return users;
+    } catch (error) {
+      throw error;
+    }
+  },
 
-            if (!user) {
-                throw new Error(`User with ID ${id} not found.`);
-            }
+  // Get user by ID
+  readUserById: async (userId) => {
+    const id = parseInt(userId, 10);
+    if (isNaN(id)) {
+      throw new Error("Invalid user ID. It must be a number.");
+    }
 
-            return user;
-        } catch (error) {
-            throw error;
-        }
-    },
+    try {
+      const user = await prisma.user.findUnique({
+        where: { userId: id },
+        select: {
+          userId: true,
+          username: true,
+          points: true,
+        },
+      });
+
+      if (!user) {
+        throw new Error(`User with ID ${id} not found.`);
+      }
+
+      return user;
+    } catch (error) {
+      throw error;
+    }
+  },
 };

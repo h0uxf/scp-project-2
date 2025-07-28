@@ -94,7 +94,7 @@ export function AuthProvider({ children }) {
     });
 
     setCurrentUser(null);
-    navigate("/");
+    window.location.reload();
   }
 
   function hasRole(...roleIds) {

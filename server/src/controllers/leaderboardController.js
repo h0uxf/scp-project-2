@@ -27,12 +27,26 @@ module.exports = {
       return next(new AppError("User ID is required", 400));
     }
 
-    const user = await leaderboardModel.readUserById(userId);
+    const [user, sortedUsers] = await Promise.all([
+      leaderboardModel.readUserById(userId),
+      leaderboardModel.readAllUsersSorted(),
+    ]);
+
     if (!user) {
       logger.warn(`Fetch user by ID failed: User with ID ${userId} not found`);
       return next(new AppError(`User with ID ${userId} not found`, 404));
     }
-    logger.debug(`Fetched user with ID ${userId}`);
-    res.status(200).json({ status: "success", data: user });
+
+    const rank = sortedUsers.findIndex((u) => u.userId === user.userId) + 1;
+
+    logger.debug(`Fetched user with ID ${userId} and rank ${rank}`);
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        ...user,
+        rank,
+      },
+    });
   }),
 };

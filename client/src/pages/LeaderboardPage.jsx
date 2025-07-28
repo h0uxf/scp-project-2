@@ -52,22 +52,6 @@ const LeaderboardPage = () => {
     fetchUserRanking();
   }, [currentUser]);
 
-  useEffect(() => {
-    if (!currentUser || topPlayers.length === 0) return;
-
-    const index = topPlayers.findIndex(
-      (user) => user.username === currentUser.username
-    );
-
-    if (index !== -1) {
-      setUserRanking({
-        rank: index + 1,
-        username: currentUser.username,
-        points: topPlayers[index].points,
-      });
-    }
-  }, [currentUser, topPlayers]);
-
   const icons = [Trophy, Medal, Star];
   const colors = [
     "from-yellow-400 to-orange-400",
