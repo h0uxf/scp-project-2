@@ -3,7 +3,6 @@ import { HelpCircle, Share2, ArrowUp, ArrowDown, Edit } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../components/AuthProvider";
 import toast, { Toaster } from "react-hot-toast";
-import NavBar from "../components/NavBar";
 import BackgroundEffects from "../components/BackgroundEffects";
 
 const API_BASE_URL =
@@ -618,8 +617,6 @@ const QuizPage = () => {
   return (
     <div className="font-sans bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen scroll-smooth relative overflow-hidden">
       <BackgroundEffects />
-      <NavBar />
-
       <QuizErrorBoundary>
         <div className="py-8 px-4 sm:px-6 text-white text-center">
           <Toaster position="top-right" />

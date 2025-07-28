@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { UserPlus, CheckCircle, XCircle, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../components/AuthProvider";
-import NavBar from "../components/NavBar";
 import BackgroundEffects from "../components/BackgroundEffects";
 
 const RegisterPage = () => {
@@ -42,8 +41,6 @@ const RegisterPage = () => {
   return (
     <div className="font-sans bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen scroll-smooth relative overflow-hidden">
       <BackgroundEffects />
-      <NavBar />
-
       <div className="font-sans bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen flex flex-col justify-center items-center px-4 sm:px-8 relative overflow-hidden">
         <div className="max-w-md w-full bg-black/70 backdrop-blur-lg rounded-3xl p-10 border border-white/20 shadow-2xl animate-fadeInUp">
           <h2 className="text-4xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent text-center">

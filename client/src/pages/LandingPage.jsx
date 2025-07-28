@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Crown, Play, GraduationCap, Star, Trophy, Medal } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import NavBar from "../components/NavBar";
 import BackgroundEffects from "../components/BackgroundEffects";
 
 const API_BASE_URL =
@@ -38,8 +37,6 @@ const LandingPage = () => {
   return (
     <div className="font-sans bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen scroll-smooth relative overflow-hidden">
       <BackgroundEffects />
-      <NavBar />
-
       {/* Hero Section */}
       <section id="home" className="py-20 px-4 sm:px-8 text-center relative">
         <div className="max-w-4xl mx-auto">

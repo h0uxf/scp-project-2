@@ -13,10 +13,12 @@ import AdminQRScanner from "./pages/AdminQRScanner";
 import CrosswordListPage from "./pages/CrosswordListPage";
 import CrosswordPage from "./pages/CrosswordPage";
 import CrosswordAdminPage from "./pages/CrosswordAdminPage";
+import NavBar from "./components/NavBar";
 
 function App() {
   return (
     <Router>
+      <NavBar />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         {/* <Route path="/scan" element={<ScanPage />} /> */}

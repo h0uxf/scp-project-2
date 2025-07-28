@@ -123,6 +123,10 @@ router.use('/activities', activityRoutes);
 const crosswordRoutes = require('../routes/crosswordRoutes.js');
 router.use('/crossword', crosswordRoutes);
 
+// routes for locations
+const locationRoutes = require('../routes/locationRoutes.js');
+router.use('/locations', locationRoutes);
+
 // routes for rewards
 const rewardRoutes = require('../routes/rewardRoutes.js');
 router.use('/rewards', rewardRoutes);

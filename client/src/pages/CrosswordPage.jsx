@@ -4,7 +4,6 @@ import { Clock, Eye, HelpCircle, Check, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../components/AuthProvider";
 import toast, { Toaster } from "react-hot-toast";
-import NavBar from "../components/NavBar";
 import BackgroundEffects from "../components/BackgroundEffects";
 import CrosswordGrid from "../components/CrosswordGrid";
 
@@ -371,7 +370,6 @@ const CrosswordPage = () => {
     <CrosswordErrorBoundary>
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <BackgroundEffects />
-        <NavBar />
         <Toaster position="top-right" />
         
         <div className="relative z-10 pt-20 pb-8 px-4 sm:px-6">
