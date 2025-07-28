@@ -2,13 +2,14 @@
 //////////////////////////////////////////////////////
 // REQUIRED MODULES
 //////////////////////////////////////////////////////
-const express = require('express');
-const prisma = require('@prisma/client'); 
+const express = require("express");
+const prisma = require("@prisma/client");
 
 //////////////////////////////////////////////////////
 // IMPORT CONTROLLERS
 //////////////////////////////////////////////////////
-const leaderboardController = require('../controllers/leaderboardController.js');
+const leaderboardController = require("../controllers/leaderboardController.js");
+const jwtMiddleware = require("../middlewares/jwtMiddleware.js");
 
 //////////////////////////////////////////////////////
 // CREATE ROUTER
@@ -18,8 +19,12 @@ const router = express.Router();
 //////////////////////////////////////////////////////
 // DEFINE ROUTES FOR LEADERBOARD
 //////////////////////////////////////////////////////
-router.get('/', leaderboardController.getAllPlayers);
-// router.get('/:userId', leaderboardController.getUserInfo);
+router.get("/", leaderboardController.getAllPlayers);
+router.get(
+  "/userRanking",
+  jwtMiddleware.verifyAccessToken,
+  leaderboardController.getUserInfo
+);
 
 //////////////////////////////////////////////////////
 // EXPORT ROUTER

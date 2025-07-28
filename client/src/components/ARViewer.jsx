@@ -1,8 +1,8 @@
-import React from 'react';
+import React from "react";
 
 const ARViewer = () => (
   <iframe
-    src="https://karysgoh.8thwall.app/facefiltersoc/"
+    src="https://h0uxf.8thwall.app/soc-face-filter/"
     width="100%"
     height="100%"
     style={{ border: "none", minHeight: "100vh" }}

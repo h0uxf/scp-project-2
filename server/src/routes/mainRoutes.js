@@ -127,6 +127,9 @@ router.use('/crossword', crosswordRoutes);
 const locationRoutes = require('../routes/locationRoutes.js');
 router.use('/locations', locationRoutes);
 
+// routes for rewards
+const rewardRoutes = require('../routes/rewardRoutes.js');
+router.use('/rewards', rewardRoutes);
 //////////////////////////////////////////////////////
 // EXPORT ROUTER
 //////////////////////////////////////////////////////

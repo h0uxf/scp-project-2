@@ -10,6 +10,6 @@ const PORT = 5000;
 //////////////////////////////////////////////////////
 // START SERVER
 //////////////////////////////////////////////////////
-app.listen(PORT,()=> {
+app.listen(PORT, '0.0.0.0', ()=> {
     console.log(`App listening to port ${PORT}`);
 });

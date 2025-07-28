@@ -1,31 +1,11 @@
 import React, { useState, useEffect } from "react";
-import {
-  Menu,
-  X,
-  Crown,
-  Play,
-  HelpCircle,
-  Home,
-  GraduationCap,
-  Star,
-  Trophy,
-  Medal,
-} from "lucide-react";
+import { Crown, Play, GraduationCap, Star, Trophy, Medal } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import NavBar from "../components/NavBar";
+import BackgroundEffects from "../components/BackgroundEffects";
 
-const FloatingShape = ({ className, delay = 0 }) => (
-  <div
-    className={`absolute opacity-20 animate-bounce ${className}`}
-    style={{ animationDelay: `${delay}s`, animationDuration: "3s" }}
-  />
-);
-
-const GlowingOrb = ({ size, color, position, delay = 0 }) => (
-  <div
-    className={`absolute ${position} ${size} ${color} rounded-full blur-xl opacity-30 animate-pulse`}
-    style={{ animationDelay: `${delay}s` }}
-  />
-);
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const LandingPage = () => {
   const [navOpen, setNavOpen] = useState(false);
@@ -36,7 +16,7 @@ const LandingPage = () => {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/leaderboard");
+        const response = await fetch(`${API_BASE_URL}/api/leaderboard`);
         const result = await response.json();
         if (result.status === "success" && Array.isArray(result.data)) {
           setLeaderboard(result.data);
@@ -51,133 +31,14 @@ const LandingPage = () => {
     fetchLeaderboard();
   }, []);
 
-  const toggleMenu = () => setNavOpen(!navOpen);
-
-  const handleNavClick = (targetId) => {
-    document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth" });
-    setNavOpen(false);
-  };
-
   const handleButtonClick = () => {
     navigate(`/login`);
   };
 
   return (
     <div className="font-sans bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen scroll-smooth relative overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="fixed inset-0 pointer-events-none">
-        <GlowingOrb
-          size="w-96 h-96"
-          color="bg-blue-500"
-          position="top-10 -left-48"
-          delay={0}
-        />
-        <GlowingOrb
-          size="w-64 h-64"
-          color="bg-purple-500"
-          position="top-1/3 right-10"
-          delay={1}
-        />
-        <GlowingOrb
-          size="w-80 h-80"
-          color="bg-indigo-500"
-          position="bottom-20 left-20"
-          delay={2}
-        />
-
-        <FloatingShape
-          className="w-4 h-4 bg-white rounded-full top-20 left-1/4"
-          delay={0}
-        />
-        <FloatingShape
-          className="w-6 h-6 bg-blue-300 rounded-full top-1/2 right-1/4"
-          delay={1}
-        />
-        <FloatingShape
-          className="w-3 h-3 bg-purple-300 rounded-full bottom-1/3 left-3/4"
-          delay={2}
-        />
-      </div>
-
-      {/* NavBar */}
-      <nav
-        className={`bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-lg border-b border-white/20 px-4 sm:px-6 py-4 sticky top-0 z-20 transition-all duration-300 ${
-          scrollY > 50
-            ? "bg-gradient-to-r from-blue-600/40 via-purple-600/40 to-pink-600/40 shadow-2xl"
-            : ""
-        }`}
-      >
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mr-3">
-              <span className="text-white font-bold text-lg">SP</span>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              EXPLORING SP GAME
-            </h1>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={toggleMenu}
-            className="lg:hidden relative bg-gradient-to-r from-blue-500 to-purple-500 text-white p-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
-          >
-            {navOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        </div>
-
-        {/* Mobile Navigation Menu */}
-        {navOpen && (
-          <div className="lg:hidden mt-4 bg-gradient-to-r from-blue-600/30 via-purple-600/30 to-pink-600/30 backdrop-blur-lg rounded-2xl border border-white/20 p-4 animate-fadeIn">
-            <div className="space-y-2">
-              {[
-                {
-                  href: "home",
-                  icon: Home,
-                  text: "Home",
-                  color: "from-blue-500 to-cyan-500",
-                },
-                {
-                  href: "about",
-                  icon: GraduationCap,
-                  text: "About",
-                  color: "from-purple-500 to-pink-500",
-                },
-                {
-                  href: "scan",
-                  icon: Play,
-                  text: "Scan",
-                  color: "from-green-500 to-emerald-500",
-                },
-                {
-                  href: "quiz",
-                  icon: HelpCircle,
-                  text: "Quiz",
-                  color: "from-yellow-500 to-orange-500",
-                },
-                {
-                  href: "leaderboard",
-                  icon: Crown,
-                  text: "Leaderboard",
-                  color: "from-pink-500 to-rose-500",
-                },
-              ].map(({ href, icon: Icon, text, color }) => (
-                <button
-                  key={href}
-                  onClick={() => handleNavClick(href)}
-                  className={`w-full group bg-gradient-to-r ${color} text-white p-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 font-medium`}
-                >
-                  <span className="flex items-center gap-3 justify-center">
-                    <Icon className="group-hover:rotate-12 transition-transform duration-300" />
-                    {text}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </nav>
+      <BackgroundEffects />
+      <NavBar />
 
       {/* Hero Section */}
       <section id="home" className="py-20 px-4 sm:px-8 text-center relative">
@@ -206,7 +67,10 @@ const LandingPage = () => {
               <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </button>
             <button
-              onClick={() => handleButtonClick()}
+              onClick={() => {
+                window.location.href =
+                  "https://singaporepoly.8thwall.app/demo/";
+              }}
               className="group bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-8 py-4 rounded-full shadow-2xl hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-105"
             >
               <span className="flex items-center gap-2 font-semibold">
@@ -301,30 +165,73 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Quiz Section */}
-      <section id="quiz" className="py-10 px-4 sm:px-8 text-center relative">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-4xl sm:text-5xl font-bold mb-8 text-white">
-            Test Your{" "}
-            <span className="bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
-              Knowledge
+      {/* Games & Activities Section */}
+      <section id="games" className="py-10 px-4 sm:px-8 text-center relative">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl sm:text-5xl font-bold mb-12 text-white">
+            Games &{" "}
+            <span className="bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
+              Activities
             </span>
           </h2>
-          <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 backdrop-blur-lg rounded-3xl p-8 border border-white/20">
-            <HelpCircle className="text-6xl text-yellow-400 mx-auto mb-6 animate-bounce" />
-            <p className="text-gray-300 text-lg mb-8 max-w-2xl mx-auto">
-              Challenge yourself with our interactive computing quiz. Test your
-              knowledge, learn new concepts, and compete with fellow students!
-            </p>
-            <button
-              onClick={() => navigate("/quiz")}
-              className="group bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-8 py-4 rounded-full shadow-lg hover:scale-105 transition-all duration-300 font-semibold"
-            >
-              <span className="flex items-center gap-2">
-                <HelpCircle className="group-hover:rotate-12 transition-transform" />
-                Take the Quiz
-              </span>
-            </button>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Crossword Puzzle */}
+            <div className="bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-lg rounded-3xl p-8 border border-white/20 hover:border-orange-400/50 transition-all duration-300 hover:scale-105">
+              <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <span className="text-white text-2xl font-bold">📝</span>
+              </div>
+              <h3 className="text-2xl font-semibold text-white mb-4">
+                Crossword Puzzles
+              </h3>
+              <p className="text-gray-300 mb-6">
+                Challenge your knowledge with themed crossword puzzles. Test your vocabulary and problem-solving skills!
+              </p>
+              <button
+                onClick={() => navigate("/crossword")}
+                className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-3 rounded-full shadow-lg hover:scale-105 transition-transform duration-300 font-semibold"
+              >
+                Play Crossword
+              </button>
+            </div>
+
+            {/* Quiz */}
+            <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-lg rounded-3xl p-8 border border-white/20 hover:border-purple-400/50 transition-all duration-300 hover:scale-105">
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <span className="text-white text-2xl font-bold">❓</span>
+              </div>
+              <h3 className="text-2xl font-semibold text-white mb-4">
+                Personality Quiz
+              </h3>
+              <p className="text-gray-300 mb-6">
+                Discover your ideal computing course path with our interactive personality assessment quiz.
+              </p>
+              <button
+                onClick={() => navigate("/quiz")}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-full shadow-lg hover:scale-105 transition-transform duration-300 font-semibold"
+              >
+                Take Quiz
+              </button>
+            </div>
+
+            {/* AR Scanning */}
+            <div className="bg-gradient-to-br from-green-500/20 to-blue-500/20 backdrop-blur-lg rounded-3xl p-8 border border-white/20 hover:border-green-400/50 transition-all duration-300 hover:scale-105">
+              <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <Play className="text-white text-3xl" />
+              </div>
+              <h3 className="text-2xl font-semibold text-white mb-4">
+                AR Exploration
+              </h3>
+              <p className="text-gray-300 mb-6">
+                Scan QR codes and markers around campus to unlock hidden content and earn rewards.
+              </p>
+              <button
+                onClick={() => handleButtonClick()}
+                className="bg-gradient-to-r from-green-600 to-blue-600 text-white px-6 py-3 rounded-full shadow-lg hover:scale-105 transition-transform duration-300 font-semibold"
+              >
+                Start Scanning
+              </button>
+            </div>
           </div>
         </div>
       </section>
