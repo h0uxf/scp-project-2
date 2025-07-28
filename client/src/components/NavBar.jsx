@@ -10,11 +10,6 @@ const NavBar = () => {
 
   const toggleMenu = () => setNavOpen(!navOpen);
 
-  const handleLogoutAndRedirect = async () => {
-    await handleLogout();
-    navigate("/");
-  };
-
   const navItems = [
     {
       icon: Home,
@@ -55,7 +50,7 @@ const NavBar = () => {
             icon: X,
             text: "Logout",
             color: "from-red-500 to-rose-500",
-            action: handleLogoutAndRedirect,
+            action: handleLogout,
           },
         ]
       : []),
