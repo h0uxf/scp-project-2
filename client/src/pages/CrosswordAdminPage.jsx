@@ -73,7 +73,7 @@ const CrosswordAdminPage = () => {
 
   // Check admin permissions
   useEffect(() => {
-    if (!authLoading && currentUser && !hasRole([3, 4, 5])) {
+    if (!authLoading && currentUser && !hasRole(3, 4, 5)) {
       navigate('/');
       toast.error('Access denied. Admin privileges required.');
     }
@@ -81,7 +81,7 @@ const CrosswordAdminPage = () => {
 
   // Fetch data based on active tab
   useEffect(() => {
-    if (currentUser && hasRole([3, 4, 5])) {
+    if (currentUser && hasRole(3, 4, 5)) {
       fetchData();
     }
   }, [activeTab, currentUser, hasRole]);
@@ -287,7 +287,7 @@ const CrosswordAdminPage = () => {
     );
   }
 
-  if (!currentUser || !hasRole([3, 4, 5])) {
+  if (!currentUser || !hasRole(3, 4, 5)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-white text-xl">Access Denied</div>
@@ -404,7 +404,7 @@ const CrosswordAdminPage = () => {
                         <button
                           onClick={() => deletePuzzle(puzzle.puzzleId)}
                           className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300"
-                          disabled={!hasRole([4, 5])}
+                          disabled={!hasRole(4, 5)}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
