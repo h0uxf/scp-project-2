@@ -7,10 +7,16 @@ const catchAsync = require("../utils/catchAsync");
 module.exports = {
     
     getLocationById: catchAsync(async (req, res, next) => {
-        const { locationId } = req.params;
-        if (!locationId) {
+        if (!req.params || !req.params.locationId) {
             logger.warn("Fetch location by ID failed: Missing location ID");
             return next(new AppError("Location ID is required", 400));
+        }
+        // Parse locationId from request parameters
+        // Ensure locationId is a valid integer
+        const locationId = parseInt(req.params.locationId, 10);
+        if (isNaN(locationId)) {
+            logger.warn("Fetch location by ID failed: Invalid location ID");
+            return next(new AppError("Location ID must be a valid integer", 400));
         }
 
         const location = await getLocationById(locationId);
@@ -31,5 +37,5 @@ module.exports = {
         logger.debug("Fetched all locations");
         res.status(200).json({ status: "success", data: locations });
     }),
-    
+
 }

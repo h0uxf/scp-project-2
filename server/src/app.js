@@ -16,12 +16,30 @@ const { sanitizeResponse } = require("./middlewares/sanitizers");
 //////////////////////////////////////////////////////
 const app = express();
 
+// Trust proxy for correct IP handling (dev. port forwarding)
+app.set('trust proxy', 1);
+
 //////////////////////////////////////////////////////
 // USES
 //////////////////////////////////////////////////////
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://kh24.8thwall.app",
+  "https://kahhian24-default-kh24.dev.8thwall.app"
+];
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );

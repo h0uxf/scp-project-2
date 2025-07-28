@@ -7,7 +7,7 @@ module.exports = {
 
         try {
             const location = await prisma.location.findUnique({
-                where: { locationId: id },
+                where: { locationId: locationId },
                 select: {
                     locationId: true,
                     name: true,
@@ -29,7 +29,7 @@ module.exports = {
             });
 
             if (!location) {
-                throw new Error(`Location with ID ${id} not found.`);
+                throw new Error(`Location with ID ${locationId} not found.`);
             }
 
             return location;
