@@ -4,7 +4,6 @@ import { Puzzle, Clock, Trophy, Play, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../components/AuthProvider";
 import toast, { Toaster } from "react-hot-toast";
-import NavBar from "../components/NavBar";
 import BackgroundEffects from "../components/BackgroundEffects";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
@@ -110,7 +109,6 @@ const CrosswordListPage = () => {
     <CrosswordListErrorBoundary>
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <BackgroundEffects />
-        <NavBar />
         <Toaster position="top-right" />
         
         <div className="relative z-10 pt-20 pb-8 px-4 sm:px-6">

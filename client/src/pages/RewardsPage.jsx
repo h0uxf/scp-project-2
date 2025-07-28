@@ -4,7 +4,6 @@ import { Gift, AlertCircle, X } from "lucide-react";
 import axios from "axios";
 import QRCode from "react-qr-code";
 import { useAuth } from "../components/AuthProvider";
-import NavBar from "../components/NavBar";
 import BackgroundEffects from "../components/BackgroundEffects";
 
 const API_BASE_URL =
@@ -45,9 +44,6 @@ const RewardsPage = () => {
           );
           setCompletionStatus(completionResponse.data.data);
 
-          // Only fetch reward status if qrToken is non-empty
-          // Note: On initial load, qrToken will likely be empty, so this block won't run immediately.
-          // The hasRedeemed status will primarily come from /api/rewards/user-status.
           if (qrToken) {
             const rewardStatusResponse = await axios.get(
               `${API_BASE_URL}/api/rewards/status?qrToken=${qrToken}`,
@@ -162,7 +158,6 @@ const RewardsPage = () => {
   return (
     <div className="font-sans bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen scroll-smooth relative overflow-hidden">
       <BackgroundEffects />
-      <NavBar />
       <div className="font-sans bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen flex flex-col justify-center items-center px-4 sm:px-8 relative overflow-hidden">
         <div className="max-w-md w-full bg-black/70 backdrop-blur-lg rounded-3xl p-6 sm:p-10 border border-white/20 shadow-2xl animate-fadeInUp">
           <h2 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent text-center">

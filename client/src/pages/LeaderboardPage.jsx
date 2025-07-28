@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Medal, Star, Trophy, CircleUserRound } from "lucide-react";
 import { useAuth } from "../components/AuthProvider";
-import NavBar from "../components/NavBar";
 import BackgroundEffects from "../components/BackgroundEffects";
 
 const API_BASE_URL =
@@ -87,8 +86,6 @@ const LeaderboardPage = () => {
   return (
     <div className="font-sans bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen scroll-smooth relative overflow-hidden">
       <BackgroundEffects />
-      <NavBar />
-      
       <div className="py-20 px-4 sm:px-8 text-center">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-5xl sm:text-6xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-12">
