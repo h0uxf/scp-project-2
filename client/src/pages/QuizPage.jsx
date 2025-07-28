@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../components/AuthProvider";
 import toast, { Toaster } from "react-hot-toast";
 import BackgroundEffects from "../components/BackgroundEffects";
+import { useNavigate } from "react-router-dom";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
@@ -54,6 +55,14 @@ const QuizPage = () => {
     options: [{ optionText: "" }, { optionText: "" }, { optionText: "" }],
   });
   const [editingQuestionId, setEditingQuestionId] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+      if (!authLoading && !currentUser) {
+        navigate('/login');
+      }
+  }, [currentUser, hasRole, authLoading, navigate]);
+  
 
   // Normalize options to ensure exactly 3 options
   const normalizeOptions = (options) => {
@@ -605,6 +614,14 @@ const QuizPage = () => {
               className="bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base"
             >
               <Share2 size={16} /> Share Result
+            </button>
+          </div>
+          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row justify-center gap-2 sm:gap-4 flex-wrap">
+            <button
+              onClick={handleShareResult}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base"
+            >
+              Continue to next activity
             </button>
           </div>
         </div>
