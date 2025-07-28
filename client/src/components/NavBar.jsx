@@ -21,9 +21,7 @@ const NavBar = () => {
       icon: GraduationCap,
       text: "About",
       color: "from-purple-500 to-pink-500",
-      action: () => {
-        window.location.href = "https://singaporepoly.8thwall.app/demo/";
-      },
+      action: () =>  navigate('/learn-more'),
     },
 
     {
@@ -31,12 +29,6 @@ const NavBar = () => {
       text: "Scan",
       color: "from-green-500 to-emerald-500",
       action: () => navigate("/scan"),
-    },
-    {
-      icon: Puzzle,
-      text: "Crossword",
-      color: "from-orange-500 to-red-500",
-      action: () => navigate("/crossword"),
     },
     {
       icon: Crown,
