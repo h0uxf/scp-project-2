@@ -26,7 +26,8 @@ app.set('trust proxy', 1);
 const allowedOrigins = [
   "http://localhost:5173",
   "https://kh24.8thwall.app",
-  "https://kahhian24-default-kh24.dev.8thwall.app"
+  "https://kahhian24-default-kh24.dev.8thwall.app",
+  "http://192.168.31.124:5173"
 ];
 
 app.use(
