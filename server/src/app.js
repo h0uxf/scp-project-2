@@ -16,15 +16,25 @@ const { sanitizeResponse } = require("./middlewares/sanitizers");
 //////////////////////////////////////////////////////
 const app = express();
 
+// Trust proxy for correct IP handling (dev. port forwarding)
+app.set('trust proxy', 1);
+
 //////////////////////////////////////////////////////
 // USES
 //////////////////////////////////////////////////////
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://kh24.8thwall.app",
+  "https://kahhian24-default-kh24.dev.8thwall.app",
+  "http://192.168.31.124:5173"
+];
+
 app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "http://192.168.31.124:5173",
-      "http://172.23.57.18:5173"
+      "http://192.168.31.124:5173"
     ],
     credentials: true,
   })
