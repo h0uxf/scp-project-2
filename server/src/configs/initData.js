@@ -362,6 +362,7 @@ async function initializeData() {
       {
         name: "NPC Interation (Introduction)",
         description: "Learn more about the game and how to play.",
+        route: "/learn-more"
       },
       {
         name: "Computing Crash Course",
@@ -371,6 +372,7 @@ async function initializeData() {
         name: "Crossword Puzzle",
         description:
           "Solve a crossword puzzle to test your knowledge of computing terms.",
+        route: "/admin/crossword"
       },
       {
         name: "SoC Personality Quiz",

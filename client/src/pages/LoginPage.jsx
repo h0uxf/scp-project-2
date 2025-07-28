@@ -17,7 +17,7 @@ const LoginPage = () => {
     if (!loading && currentUser) {
       const role = currentUser.role_id;
       if ([3, 4, 5].includes(role)) {
-        navigate("/activities");
+        navigate("/admin/activities");
       } else {
         navigate("/");
       }
