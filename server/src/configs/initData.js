@@ -720,11 +720,7 @@ async function initializeData() {
       { wordText: "MEMORY", difficulty: "Medium", category: "Hardware" },
       { wordText: "SERVER", difficulty: "Medium", category: "Computing" },
       { wordText: "FUNCTION", difficulty: "Medium", category: "Programming" },
-      {
-        wordText: "DATABASE",
-        difficulty: "Medium",
-        category: "Data Management",
-      },
+      { wordText: "DATABASE", difficulty: "Medium", category: "Data Management" },
       { wordText: "VARIABLE", difficulty: "Medium", category: "Programming" },
       { wordText: "COMPILER", difficulty: "Medium", category: "Programming" },
       { wordText: "INTERNET", difficulty: "Medium", category: "Networking" },

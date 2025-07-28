@@ -10,6 +10,9 @@ import FaceFilterPage from "./pages/FaceFilterPage";
 import ActivitiesPage from "./pages/ActivitiesPage";
 import RewardsPage from "./pages/RewardsPage";
 import AdminQRScanner from "./pages/AdminQRScanner";
+import CrosswordListPage from "./pages/CrosswordListPage";
+import CrosswordPage from "./pages/CrosswordPage";
+import CrosswordAdminPage from "./pages/CrosswordAdminPage";
 
 function App() {
   return (
@@ -25,6 +28,9 @@ function App() {
         <Route path="/activities" element={<ActivitiesPage />} />
         <Route path='/rewards' element={<RewardsPage />} />
         <Route path='/admin/rewards/scan' element={<AdminQRScanner />} />
+        <Route path='/crossword' element={<CrosswordListPage />} />
+        <Route path='/crossword/:puzzleId' element={<CrosswordPage />} />
+        <Route path='/admin/crossword' element={<CrosswordAdminPage />} />
       </Routes>
     </Router>
   );

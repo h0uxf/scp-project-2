@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Menu, X, Crown, Play, GraduationCap, Home } from "lucide-react";
+import { Menu, X, Crown, Play, GraduationCap, Home, Puzzle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../components/AuthProvider";
 
@@ -36,6 +36,12 @@ const NavBar = () => {
       text: "Scan",
       color: "from-green-500 to-emerald-500",
       action: () => navigate("/scan"),
+    },
+    {
+      icon: Puzzle,
+      text: "Crossword",
+      color: "from-orange-500 to-red-500",
+      action: () => navigate("/crossword"),
     },
     {
       icon: Crown,

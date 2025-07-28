@@ -165,6 +165,77 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* Games & Activities Section */}
+      <section id="games" className="py-10 px-4 sm:px-8 text-center relative">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl sm:text-5xl font-bold mb-12 text-white">
+            Games &{" "}
+            <span className="bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
+              Activities
+            </span>
+          </h2>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Crossword Puzzle */}
+            <div className="bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-lg rounded-3xl p-8 border border-white/20 hover:border-orange-400/50 transition-all duration-300 hover:scale-105">
+              <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <span className="text-white text-2xl font-bold">📝</span>
+              </div>
+              <h3 className="text-2xl font-semibold text-white mb-4">
+                Crossword Puzzles
+              </h3>
+              <p className="text-gray-300 mb-6">
+                Challenge your knowledge with themed crossword puzzles. Test your vocabulary and problem-solving skills!
+              </p>
+              <button
+                onClick={() => navigate("/crossword")}
+                className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-3 rounded-full shadow-lg hover:scale-105 transition-transform duration-300 font-semibold"
+              >
+                Play Crossword
+              </button>
+            </div>
+
+            {/* Quiz */}
+            <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 backdrop-blur-lg rounded-3xl p-8 border border-white/20 hover:border-purple-400/50 transition-all duration-300 hover:scale-105">
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <span className="text-white text-2xl font-bold">❓</span>
+              </div>
+              <h3 className="text-2xl font-semibold text-white mb-4">
+                Personality Quiz
+              </h3>
+              <p className="text-gray-300 mb-6">
+                Discover your ideal computing course path with our interactive personality assessment quiz.
+              </p>
+              <button
+                onClick={() => navigate("/quiz")}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-full shadow-lg hover:scale-105 transition-transform duration-300 font-semibold"
+              >
+                Take Quiz
+              </button>
+            </div>
+
+            {/* AR Scanning */}
+            <div className="bg-gradient-to-br from-green-500/20 to-blue-500/20 backdrop-blur-lg rounded-3xl p-8 border border-white/20 hover:border-green-400/50 transition-all duration-300 hover:scale-105">
+              <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <Play className="text-white text-3xl" />
+              </div>
+              <h3 className="text-2xl font-semibold text-white mb-4">
+                AR Exploration
+              </h3>
+              <p className="text-gray-300 mb-6">
+                Scan QR codes and markers around campus to unlock hidden content and earn rewards.
+              </p>
+              <button
+                onClick={() => handleButtonClick()}
+                className="bg-gradient-to-r from-green-600 to-blue-600 text-white px-6 py-3 rounded-full shadow-lg hover:scale-105 transition-transform duration-300 font-semibold"
+              >
+                Start Scanning
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Leaderboard Section */}
       <section
         id="leaderboard"
