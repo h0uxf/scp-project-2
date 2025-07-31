@@ -83,6 +83,8 @@ const AdminQRScanner = () => {
     setError("");
     setSuccess("");
     setScanResult(null);
+          setIsScanning(true);
+
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setError("Camera access is not supported on this device or browser. Please use a device with a camera and a compatible browser.");
@@ -91,14 +93,13 @@ const AdminQRScanner = () => {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
+        video: { facingMode: "user" },
       });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.play();
       }
-      setIsScanning(true);
       scanForQRCode();
     } catch (err) {
       console.error("Camera access error:", err);
