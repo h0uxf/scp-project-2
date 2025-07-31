@@ -33,7 +33,7 @@ const LearnMoreRedirect = () => {
         if (prev <= 1) {
           clearInterval(timer);
           // Redirect to external 8th Wall site
-          window.location.href = `https://singaporepoly.8thwall.app/demo/?${params.toString()}`;
+          window.location.href = `https://singaporepoly.8thwall.app/manipulate-model/?${params.toString()}`;
           return 0;
         }
         return prev - 1;
@@ -59,7 +59,7 @@ const LearnMoreRedirect = () => {
       immediate_redirect: 'true'
     });
     
-    window.location.href = `https://singaporepoly.8thwall.app/demo/?${params.toString()}`;
+    window.location.href = `https://singaporepoly.8thwall.app/manipulate-model/?${params.toString()}`;
   };
 
   return (
@@ -95,7 +95,7 @@ const LearnMoreRedirect = () => {
         <div className="bg-black/40 rounded-lg p-3 mb-6 text-xs">
           <p className="text-gray-400 mb-1">Redirecting to:</p>
           <p className="text-emerald-400 break-all">
-            singaporepoly.8thwall.app/demo/
+            singaporepoly.8thwall.app/manipulate-model/
           </p>
         </div>
         
