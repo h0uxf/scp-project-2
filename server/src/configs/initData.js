@@ -172,29 +172,29 @@ async function initializeUsers(roles) {
     return map;
   }, {});
 
-  const adminPassword = process.env.ADMIN_PASSWORD || "Admin@123";
+  const password = process.env.ADMIN_PASSWORD;
   const sampleUsers = [
-    { username: "admin", password: adminPassword, roleName: "super_admin", points: 0 },
-    { username: "alice", password: "Alice@123", roleName: "user", points: 120 },
-    { username: "bob", password: "Bob@123", roleName: "user", points: 45 },
-    { username: "charlie", password: "Charlie@123", roleName: "user", points: 300 },
-    { username: "diana", password: "Diana@123", roleName: "user", points: 80 },
-    { username: "evan", password: "Evan@123", roleName: "user", points: 200 },
-    { username: "fay", password: "Fay@123", roleName: "user", points: 15 },
-    { username: "grace", password: "Grace@123", roleName: "user", points: 500 },
-    { username: "henry", password: "Henry@123", roleName: "user", points: 260 },
-    { username: "ivy", password: "Ivy@123", roleName: "user", points: 75 },
-    { username: "jack", password: "Jack@123", roleName: "user", points: 0 },
-    { username: "kate", password: "Kate@123", roleName: "user", points: 350 },
-    { username: "leo", password: "Leo@123", roleName: "user", points: 5 },
-    { username: "mia", password: "Mia@123", roleName: "user", points: 100 },
-    { username: "nick", password: "Nick@123", roleName: "user", points: 180 },
-    { username: "olivia", password: "Olivia@123", roleName: "user", points: 420 },
-    { username: "peter", password: "Peter@123", roleName: "user", points: 33 },
-    { username: "quinn", password: "Quinn@123", roleName: "user", points: 275 },
-    { username: "rachel", password: "Rachel@123", roleName: "user", points: 92 },
-    { username: "sam", password: "Sam@123", roleName: "user", points: 60 },
-    { username: "tina", password: "Tina@123", roleName: "user", points: 310 },
+    { username: "admin", password: password, roleName: "super_admin", points: 0 },
+    { username: "alice", password: password, roleName: "user", points: 120 },
+    { username: "bob", password: password, roleName: "user", points: 45 },
+    { username: "charlie", password: password, roleName: "user", points: 300 },
+    { username: "diana", password: password, roleName: "user", points: 80 },
+    { username: "evan", password: password, roleName: "user", points: 200 },
+    { username: "fay", password: password, roleName: "user", points: 15 },
+    { username: "grace", password: password, roleName: "user", points: 500 },
+    { username: "henry", password: password, roleName: "user", points: 260 },
+    { username: "ivy", password: password, roleName: "user", points: 75 },
+    { username: "jack", password: password, roleName: "user", points: 0 },
+    { username: "kate", password: password, roleName: "user", points: 350 },
+    { username: "leo", password: password, roleName: "user", points: 5 },
+    { username: "mia", password: password, roleName: "user", points: 100 },
+    { username: "nick", password: password, roleName: "user", points: 180 },
+    { username: "olivia", password: password, roleName: "user", points: 420 },
+    { username: "peter", password: password, roleName: "user", points: 33 },
+    { username: "quinn", password: password, roleName: "user", points: 275 },
+    { username: "rachel", password: password, roleName: "user", points: 92 },
+    { username: "sam", password: password, roleName: "user", points: 60 },
+    { username: "tina", password: password, roleName: "user", points: 310 },
   ];
 
   try {

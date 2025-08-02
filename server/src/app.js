@@ -9,6 +9,7 @@ const errorHandler = require("./middlewares/errorHandler");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const cookieParser = require("cookie-parser");
+const csrf = require("csurf"); // Add CSRF protection
 const { sanitizeResponse } = require("./middlewares/sanitizers");
 
 //////////////////////////////////////////////////////
@@ -63,6 +64,30 @@ app.use(
     },
   })
 );
+
+// CSRF Protection
+const csrfProtection = csrf({
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production', // Only secure in production
+    sameSite: 'strict'
+  }
+});
+
+// Apply CSRF protection to state-changing operations only
+app.use('/api', (req, res, next) => {
+  // Skip CSRF for GET, HEAD, OPTIONS requests (safe methods)
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    return next();
+  }
+  // Apply CSRF protection for POST, PUT, DELETE, PATCH
+  csrfProtection(req, res, next);
+});
+
+// Endpoint to get CSRF token for frontend
+app.get('/api/csrf-token', csrfProtection, (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
 
 // Rate limiting
 const limiter = rateLimit({
