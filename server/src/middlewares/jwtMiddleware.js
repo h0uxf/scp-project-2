@@ -12,7 +12,7 @@ module.exports = {
   generateTokens: (req, res, next) => {
     console.log(`Generating access and refresh JWT tokens`);
 
-    const { user_id, username, role_id } = res.locals;
+    const { user_id, username, role_id, role_name } = res.locals;
 
     if (!user_id) {
       console.error('User ID not found in res.locals');
@@ -23,6 +23,7 @@ module.exports = {
       user_id,
       username: username || null,
       role_id: role_id || 3,
+      role_name: role_name, 
       timestamp: new Date()
     };
 
@@ -61,6 +62,7 @@ module.exports = {
   verifyAccessToken: (req, res, next) => {
     const accessToken = req.cookies?.authToken;
     const refreshToken = req.cookies?.refreshToken;
+    console.log("Received cookies: "+{accessToken, refreshToken});
 
     // Helper function to verify refresh token and issue new access token
     const tryRefreshToken = () => {
@@ -79,6 +81,7 @@ module.exports = {
           user_id: decoded.user_id,
           username: decoded.username,
           role_id: decoded.role_id,
+          role_name: decoded.role_name,
           timestamp: new Date()
         };
 
@@ -99,6 +102,7 @@ module.exports = {
           console.log('New access token issued via refresh');
           req.user = payload;
           res.locals = { ...res.locals, ...payload };
+          
           next();
         } catch (err) {
           console.error('Error generating new access token:', err);
@@ -143,6 +147,7 @@ module.exports = {
         user_id: decoded.user_id,
         username: decoded.username,
         role_id: decoded.role_id,
+        role_name: decoded.role_name,
         timestamp: new Date()
       };
 

@@ -45,7 +45,7 @@ router.get(
 router.get(
     '/stats',
     jwtMiddleware.verifyAccessToken,
-    roleMiddleware([3, 4, 5]),
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     rewardController.getRewardStatistics
 )
 

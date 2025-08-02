@@ -174,13 +174,14 @@ model User {
   createdAt      DateTime             @default(now()) @map("created_at")
   updatedAt      DateTime             @updatedAt @map("updated_at")
   username       String               @unique
+  roleId         Int 
   quizResults    QuizResult[]
   rewards        Reward[]
   userActivities UserActivities[]
   userLocation   UserLocation[]
   puzzleProgress UserPuzzleProgress[]
   userResults    UserResult[]
-  userRole       UserRole[]
+  role           Role                 @relation(fields: [roleId], references: [roleId], onDelete: Cascade)
 }
 
 model UserLocation {
@@ -206,17 +207,6 @@ model UserActivities {
   @@id([userId, activityId])
 }
 
-model UserRole {
-  userId     Int      @map("user_id")
-  roleId     Int      @map("role_id")
-  assignedAt DateTime @default(now()) @map("assigned_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-  role       Role     @relation(fields: [roleId], references: [roleId], onDelete: Cascade)
-  user       User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
-
-  @@id([userId, roleId])
-}
-
 model Role {
   roleId         Int              @id @default(autoincrement()) @map("role_id")
   roleName       String           @unique @map("role_name")
@@ -224,7 +214,7 @@ model Role {
   createdAt      DateTime         @default(now()) @map("created_at")
   updatedAt      DateTime         @updatedAt @map("updated_at")
   rolePermission RolePermission[]
-  userRole       UserRole[]
+  userRole       User[]
 }
 
 model RolePermission {

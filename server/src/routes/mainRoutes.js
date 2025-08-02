@@ -44,6 +44,7 @@ router.post(
         user_id: res.locals.user_id,
         username: res.locals.username,
         role_id: res.locals.role_id,
+        role_name: req.user.role_name
       }
     });
   }
@@ -65,6 +66,7 @@ router.post(
         user_id: res.locals.user_id,
         username: res.locals.username,
         role_id: res.locals.role_id,
+        role_name: req.user.role_name
       }
     });
   }
@@ -76,6 +78,7 @@ router.get('/me', jwtMiddleware.verifyAccessToken, (req, res) => {
     user_id: req.user.user_id,
     username: req.user.username,
     role_id: req.user.role_id,
+    role_name: req.user.role_name
   };
   res.status(200).json(user);
 });

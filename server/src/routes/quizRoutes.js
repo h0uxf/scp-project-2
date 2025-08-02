@@ -9,7 +9,7 @@ const prisma = require('@prisma/client');
 //////////////////////////////////////////////////////
 const quizController = require('../controllers/quizController.js');
 const jwtMiddleware = require('../middlewares/jwtMiddleware.js');
-const verifyRole = require('../middlewares/roleMiddleware.js');
+const roleMiddleware = require('../middlewares/roleMiddleware.js');
 
 //////////////////////////////////////////////////////
 // IMPORT MIDDLEWARES FOR INPUT VALIDATION
@@ -47,14 +47,14 @@ router.post(
 router.put(
     '/reorder',
     jwtMiddleware.verifyAccessToken,
-    verifyRole([3, 4, 5]),
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     quizController.reorderQuizQuestions
 )
 
 router.post(
     '/',
     jwtMiddleware.verifyAccessToken,
-    verifyRole([3, 4, 5]),
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     questionValidationRules(), 
     validate,                  
     quizController.createQuizQuestion
@@ -63,7 +63,7 @@ router.post(
 router.put(
     '/:questionId',
     jwtMiddleware.verifyAccessToken,
-    verifyRole([3, 4, 5]),
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     questionValidationRules(), 
     validate,                  
     quizController.updateQuizQuestion
@@ -72,14 +72,14 @@ router.put(
 router.delete(
     '/:questionId',
     jwtMiddleware.verifyAccessToken,
-    verifyRole([3, 4, 5]),
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     quizController.deleteQuizQuestion
 );
 
 router.put(
     '/:questionId/options/reorder',
     jwtMiddleware.verifyAccessToken,
-    verifyRole([3, 4, 5]),
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     quizController.reorderQuizOptionsById
 );
 

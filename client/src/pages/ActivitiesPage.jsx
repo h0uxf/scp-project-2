@@ -214,7 +214,7 @@ const ActivitiesPage = () => {
   // Fetch activities on mount for admins only
   useEffect(() => {
     if (!authLoading) {
-      if (hasRole(3, 4, 5)) {
+      if (hasRole("content_manager", "moderator", "admin", "super_admin")) {
         fetchActivities();
       } else {
         setLoading(false);
@@ -246,7 +246,7 @@ const ActivitiesPage = () => {
     );
   }
 
-  if (!hasRole(3, 4, 5)) {
+  if (!hasRole("content_manager", "moderator", "admin", "super_admin")) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4 sm:px-6 text-white text-center">
         <h1 className="text-2xl sm:text-4xl font-bold mb-4">Manage Activities</h1>

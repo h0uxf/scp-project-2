@@ -11,8 +11,7 @@ export function AuthProvider({ children }) {
   function normalizeUser(user) {
     return {
       ...user,
-      role_id:
-        typeof user.role_id === "string" ? Number(user.role_id) : user.role_id,
+      role_name: user.role_name,
     };
   }
 
@@ -97,14 +96,14 @@ export function AuthProvider({ children }) {
     window.location.reload();
   }
 
-  function hasRole(...roleIds) {
+  function hasRole(...roleNames) {
     if (!currentUser) return false;
-    const currentRole = Number(currentUser.role_id);
-    return roleIds.includes(currentRole);
+    const currentRole = currentUser.role_name;
+    return roleNames.includes(currentRole);
   }
 
   function isContentManager() {
-    return hasRole(3);
+    return hasRole(2);
   }
 
   function isAdmin() {

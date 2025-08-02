@@ -1,14 +1,14 @@
-const verifyRole = (allowedRoleIds) => {
+const verifyRole = (allowedRoleNames) => {
   return (req, res, next) => {
-    const roleId = res.locals.role_id; 
+    const roleName = res.locals.role_name; 
     
-    if (!roleId) {
+    if (!roleName) {
       return res.status(403).json({
         message: 'Role not found in token',
       });
     }
 
-    if (!allowedRoleIds.includes(roleId)) {
+    if (!allowedRoleNames.includes(roleName)) {
       return res.status(403).json({
         message: 'You do not have this permission',
       });

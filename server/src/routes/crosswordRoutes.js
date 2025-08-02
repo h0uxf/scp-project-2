@@ -8,7 +8,7 @@ const express = require('express');
 //////////////////////////////////////////////////////
 const crosswordController = require('../controllers/crosswordController.js');
 const jwtMiddleware = require('../middlewares/jwtMiddleware.js');
-const verifyRole = require('../middlewares/roleMiddleware.js');
+const roleMiddleware = require('../middlewares/roleMiddleware.js');
 
 //////////////////////////////////////////////////////
 // IMPORT MIDDLEWARES FOR INPUT VALIDATION
@@ -55,13 +55,13 @@ router.put(
 );
 
 //////////////////////////////////////////////////////
-// DEFINE ROUTES FOR CROSSWORD MANAGEMENT (CONTENT MANAGER, ADMIN, AND SUPER ADMIN)
+// DEFINE ROUTES FOR CROSSWORD MANAGEMENT 
 //////////////////////////////////////////////////////
 // [GET] Get all puzzles for admin (including unpublished)
 router.get(
     '/admin/puzzles',
     jwtMiddleware.verifyAccessToken,
-    verifyRole([3, 4, 5]), // Content Manager, Admin, Super Admin
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]), 
     crosswordController.getAllPuzzlesAdmin
 );
 
@@ -69,7 +69,7 @@ router.get(
 router.post(
     '/admin/puzzles',
     jwtMiddleware.verifyAccessToken,
-    verifyRole([3, 4, 5]), // Content Manager, Admin, Super Admin
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     validate,
     crosswordController.createPuzzle
 );
@@ -78,7 +78,7 @@ router.post(
 router.put(
     '/admin/puzzles/:puzzleId',
     jwtMiddleware.verifyAccessToken,
-    verifyRole([3, 4, 5]), // Content Manager, Admin, Super Admin
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]), 
     validate,
     crosswordController.updatePuzzle
 );
@@ -87,7 +87,7 @@ router.put(
 router.delete(
     '/admin/puzzles/:puzzleId',
     jwtMiddleware.verifyAccessToken,
-    verifyRole([4, 5]), // Admin, Super Admin only
+    roleMiddleware(["admin", "super_admin"]), // Admin, Super Admin only
     crosswordController.deletePuzzle
 );
 
@@ -98,7 +98,7 @@ router.delete(
 router.get(
     '/admin/words',
     jwtMiddleware.verifyAccessToken,
-    verifyRole([3, 4, 5]), // Content Manager, Admin, Super Admin
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]), 
     crosswordController.getAllWords
 );
 
@@ -106,7 +106,7 @@ router.get(
 router.get(
     '/admin/clues',
     jwtMiddleware.verifyAccessToken,
-    verifyRole([3, 4, 5]), // Content Manager, Admin, Super Admin
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]), 
     crosswordController.getAllClues
 );
 
@@ -114,7 +114,7 @@ router.get(
 router.post(
     '/admin/words',
     jwtMiddleware.verifyAccessToken,
-    verifyRole([3, 4, 5]), // Content Manager, Admin, Super Admin
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]), 
     validate,
     crosswordController.createWord
 );
@@ -123,7 +123,7 @@ router.post(
 router.post(
     '/admin/clues',
     jwtMiddleware.verifyAccessToken,
-    verifyRole([3, 4, 5]), // Content Manager, Admin, Super Admin
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]), 
     validate,
     crosswordController.createClue
 );

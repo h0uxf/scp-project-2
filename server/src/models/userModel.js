@@ -13,15 +13,11 @@ module.exports = {
                     userId: true,
                     username: true,
                     passwordHash: true, 
-                    userRole: {
+                    role: {
                         select: {
-                            roleId: true,
-                            role: {
-                            select: {
-                                roleName: true,
-                            },
-                            },
-                        },
+                            roleId: true, 
+                            roleName: true
+                        }
                     }
                 },
             });
@@ -47,10 +43,11 @@ module.exports = {
             select: {
                 userId: true,
                 username: true,
-                userRole: {
-                select: {
-                    roleId: true,
-                },
+                role: {
+                    select: {
+                        roleId: true,
+                        roleName: true
+                    },
                 },
             },
             });
@@ -70,7 +67,7 @@ module.exports = {
                 select: {
                     userId: true,
                     username: true,
-                    roleId: true,
+                    roleId: true
                 },
             });
             return user;

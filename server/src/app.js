@@ -34,11 +34,12 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "http://192.168.31.124:5173"
+      "https://gwddjcdx-5173.asse.devtunnels.ms"
     ],
     credentials: true,
   })
 );
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());

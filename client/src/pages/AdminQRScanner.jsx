@@ -28,22 +28,22 @@ const AdminQRScanner = () => {
   };
 
   useEffect(() => {
-    if (!loading && (!currentUser || !hasRole(3, 4, 5))) {
+    if (!loading && (!currentUser || !hasRole("content_manager", "moderator", "admin", "super_admin" ))) {
       navigate("/login");
-    } else if (!loading && hasRole(3, 4, 5)) {
+    } else if (!loading && hasRole("content_manager", "moderator", "admin", "super_admin" )) {
       fetchStats();
     }
   }, [loading, currentUser, navigate, hasRole]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (!document.hidden && currentUser && hasRole(3, 4, 5)) {
+      if (!document.hidden && currentUser && hasRole("content_manager", "moderator", "admin", "super_admin" )) {
         fetchStats();
       }
     };
 
     const handleFocus = () => {
-      if (currentUser && hasRole(3, 4, 5)) {
+      if (currentUser && hasRole("content_manager", "moderator", "admin", "super_admin" )) {
         fetchStats();
       }
     };
@@ -202,7 +202,7 @@ const AdminQRScanner = () => {
     );
   }
 
-  if (!currentUser || !hasRole(3, 4, 5)) {
+  if (!currentUser || !hasRole("content_manager", "moderator", "admin", "super_admin" )) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4 sm:px-6 text-white text-center">
         <h1 className="text-2xl sm:text-4xl font-bold mb-4">Admin QR Scanner</h1>

@@ -642,7 +642,7 @@ const QuizPage = () => {
           </h1>
 
           {/* Admin Controls */}
-          {hasRole(3, 4, 5) && !isPreviewMode && (
+          {hasRole("content_manager", "moderator", "admin", "super_admin") && !isPreviewMode && (
             <div className="max-w-4xl mx-auto bg-white/5 border border-white/20 rounded-2xl p-4 sm:p-6 md:p-8 shadow-xl mb-6 sm:mb-8">
               <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 gap-2">
                 <h2 className="text-xl sm:text-2xl font-semibold">
@@ -789,9 +789,9 @@ const QuizPage = () => {
           )}
 
           {/* Preview Mode or Visitor View */}
-          {(!hasRole(3, 4, 5) || isPreviewMode) && (
+          {(!hasRole("content_manager", "moderator", "admin", "super_admin") || isPreviewMode) && (
             <div className="max-w-4xl mx-auto bg-white/5 border border-white/20 rounded-2xl p-4 sm:p-6 md:p-8 shadow-xl">
-              {hasRole(3, 4, 5) && isPreviewMode && (
+              {hasRole("content_manager", "moderator", "admin", "super_admin") && isPreviewMode && (
                 <div className="flex justify-end mb-4">
                   <button
                     onClick={() => setIsPreviewMode(false)}

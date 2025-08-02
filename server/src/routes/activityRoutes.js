@@ -28,7 +28,7 @@ router.use(sanitizeRequest);
 router.get(
     '/check-completion', 
     jwtMiddleware.verifyAccessToken,
-    roleMiddleware([3, 4, 5]),
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     activityController.checkCompletion
 );
 
@@ -36,14 +36,14 @@ router.get(
 router.put(
     '/reorder',
     jwtMiddleware.verifyAccessToken,
-    roleMiddleware([3, 4, 5]),
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     activityController.reorderActivities
 );
 // [GET] Get all activities
 router.get(
     '/',
     jwtMiddleware.verifyAccessToken,
-    roleMiddleware([3, 4, 5]),
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     activityController.getAllActivities
 );
 
@@ -51,7 +51,7 @@ router.get(
 router.get(
     '/:activityId',
     jwtMiddleware.verifyAccessToken,
-    roleMiddleware([3, 4, 5]),
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     activityController.getActivityById
 );
 
@@ -59,7 +59,7 @@ router.get(
 router.post(
     '/',
     jwtMiddleware.verifyAccessToken,
-    roleMiddleware([3, 4, 5]),
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     activityValidationRules(),
     validate,
     activityController.createActivity
@@ -69,7 +69,7 @@ router.post(
 router.put(
     '/:activityId',
     jwtMiddleware.verifyAccessToken,
-    roleMiddleware([3, 4, 5]),
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     activityValidationRules(),
     validate,
     activityController.updateActivity
@@ -79,7 +79,7 @@ router.put(
 router.delete(
     '/:activityId',
     jwtMiddleware.verifyAccessToken,
-    roleMiddleware([3, 4, 5]),
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     activityController.deleteActivity
 );
 
