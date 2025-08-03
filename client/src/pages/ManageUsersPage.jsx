@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Edit2, Trash2, Shield, User, Crown } from "lucide-react";
+import { Edit2, Trash2, Shield, User, Crown, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../components/AuthProvider";
 import { useNavigate } from "react-router-dom";
@@ -11,9 +11,16 @@ const ManageUsersPage = () => {
   const { currentUser, hasRole, loading: authLoading } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [newRoleId, setNewRoleId] = useState("");
   const [csrfToken, setCsrfToken] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [usersPerPage] = useState(10);
+  const [isInitialMount, setIsInitialMount] = useState(true);
   const navigate = useNavigate();
 
   // Fetch CSRF token
@@ -111,11 +118,22 @@ const ManageUsersPage = () => {
     return [];
   };
 
-  // Fetch all users
-  const fetchUsers = async () => {
+  // Fetch all users with pagination
+  const fetchUsers = async (page = 1, search = "", isSearch = false) => {
     try {
-      setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
+      if (isSearch) {
+        setSearchLoading(true);
+      } else {
+        setLoading(true);
+      }
+      
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        limit: usersPerPage.toString(),
+        ...(search && { search })
+      });
+      
+      const response = await fetch(`${API_BASE_URL}/api/admin/users?${queryParams}`, {
         credentials: "include",
       });
       
@@ -126,11 +144,21 @@ const ManageUsersPage = () => {
       
       const data = await response.json();
       setUsers(data.data || []);
+      
+      if (data.pagination) {
+        setCurrentPage(data.pagination.currentPage);
+        setTotalPages(data.pagination.totalPages);
+        setTotalUsers(data.pagination.totalUsers);
+      }
     } catch (err) {
       console.error("Failed to fetch users:", err);
       toast.error(err.message);
     } finally {
-      setLoading(false);
+      if (isSearch) {
+        setSearchLoading(false);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
@@ -212,6 +240,30 @@ const ManageUsersPage = () => {
     setNewRoleId("");
   };
 
+  // Pagination handlers
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      fetchUsers(newPage, searchTerm, !!searchTerm);
+    }
+  };
+
+  // Debounced search - for all search term changes including empty string
+  useEffect(() => {
+    // Skip the initial mount to avoid duplicate API calls
+    if (isInitialMount) {
+      setIsInitialMount(false);
+      return;
+    }
+    
+    const delayedSearch = setTimeout(() => {
+      setCurrentPage(1);
+      fetchUsers(1, searchTerm, true); // Mark as search operation
+    }, 500);
+
+    return () => clearTimeout(delayedSearch);
+  }, [searchTerm, isInitialMount]);
+
   // Check admin permissions
   useEffect(() => {
     if (!authLoading && currentUser && !hasRole("admin", "super_admin")) {
@@ -220,11 +272,11 @@ const ManageUsersPage = () => {
     }
   }, [currentUser, hasRole, authLoading, navigate]);
 
-  // Fetch users on mount
+  // Fetch users on mount - only run once when user is authenticated
   useEffect(() => {
     if (currentUser && hasRole("admin", "super_admin")) {
       fetchCsrfToken(); // Fetch CSRF token on mount
-      fetchUsers();
+      fetchUsers(1, "", false); // Always start with empty search on mount, mark as initial load
     }
   }, [currentUser, hasRole]);
 
@@ -254,6 +306,29 @@ const ManageUsersPage = () => {
           <p className="text-gray-300">
             Manage user roles and permissions. You can update roles and delete users based on your permissions.
           </p>
+        </div>
+
+        {/* Search and Stats */}
+        <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex-1 max-w-md relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Search by username"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-white/10 text-white placeholder-gray-400 border border-white/20 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {searchLoading && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              </div>
+            )}
+          </div>
+          <div className="text-sm text-gray-300">
+            Showing {users.length} of {totalUsers} users
+            {searchTerm && ` (filtered by "${searchTerm}")`}
+          </div>
         </div>
 
         {/* Users List */}
@@ -383,9 +458,80 @@ const ManageUsersPage = () => {
           </div>
         </div>
 
-        {users.length === 0 && (
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="mt-6 flex justify-center items-center gap-2">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="flex items-center gap-2 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Previous
+            </button>
+            
+            <div className="flex gap-1">
+              {[...Array(totalPages)].map((_, index) => {
+                const page = index + 1;
+                const isCurrentPage = page === currentPage;
+                
+                // Show first, last, current, and pages around current
+                if (
+                  page === 1 ||
+                  page === totalPages ||
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => handlePageChange(page)}
+                      className={`px-3 py-2 rounded-lg transition-colors ${
+                        isCurrentPage
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                } else if (
+                  page === currentPage - 2 ||
+                  page === currentPage + 2
+                ) {
+                  return <span key={page} className="px-2 text-gray-400">...</span>;
+                }
+                return null;
+              })}
+            </div>
+            
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-2 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
+            >
+              Next
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {users.length === 0 && !loading && (
           <div className="text-center py-12">
-            <p className="text-gray-400 text-lg">No users found.</p>
+            <p className="text-gray-400 text-lg">
+              {searchTerm ? `No users found matching "${searchTerm}".` : "No users found."}
+            </p>
+            {searchTerm && (
+              <button
+                onClick={() => {
+                  setSearchTerm("");
+                  setCurrentPage(1);
+                  fetchUsers(1, "", false);
+                }}
+                className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                Clear Search
+              </button>
+            )}
           </div>
         )}
       </div>

@@ -2,10 +2,24 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 module.exports = {
-    // Get all users
-    readAllUsers: async () => {
+    // Get all users with pagination
+    readAllUsers: async (page = 1, limit = 10, search = '') => {
         try {
+            const skip = (page - 1) * limit;
+            
+            // Build search condition - only search by username
+            const searchCondition = search ? {
+                username: { contains: search, mode: 'insensitive' }
+            } : {};
+
+            // Get total count for pagination
+            const totalUsers = await prisma.user.count({
+                where: searchCondition
+            });
+
+            // Get users with pagination
             const users = await prisma.user.findMany({
+                where: searchCondition,
                 select: {
                     userId: true,
                     username: true,
@@ -24,18 +38,29 @@ module.exports = {
                 orderBy: {
                     createdAt: 'desc',
                 },
+                skip: skip,
+                take: limit,
             });
 
-            if (users.length === 0) {
+            if (users.length === 0 && page === 1) {
                 throw new Error('No users found.');
             }
 
+            const totalPages = Math.ceil(totalUsers / limit);
+
             // Transform the data to match expected format
-            return users.map(user => ({
+            const transformedUsers = users.map(user => ({
                 ...user,
                 role_id: user.roleId,
                 role_name: user.role?.roleName,
             }));
+
+            return {
+                users: transformedUsers,
+                totalUsers,
+                totalPages,
+                currentPage: page
+            };
         } catch (error) {
             throw error;
         }
@@ -140,6 +165,55 @@ module.exports = {
             });
 
             return updatedUser;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // Update user role by role name
+    updateUserByRoleName: async (userId, roleName) => {
+        const id = parseInt(userId, 10);
+        if (isNaN(id)) {
+            throw new Error('Invalid user ID. It must be a number.');
+        }
+
+        try {
+            // First, find the role by name to get the roleId
+            const role = await prisma.role.findUnique({
+                where: { roleName: roleName }
+            });
+
+            if (!role) {
+                throw new Error(`Role '${roleName}' not found.`);
+            }
+
+            // Update user role directly in the user table
+            const updatedUser = await prisma.user.update({
+                where: { userId: id },
+                data: {
+                    roleId: role.roleId,
+                    updatedAt: new Date(),
+                },
+                select: {
+                    userId: true,
+                    username: true,
+                    roleId: true,
+                    role: {
+                        select: {
+                            roleId: true,
+                            roleName: true
+                        }
+                    },
+                    updatedAt: true,
+                },
+            });
+
+            // Transform the data to match expected format
+            return {
+                ...updatedUser,
+                role_id: updatedUser.roleId,
+                role_name: updatedUser.role?.roleName,
+            };
         } catch (error) {
             throw error;
         }

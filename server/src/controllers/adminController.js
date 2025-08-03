@@ -5,15 +5,29 @@ const AppError = require("../utils/AppError");
 const catchAsync = require("../utils/catchAsync");
 
 module.exports = {
-  // Get all users
+  // Get all users with pagination
   getAllUsers: catchAsync(async (req, res, next) => {
-    const users = await adminModel.readAllUsers();
-    if (!users || users.length === 0) {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || '';
+    
+    const result = await adminModel.readAllUsers(page, limit, search);
+    if (!result || result.users.length === 0) {
       logger.warn("Fetch all users failed: No users found");
       return next(new AppError("No users found", 404));
     }
-    logger.debug("Fetching all users");
-    res.status(200).json({ status: "success", data: users });
+    logger.debug(`Fetching users - page: ${page}, limit: ${limit}, search: ${search}`);
+    res.status(200).json({ 
+      status: "success", 
+      data: result.users,
+      pagination: {
+        currentPage: page,
+        totalPages: result.totalPages,
+        totalUsers: result.totalUsers,
+        hasNextPage: page < result.totalPages,
+        hasPrevPage: page > 1
+      }
+    });
   }),
 
   // Get user by ID
@@ -36,24 +50,24 @@ module.exports = {
   // Update user role by ID
   updateUserById: catchAsync(async (req, res, next) => {
     const { userId } = req.params;
-    const { roleId } = req.body;
+    const { role_name } = req.body;
 
     if (!userId) {
       logger.warn("Update user role failed: Missing user ID");
       return next(new AppError("User ID is required", 400));
     }
 
-    if (roleId === undefined) {
-      logger.warn("Update user role failed: No role ID provided");
-      return next(new AppError("Role ID is required for update", 400));
+    if (!role_name) {
+      logger.warn("Update user role failed: No role name provided");
+      return next(new AppError("Role name is required for update", 400));
     }
 
-    const updatedUser = await adminModel.updateUserById(userId, { roleId });
+    const updatedUser = await adminModel.updateUserByRoleName(userId, role_name);
     if (!updatedUser) {
       logger.warn(`Update user role failed: User with ID ${userId} not found`);
       return next(new AppError(`User with ID ${userId} not found`, 404));
     }
-    logger.info(`User role updated for user ID ${userId} to role ID ${roleId}`);
+    logger.info(`User role updated for user ID ${userId} to role ${role_name}`);
     res.status(200).json({
       status: "success",
       message: "User role updated successfully",
