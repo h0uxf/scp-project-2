@@ -571,9 +571,9 @@ const CrosswordAdminPage = () => {
                           onChange={(e) => setPuzzleForm({ ...puzzleForm, difficulty: e.target.value })}
                           className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                          <option value="easy">Easy</option>
-                          <option value="medium">Medium</option>
-                          <option value="hard">Hard</option>
+                          <option value="easy" className="bg-gray-800 text-white">Easy</option>
+                          <option value="medium" className="bg-gray-800 text-white">Medium</option>
+                          <option value="hard" className="bg-gray-800 text-white">Hard</option>
                         </select>
                       </div>
 
@@ -586,9 +586,9 @@ const CrosswordAdminPage = () => {
                           onChange={(e) => setPuzzleForm({ ...puzzleForm, gridSize: parseInt(e.target.value) })}
                           className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                          <option value={10}>10×10</option>
-                          <option value={15}>15×15</option>
-                          <option value={20}>20×20</option>
+                          <option value={10} className="bg-gray-800 text-white">10×10</option>
+                          <option value={15} className="bg-gray-800 text-white">15×15</option>
+                          <option value={20} className="bg-gray-800 text-white">20×20</option>
                         </select>
                       </div>
                     </div>
@@ -662,9 +662,9 @@ const CrosswordAdminPage = () => {
                           onChange={(e) => setWordForm({ ...wordForm, difficulty: e.target.value })}
                           className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                          <option value="easy">Easy</option>
-                          <option value="medium">Medium</option>
-                          <option value="hard">Hard</option>
+                          <option value="easy" className="bg-gray-800 text-white">Easy</option>
+                          <option value="medium" className="bg-gray-800 text-white">Medium</option>
+                          <option value="hard" className="bg-gray-800 text-white">Hard</option>
                         </select>
                       </div>
 
@@ -750,11 +750,11 @@ const CrosswordAdminPage = () => {
                           onChange={(e) => setClueForm({ ...clueForm, clueType: e.target.value })}
                           className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                          <option value="definition">Definition</option>
-                          <option value="synonym">Synonym</option>
-                          <option value="antonym">Antonym</option>
-                          <option value="wordplay">Wordplay</option>
-                          <option value="fill-in-blank">Fill in Blank</option>
+                          <option value="definition" className="bg-gray-800 text-white">Definition</option>
+                          <option value="synonym" className="bg-gray-800 text-white">Synonym</option>
+                          <option value="antonym" className="bg-gray-800 text-white">Antonym</option>
+                          <option value="wordplay" className="bg-gray-800 text-white">Wordplay</option>
+                          <option value="fill-in-blank" className="bg-gray-800 text-white">Fill in Blank</option>
                         </select>
                       </div>
 
@@ -767,9 +767,9 @@ const CrosswordAdminPage = () => {
                           onChange={(e) => setClueForm({ ...clueForm, difficulty: e.target.value })}
                           className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                          <option value="easy">Easy</option>
-                          <option value="medium">Medium</option>
-                          <option value="hard">Hard</option>
+                          <option value="easy" className="bg-gray-800 text-white">Easy</option>
+                          <option value="medium" className="bg-gray-800 text-white">Medium</option>
+                          <option value="hard" className="bg-gray-800 text-white">Hard</option>
                         </select>
                       </div>
 

@@ -3,23 +3,49 @@ const prisma = new PrismaClient();
 
 module.exports = {
     // Get all users with pagination
-    readAllUsers: async (page = 1, limit = 10, search = '') => {
+    readAllUsers: async (page = 1, limit = 10, search = '', sortBy = 'userId', sortOrder = 'asc', role = '') => {
         try {
             const skip = (page - 1) * limit;
             
-            // Build search condition - only search by username
-            const searchCondition = search ? {
-                username: { contains: search, mode: 'insensitive' }
-            } : {};
+            // Build search and filter conditions
+            const whereCondition = {};
+            
+            // Add search condition - only search by username
+            if (search) {
+                whereCondition.username = { contains: search, mode: 'insensitive' };
+            }
+            
+            // Add role filter condition
+            if (role) {
+                whereCondition.role = {
+                    roleName: role
+                };
+            }
 
             // Get total count for pagination
             const totalUsers = await prisma.user.count({
-                where: searchCondition
+                where: whereCondition
             });
+
+            // Build sort condition
+            let orderBy = {};
+            switch (sortBy) {
+                case 'userId':
+                    orderBy.userId = sortOrder;
+                    break;
+                case 'points':
+                    orderBy.points = sortOrder;
+                    break;
+                case 'createdAt':
+                    orderBy.createdAt = sortOrder;
+                    break;
+                default:
+                    orderBy.userId = 'asc';
+            }
 
             // Get users with pagination
             const users = await prisma.user.findMany({
-                where: searchCondition,
+                where: whereCondition,
                 select: {
                     userId: true,
                     username: true,
@@ -35,16 +61,10 @@ module.exports = {
                         },
                     },
                 },
-                orderBy: {
-                    createdAt: 'desc',
-                },
+                orderBy: orderBy,
                 skip: skip,
                 take: limit,
             });
-
-            if (users.length === 0 && page === 1) {
-                throw new Error('No users found.');
-            }
 
             const totalPages = Math.ceil(totalUsers / limit);
 

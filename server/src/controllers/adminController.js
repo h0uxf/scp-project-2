@@ -10,13 +10,17 @@ module.exports = {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const search = req.query.search || '';
+    const sortBy = req.query.sortBy || 'userId';
+    const sortOrder = req.query.sortOrder || 'asc';
+    const role = req.query.role || '';
     
-    const result = await adminModel.readAllUsers(page, limit, search);
-    if (!result || result.users.length === 0) {
-      logger.warn("Fetch all users failed: No users found");
-      return next(new AppError("No users found", 404));
+    const result = await adminModel.readAllUsers(page, limit, search, sortBy, sortOrder, role);
+    if (!result) {
+      logger.warn("Fetch all users failed: Database error");
+      return next(new AppError("Failed to fetch users", 500));
     }
-    logger.debug(`Fetching users - page: ${page}, limit: ${limit}, search: ${search}`);
+    
+    logger.debug(`Fetching users - page: ${page}, limit: ${limit}, search: ${search}, sortBy: ${sortBy}, sortOrder: ${sortOrder}, role: ${role}`);
     res.status(200).json({ 
       status: "success", 
       data: result.users,

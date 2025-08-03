@@ -346,14 +346,14 @@ const ActivitiesPage = ({ isEmbedded = false }) => {
                     <button
                       onClick={() => handleMoveActivity(index, "up")}
                       disabled={index === 0}
-                      className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-full disabled:opacity-50 min-w-[40px]"
+                      className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-full disabled:opacity-50 min-w-[40px] flex items-center justify-center"
                     >
                       <ArrowUp size={16} />
                     </button>
                     <button
                       onClick={() => handleMoveActivity(index, "down")}
                       disabled={index === activities.length - 1}
-                      className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-full disabled:opacity-50 min-w-[40px]"
+                      className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-full disabled:opacity-50 min-w-[40px] flex items-center justify-center"
                     >
                       <ArrowDown size={16} />
                     </button>

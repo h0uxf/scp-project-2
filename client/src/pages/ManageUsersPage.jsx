@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Edit2, Trash2, Shield, User, Crown, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Edit2, Trash2, Shield, User, Crown, Search, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Filter } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../components/AuthProvider";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +21,9 @@ const ManageUsersPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [usersPerPage] = useState(10);
   const [isInitialMount, setIsInitialMount] = useState(true);
+  const [sortField, setSortField] = useState("userId");
+  const [sortDirection, setSortDirection] = useState("asc");
+  const [roleFilter, setRoleFilter] = useState("");
   const navigate = useNavigate();
 
   // Fetch CSRF token
@@ -119,7 +122,7 @@ const ManageUsersPage = () => {
   };
 
   // Fetch all users with pagination
-  const fetchUsers = async (page = 1, search = "", isSearch = false) => {
+  const fetchUsers = async (page = 1, search = "", isSearch = false, sort = sortField, direction = sortDirection, role = roleFilter) => {
     try {
       if (isSearch) {
         setSearchLoading(true);
@@ -130,7 +133,10 @@ const ManageUsersPage = () => {
       const queryParams = new URLSearchParams({
         page: page.toString(),
         limit: usersPerPage.toString(),
-        ...(search && { search })
+        ...(search && { search }),
+        ...(sort && { sortBy: sort }),
+        ...(direction && { sortOrder: direction }),
+        ...(role && { role })
       });
       
       const response = await fetch(`${API_BASE_URL}/api/admin/users?${queryParams}`, {
@@ -244,8 +250,29 @@ const ManageUsersPage = () => {
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
-      fetchUsers(newPage, searchTerm, !!searchTerm);
+      fetchUsers(newPage, searchTerm, !!searchTerm, sortField, sortDirection, roleFilter);
     }
+  };
+
+  // Sorting handlers
+  const handleSort = (field) => {
+    const newDirection = field === sortField && sortDirection === "asc" ? "desc" : "asc";
+    setSortField(field);
+    setSortDirection(newDirection);
+    setCurrentPage(1);
+    fetchUsers(1, searchTerm, !!searchTerm, field, newDirection, roleFilter);
+  };
+
+  const getSortIcon = (field) => {
+    if (sortField !== field) return null;
+    return sortDirection === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />;
+  };
+
+  // Role filter handler
+  const handleRoleFilter = (role) => {
+    setRoleFilter(role);
+    setCurrentPage(1);
+    fetchUsers(1, searchTerm, !!searchTerm, sortField, sortDirection, role);
   };
 
   // Debounced search - for all search term changes including empty string
@@ -258,11 +285,19 @@ const ManageUsersPage = () => {
     
     const delayedSearch = setTimeout(() => {
       setCurrentPage(1);
-      fetchUsers(1, searchTerm, true); // Mark as search operation
-    }, 500);
+      fetchUsers(1, searchTerm, true, sortField, sortDirection, roleFilter); // Mark as search operation
+    }, 50);
 
     return () => clearTimeout(delayedSearch);
   }, [searchTerm, isInitialMount]);
+
+  // Handle sorting and filtering changes
+  useEffect(() => {
+    if (!isInitialMount && currentUser && hasRole("admin", "super_admin")) {
+      setCurrentPage(1);
+      fetchUsers(1, searchTerm, !!searchTerm, sortField, sortDirection, roleFilter);
+    }
+  }, [sortField, sortDirection, roleFilter]);
 
   // Check admin permissions
   useEffect(() => {
@@ -276,7 +311,7 @@ const ManageUsersPage = () => {
   useEffect(() => {
     if (currentUser && hasRole("admin", "super_admin")) {
       fetchCsrfToken(); // Fetch CSRF token on mount
-      fetchUsers(1, "", false); // Always start with empty search on mount, mark as initial load
+      fetchUsers(1, "", false, "userId", "asc", ""); // Always start with empty search on mount, mark as initial load
     }
   }, [currentUser, hasRole]);
 
@@ -308,6 +343,56 @@ const ManageUsersPage = () => {
           </p>
         </div>
 
+        {/* Filters */}
+        <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 bg-white/5 border border-white/20 rounded-xl">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-400" />
+            <span className="text-sm font-medium text-gray-300">Filters:</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-300">Role:</label>
+              <select
+                value={roleFilter}
+                onChange={(e) => handleRoleFilter(e.target.value)}
+                className="bg-white/10 text-white border border-white/20 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 backdrop-blur-sm"
+              >
+                <option value="" className="bg-gray-800 text-white">All Roles</option>
+                {roles.map((role) => (
+                  <option key={role.id} value={role.name} className="bg-gray-800 text-white">
+                    {role.displayName}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-300">Sort by:</label>
+              <select
+                value={sortField}
+                onChange={(e) => handleSort(e.target.value)}
+                className="bg-white/10 text-white border border-white/20 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 backdrop-blur-sm"
+              >
+                <option value="userId" className="bg-gray-800 text-white">User ID</option>
+                <option value="points" className="bg-gray-800 text-white">Points</option>
+                <option value="createdAt" className="bg-gray-800 text-white">Created Date</option>
+              </select>
+            </div>
+            <button
+              onClick={() => {
+                setRoleFilter("");
+                setSortField("userId");
+                setSortDirection("asc");
+                setSearchTerm("");
+                setCurrentPage(1);
+                fetchUsers(1, "", false, "userId", "asc", "");
+              }}
+              className="px-4 py-2 text-sm bg-white/10 border border-white/20 hover:bg-white/20 text-white rounded-xl transition-colors backdrop-blur-sm"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+
         {/* Search and Stats */}
         <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex-1 max-w-md relative">
@@ -328,6 +413,8 @@ const ManageUsersPage = () => {
           <div className="text-sm text-gray-300">
             Showing {users.length} of {totalUsers} users
             {searchTerm && ` (filtered by "${searchTerm}")`}
+            {roleFilter && ` (role: ${getRoleInfo(roleFilter).displayName})`}
+            {sortField && ` (sorted by ${sortField} ${sortDirection})`}
           </div>
         </div>
 
@@ -337,17 +424,35 @@ const ManageUsersPage = () => {
             <table className="w-full">
               <thead className="bg-white/10">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
-                    User
+                  <th 
+                    className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-colors"
+                    onClick={() => handleSort("userId")}
+                  >
+                    <div className="flex items-center gap-2">
+                      User
+                      {getSortIcon("userId")}
+                    </div>
                   </th>
                   <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
                     Current Role
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
-                    Points
+                  <th 
+                    className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-colors"
+                    onClick={() => handleSort("points")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Points
+                      {getSortIcon("points")}
+                    </div>
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
-                    Joined
+                  <th 
+                    className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-colors"
+                    onClick={() => handleSort("createdAt")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Created
+                      {getSortIcon("createdAt")}
+                    </div>
                   </th>
                   <th className="px-6 py-4 text-right text-sm font-medium text-gray-300 uppercase tracking-wider">
                     Actions
@@ -356,102 +461,136 @@ const ManageUsersPage = () => {
               </thead>
               <tbody className="divide-y divide-white/10">
                 <AnimatePresence>
-                  {users.map((user) => {
-                    const roleInfo = getRoleInfo(user.role_name);
-                    const RoleIcon = roleInfo.icon;
-                    const isEditing = editingUser?.userId === user.userId;
-
-                    return (
-                      <motion.tr
-                        key={user.userId}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="hover:bg-white/5 transition-colors"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                              <span className="text-white font-medium">
-                                {user.username?.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="font-medium text-white">{user.username}</p>
-                              <p className="text-sm text-gray-400">ID: {user.userId}</p>
-                            </div>
+                  {users.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="px-6 py-12 text-center">
+                        <div className="flex flex-col items-center gap-4">
+                          <User className="w-16 h-16 text-gray-500" />
+                          <div>
+                            <p className="text-lg text-gray-400 mb-2">
+                              {searchTerm || roleFilter ? "No users found matching your criteria" : "No users found"}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {searchTerm && !roleFilter && `Try searching for a different username`}
+                              {!searchTerm && roleFilter && `No users with the "${getRoleInfo(roleFilter).displayName}" role`}
+                              {searchTerm && roleFilter && `No users with username "${searchTerm}" and role "${getRoleInfo(roleFilter).displayName}"`}
+                              {!searchTerm && !roleFilter && "Users will appear here once they are registered"}
+                            </p>
+                            {(searchTerm || roleFilter) && (
+                              <button
+                                onClick={() => {
+                                  setSearchTerm("");
+                                  setRoleFilter("");
+                                  setCurrentPage(1);
+                                  fetchUsers(1, "", false, sortField, sortDirection, "");
+                                }}
+                                className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
+                              >
+                                Clear Filters
+                              </button>
+                            )}
                           </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          {isEditing ? (
-                            <select
-                              value={newRoleId}
-                              onChange={(e) => setNewRoleId(e.target.value)}
-                              className="bg-white/10 text-white border border-white/20 rounded-lg px-3 py-2"
-                            >
-                              {getAvailableRoles().map((role) => (
-                                <option key={role.id} value={role.id} className="bg-gray-800">
-                                  {role.name}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <RoleIcon size={16} className={roleInfo.color} />
-                              <span className={`font-medium ${roleInfo.color}`}>
-                                {roleInfo.name}
-                              </span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    users.map((user) => {
+                      const roleInfo = getRoleInfo(user.role_name);
+                      const RoleIcon = roleInfo.icon;
+                      const isEditing = editingUser?.userId === user.userId;
+
+                      return (
+                        <motion.tr
+                          key={user.userId}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          className="hover:bg-white/5 transition-colors"
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                                <span className="text-white font-medium">
+                                  {user.username?.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <div>
+                                <p className="font-medium text-white">{user.username}</p>
+                                <p className="text-sm text-gray-400">ID: {user.userId}</p>
+                              </div>
                             </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-gray-300">
-                          {user.points || 0}
-                        </td>
-                        <td className="px-6 py-4 text-gray-300">
-                          {new Date(user.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          {isEditing ? (
-                            <div className="flex justify-end gap-2">
-                              <button
-                                onClick={() => handleUpdateUserRole(user.userId, newRoleId)}
-                                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm transition-colors"
+                          </td>
+                          <td className="px-6 py-4">
+                            {isEditing ? (
+                              <select
+                                value={newRoleId}
+                                onChange={(e) => setNewRoleId(e.target.value)}
+                                className="bg-white/10 text-white border border-white/20 rounded-lg px-3 py-2"
                               >
-                                Save
-                              </button>
-                              <button
-                                onClick={cancelEditing}
-                                className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded-lg text-sm transition-colors"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex justify-end gap-2">
-                              {canEditUser(user) && (
+                                {getAvailableRoles().map((role) => (
+                                  <option key={role.id} value={role.name} className="bg-gray-800 text-white">
+                                    {role.displayName}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <RoleIcon size={16} className={roleInfo.color} />
+                                <span className={`font-medium ${roleInfo.color}`}>
+                                  {roleInfo.displayName}
+                                </span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-gray-300">
+                            {user.points || 0}
+                          </td>
+                          <td className="px-6 py-4 text-gray-300">
+                            {new Date(user.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            {isEditing ? (
+                              <div className="flex justify-end gap-2">
                                 <button
-                                  onClick={() => startEditing(user)}
-                                  className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors"
-                                  title="Edit Role"
+                                  onClick={() => handleUpdateUserRole(user.userId, newRoleId)}
+                                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm transition-colors"
                                 >
-                                  <Edit2 size={16} />
+                                  Save
                                 </button>
-                              )}
-                              {canDeleteUser(user) && (
                                 <button
-                                  onClick={() => handleDeleteUser(user.userId)}
-                                  className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg transition-colors"
-                                  title="Delete User"
+                                  onClick={cancelEditing}
+                                  className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded-lg text-sm transition-colors"
                                 >
-                                  <Trash2 size={16} />
+                                  Cancel
                                 </button>
-                              )}
-                            </div>
-                          )}
-                        </td>
-                      </motion.tr>
-                    );
-                  })}
+                              </div>
+                            ) : (
+                              <div className="flex justify-end gap-2">
+                                {canEditUser(user) && (
+                                  <button
+                                    onClick={() => startEditing(user)}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors"
+                                    title="Edit Role"
+                                  >
+                                    <Edit2 size={16} />
+                                  </button>
+                                )}
+                                {canDeleteUser(user) && (
+                                  <button
+                                    onClick={() => handleDeleteUser(user.userId)}
+                                    className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg transition-colors"
+                                    title="Delete User"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                        </motion.tr>
+                      );
+                    })
+                  )}
                 </AnimatePresence>
               </tbody>
             </table>
@@ -512,26 +651,6 @@ const ManageUsersPage = () => {
               Next
               <ChevronRight className="w-4 h-4" />
             </button>
-          </div>
-        )}
-
-        {users.length === 0 && !loading && (
-          <div className="text-center py-12">
-            <p className="text-gray-400 text-lg">
-              {searchTerm ? `No users found matching "${searchTerm}".` : "No users found."}
-            </p>
-            {searchTerm && (
-              <button
-                onClick={() => {
-                  setSearchTerm("");
-                  setCurrentPage(1);
-                  fetchUsers(1, "", false);
-                }}
-                className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-              >
-                Clear Search
-              </button>
-            )}
           </div>
         )}
       </div>
