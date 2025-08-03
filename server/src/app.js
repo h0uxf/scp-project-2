@@ -74,6 +74,14 @@ const csrfProtection = csrf({
   }
 });
 
+// Endpoint to get CSRF token for frontend (apply CSRF middleware but don't validate)
+app.get('/api/csrf-token', (req, res, next) => {
+  // Apply CSRF middleware to generate token, but since it's GET it won't validate
+  csrfProtection(req, res, next);
+}, (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
+
 // Apply CSRF protection to state-changing operations only
 app.use('/api', (req, res, next) => {
   // Skip CSRF for GET, HEAD, OPTIONS requests (safe methods)
@@ -82,11 +90,6 @@ app.use('/api', (req, res, next) => {
   }
   // Apply CSRF protection for POST, PUT, DELETE, PATCH
   csrfProtection(req, res, next);
-});
-
-// Endpoint to get CSRF token for frontend
-app.get('/api/csrf-token', csrfProtection, (req, res) => {
-  res.json({ csrfToken: req.csrfToken() });
 });
 
 // Rate limiting

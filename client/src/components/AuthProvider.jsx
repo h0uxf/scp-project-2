@@ -7,17 +7,52 @@ const AuthContext = createContext(undefined);
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [csrfToken, setCsrfToken] = useState(null);
+
+  // Fetch CSRF token
+  const fetchCsrfToken = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/csrf-token`, {
+        credentials: "include",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCsrfToken(data.csrfToken);
+        return data.csrfToken;
+      }
+    } catch (error) {
+      console.error("Failed to fetch CSRF token:", error);
+    }
+    return null;
+  };
+
+  // Get headers with CSRF token
+  const getHeaders = async () => {
+    let token = csrfToken;
+    if (!token) {
+      token = await fetchCsrfToken();
+    }
+    return {
+      "Content-Type": "application/json",
+      ...(token && { "X-CSRF-Token": token }),
+    };
+  };
 
   function normalizeUser(user) {
+    if (!user) return null;
     return {
       ...user,
-      role_name: user.role_name,
+      role_id: user.role_id ? Number(user.role_id) : null,
+      role_name: user.role_name || null,
     };
   }
 
   useEffect(() => {
     async function fetchMe() {
       try {
+        // Fetch CSRF token first
+        await fetchCsrfToken();
+        
         const res = await fetch(`${API_BASE_URL}/api/me`, {
           credentials: "include",
         });
@@ -40,9 +75,10 @@ export function AuthProvider({ children }) {
 
   async function handleLogin(credentials) {
     console.log("Logging in with credentials:", credentials);
+    const headers = await getHeaders();
     const res = await fetch(`${API_BASE_URL}/api/login`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       credentials: "include",
       body: JSON.stringify(credentials),
     });
@@ -60,9 +96,10 @@ export function AuthProvider({ children }) {
   }
 
   async function handleRegister(credentials) {
+    const headers = await getHeaders();
     const res = await fetch(`${API_BASE_URL}/api/register`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       credentials: "include",
       body: JSON.stringify(credentials),
     });
@@ -87,12 +124,15 @@ export function AuthProvider({ children }) {
 
   async function handleLogout() {
     console.log("Logging out...");
+    const headers = await getHeaders();
     await fetch(`${API_BASE_URL}/api/logout`, {
       method: "POST",
+      headers,
       credentials: "include",
     });
 
     setCurrentUser(null);
+    setCsrfToken(null); // Clear CSRF token on logout
     window.location.reload();
   }
 
@@ -100,14 +140,6 @@ export function AuthProvider({ children }) {
     if (!currentUser) return false;
     const currentRole = currentUser.role_name;
     return roleNames.includes(currentRole);
-  }
-
-  function isContentManager() {
-    return hasRole(2);
-  }
-
-  function isAdmin() {
-    return Number(currentUser?.role_id) === 4;
   }
 
   return (
@@ -119,7 +151,6 @@ export function AuthProvider({ children }) {
         handleRegister,
         handleLogout,
         hasRole,
-        isAdmin,
       }}
     >
       {children}
