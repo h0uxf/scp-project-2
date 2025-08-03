@@ -13,6 +13,7 @@ import AdminQRScanner from "./pages/AdminQRScanner";
 import CrosswordListPage from "./pages/CrosswordListPage";
 import CrosswordPage from "./pages/CrosswordPage";
 import CrosswordAdminPage from "./pages/CrosswordAdminPage";
+import AdminDashboard from "./pages/AdminDashboard";
 import NavBar from "./components/NavBar";
 import LearnMoreRedirect from "./components/LearnMoreRedirect";
 import Footer from "./components/Footer";
@@ -20,24 +21,35 @@ import Footer from "./components/Footer";
 function App() {
   return (
     <Router>
-      <NavBar />
       <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/learn-more" element={<LearnMoreRedirect />} />
-        {/* <Route path="/scan" element={<ScanPage />} /> */}
-        <Route path="/quiz" element={<QuizPage />} />
-        <Route path="/leaderboard" element={<LeaderboardPage />} />
-        <Route path='/login' element={<LoginPage />} />
-        <Route path='/register' element={<RegisterPage />} />
-        <Route path='/face-filter' element={<FaceFilterPage />} />
-        <Route path="/admin/activities" element={<ActivitiesPage />} />
-        <Route path='/rewards' element={<RewardsPage />} />
-        <Route path='/admin/rewards' element={<AdminQRScanner />} />
-        <Route path='/crossword' element={<CrosswordListPage />} />
-        <Route path='/crossword/:puzzleId' element={<CrosswordPage />} />
-        <Route path='/admin/crossword' element={<CrosswordAdminPage />} />
+        {/* Admin Dashboard Routes - No NavBar */}
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/activities" element={<AdminDashboard />} />
+        <Route path="/admin/users" element={<AdminDashboard />} />
+        
+        {/* Regular Routes - With NavBar */}
+        <Route path="/*" element={
+          <>
+            <NavBar />
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/learn-more" element={<LearnMoreRedirect />} />
+              {/* <Route path="/scan" element={<ScanPage />} /> */}
+              <Route path="/quiz" element={<QuizPage />} />
+              <Route path="/leaderboard" element={<LeaderboardPage />} />
+              <Route path='/login' element={<LoginPage />} />
+              <Route path='/register' element={<RegisterPage />} />
+              <Route path='/face-filter' element={<FaceFilterPage />} />
+              <Route path='/rewards' element={<RewardsPage />} />
+              <Route path='/admin/rewards' element={<AdminQRScanner />} />
+              <Route path='/crossword' element={<CrosswordListPage />} />
+              <Route path='/crossword/:puzzleId' element={<CrosswordPage />} />
+              <Route path='/admin/crossword' element={<CrosswordAdminPage />} />
+            </Routes>
+            <Footer />
+          </>
+        } />
       </Routes>
-      <Footer />
     </Router>
   );
 }

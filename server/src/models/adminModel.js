@@ -12,15 +12,12 @@ module.exports = {
                     points: true,
                     createdAt: true,
                     updatedAt: true,
-                    userRole: {
+                    roleId: true,
+                    role: {
                         select: {
-                            role: {
-                                select: {
-                                    roleId: true,
-                                    roleName: true,
-                                    description: true,
-                                },
-                            },
+                            roleId: true,
+                            roleName: true,
+                            description: true,
                         },
                     },
                 },
@@ -33,7 +30,12 @@ module.exports = {
                 throw new Error('No users found.');
             }
 
-            return users;
+            // Transform the data to match expected format
+            return users.map(user => ({
+                ...user,
+                role_id: user.roleId,
+                role_name: user.role?.roleName,
+            }));
         } catch (error) {
             throw error;
         }
@@ -55,15 +57,12 @@ module.exports = {
                     points: true,
                     createdAt: true,
                     updatedAt: true,
-                    userRole: {
+                    roleId: true,
+                    role: {
                         select: {
-                            role: {
-                                select: {
-                                    roleId: true,
-                                    roleName: true,
-                                    description: true,
-                                },
-                            },
+                            roleId: true,
+                            roleName: true,
+                            description: true,
                         },
                     },
                     userActivities: {
@@ -97,13 +96,18 @@ module.exports = {
                 throw new Error(`User with ID ${id} not found.`);
             }
 
-            return user;
+            // Transform the data to match expected format
+            return {
+                ...user,
+                role_id: user.roleId,
+                role_name: user.role?.roleName,
+            };
         } catch (error) {
             throw error;
         }
     },
 
-    // Update user by ID
+    // Update user role by ID
     updateUserById: async (userId, userData) => {
         const id = parseInt(userId, 10);
         if (isNaN(id)) {
@@ -111,41 +115,29 @@ module.exports = {
         }
 
         try {
-            const { username, points, roleId } = userData;
+            const { roleId } = userData;
+            const roleIdInt = parseInt(roleId, 10);
 
-            // Update user basic info
+            // Update user role directly in the user table
             const updatedUser = await prisma.user.update({
                 where: { userId: id },
                 data: {
-                    username,
-                    points: points !== undefined ? parseInt(points, 10) : undefined,
+                    roleId: roleIdInt,
                     updatedAt: new Date(),
                 },
                 select: {
                     userId: true,
                     username: true,
-                    points: true,
+                    roleId: true,
+                    role: {
+                        select: {
+                            roleId: true,
+                            roleName: true
+                        }
+                    },
                     updatedAt: true,
                 },
             });
-
-            // Update user role if provided
-            if (roleId !== undefined) {
-                const roleIdInt = parseInt(roleId, 10);
-                
-                // Delete existing user role
-                await prisma.userRole.deleteMany({
-                    where: { userId: id },
-                });
-
-                // Create new user role
-                await prisma.userRole.create({
-                    data: {
-                        userId: id,
-                        roleId: roleIdInt,
-                    },
-                });
-            }
 
             return updatedUser;
         } catch (error) {

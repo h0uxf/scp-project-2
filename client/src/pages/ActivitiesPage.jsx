@@ -32,7 +32,7 @@ class ActivityErrorBoundary extends React.Component {
   }
 }
 
-const ActivitiesPage = () => {
+const ActivitiesPage = ({ isEmbedded = false }) => {
   const { currentUser, hasRole, loading: authLoading } = useAuth();
   const [activities, setActivities] = useState([]);
   const [newActivity, setNewActivity] = useState({ name: "", description: "", route: "" });
@@ -223,6 +223,13 @@ const ActivitiesPage = () => {
   }, [authLoading]);
 
   if (authLoading || loading) {
+    if (isEmbedded) {
+      return (
+        <div className="p-8 text-white text-center">
+          <p className="text-lg">Loading activities...</p>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4 sm:px-6 text-white text-center">
         <h1 className="text-2xl sm:text-4xl font-bold mb-4">Manage Activities</h1>
@@ -232,6 +239,19 @@ const ActivitiesPage = () => {
   }
 
   if (error) {
+    if (isEmbedded) {
+      return (
+        <div className="p-8 text-white text-center">
+          <p className="text-lg text-red-300">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full transition-all duration-300"
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4 sm:px-6 text-white text-center">
         <h1 className="text-2xl sm:text-4xl font-bold mb-4">Manage Activities</h1>
@@ -247,6 +267,13 @@ const ActivitiesPage = () => {
   }
 
   if (!hasRole("content_manager", "moderator", "admin", "super_admin")) {
+    if (isEmbedded) {
+      return (
+        <div className="p-8 text-white text-center">
+          <p className="text-lg text-red-300">Access Denied: You do not have permission to view this page.</p>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4 sm:px-6 text-white text-center">
         <h1 className="text-2xl sm:text-4xl font-bold mb-4">Manage Activities</h1>
@@ -257,9 +284,9 @@ const ActivitiesPage = () => {
 
   return (
     <ActivityErrorBoundary>
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4 sm:px-6 text-white text-center">
+      <div className={`${isEmbedded ? 'p-8' : 'min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4 sm:px-6'} text-white text-center`}>
         <Toaster position="top-right" />
-        <h1 className="text-2xl sm:text-4xl font-bold mb-6 sm:mb-8">Manage Activities</h1>
+        {!isEmbedded && <h1 className="text-2xl sm:text-4xl font-bold mb-6 sm:mb-8">Manage Activities</h1>}
 
         {/* Admin Controls */}
         <div className="max-w-4xl mx-auto bg-white/5 border border-white/20 rounded-2xl p-4 sm:p-6 md:p-8 shadow-xl mb-6 sm:mb-8">
