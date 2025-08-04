@@ -14,6 +14,7 @@ const roleMiddleware = require('../middlewares/roleMiddleware.js');
 // IMPORT MIDDLEWARES FOR INPUT VALIDATION
 //////////////////////////////////////////////////////
 const { sanitizeRequest, sanitizeResponse } = require('../middlewares/sanitizers.js');
+const { searchValidationRules, validate, getAllUsersValidationRules } = require('../middlewares/validators.js');
 
 //////////////////////////////////////////////////////
 // CREATE ROUTER
@@ -29,6 +30,8 @@ router.get(
     '/users',
     jwtMiddleware.verifyAccessToken,
     roleMiddleware(["admin", "super_admin"]),
+    getAllUsersValidationRules(),
+    validate(),
     adminController.getAllUsers
 );
 
