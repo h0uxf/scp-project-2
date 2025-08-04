@@ -1,6 +1,3 @@
-//////////////////////////////////////////////////////
-// UPDATED APP.JS WITH PROPER CSRF HANDLING
-//////////////////////////////////////////////////////
 const express = require("express");
 const cors = require("cors");
 const logger = require("./logger");
@@ -25,7 +22,14 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: allowedOrigins,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      logger.warn("CORS blocked for invalid origin", { origin });
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
 }));
 
@@ -41,9 +45,9 @@ app.use(helmet.contentSecurityPolicy({
   directives: {
     defaultSrc: ["'self'"],
     scriptSrc: ["'self'"],
-    styleSrc: ["'self'"],
-    imgSrc: ["'self'"],
-    connectSrc: ["'self'"],
+    styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles for frontend compatibility
+    imgSrc: ["'self'", "data:"], // Allow data URLs for images
+    connectSrc: ["'self'", ...allowedOrigins], // Allow frontend origins for API calls
     fontSrc: ["'self'"],
     objectSrc: ["'none'"],
     mediaSrc: ["'self'"],
@@ -56,26 +60,43 @@ const csrfProtection = csrf({
   cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
-  }
+    sameSite: 'strict',
+  },
 });
 
-// Apply CSRF protection to state-changing operations only
+// CSRF Token Endpoint (No CSRF Protection)
+app.get('/api/csrf-token', (req, res) => {
+  const token = req.csrfToken ? req.csrfToken() : null;
+  if (!token) {
+    logger.error("Failed to generate CSRF token");
+    return res.status(500).json({ status: "error", message: "Failed to generate CSRF token" });
+  }
+  res.json({ status: "success", data: { csrfToken: token } });
+});
+
+// Selective CSRF Protection
 app.use('/api', (req, res, next) => {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
     return next();
   }
-  csrfProtection(req, res, next);
+  if (req.path === '/login' && req.method === 'POST') {
+    return next();
+  }
+  if (req.path === '/register' && req.method === 'POST') {
+    return next();
+  }
+  csrfProtection(req, res, (err) => {
+    if (err) {
+      logger.error("CSRF validation failed", { path: req.originalUrl, method: req.method });
+      return res.status(403).json({ status: "error", message: "Invalid CSRF token" });
+    }
+    next();
+  });
 });
 
-// Endpoint to get CSRF token for frontend
-app.get('/api/csrf-token', csrfProtection, (req, res) => {
-  res.json({ csrfToken: req.csrfToken() });
-});
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+// Rate Limiting
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100,
   handler: (req, res, next) => {
     const error = new Error("Too many requests from this IP, please try again after 15 minutes");
@@ -85,37 +106,22 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use(limiter);
 
-//////////////////////////////////////////////////////
-// CSRF TOKEN ENDPOINT (NO CSRF PROTECTION)
-//////////////////////////////////////////////////////
-app.get('/api/csrf-token', csrfProtection, (req, res) => {
-  res.json({ csrfToken: req.csrfToken() });
+// Endpoint-specific rate limiter for high-traffic GET endpoints
+const leaderboardLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200, // Higher limit for leaderboard
+  handler: (req, res, next) => {
+    const error = new Error("Too many leaderboard requests, please try again later");
+    error.statusCode = 429;
+    next(error);
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
-//////////////////////////////////////////////////////
-// SELECTIVE CSRF PROTECTION
-//////////////////////////////////////////////////////
-app.use('/api', (req, res, next) => {
-  // Skip CSRF for safe methods and specific auth endpoints
-  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
-    return next();
-  }
-  
-  // Skip CSRF for initial login (but require it after login)
-  if (req.path === '/login' && req.method === 'POST') {
-    return next();
-  }
-  
-  // Skip CSRF for registration
-  if (req.path === '/register' && req.method === 'POST') {
-    return next();
-  }
-  
-  // Apply CSRF protection for all other state-changing operations
-  csrfProtection(req, res, next);
-});
+app.use('/api/leaderboard', leaderboardLimiter);
+app.use(generalLimiter);
 
 //////////////////////////////////////////////////////
 // LOGGING MIDDLEWARE
@@ -130,6 +136,7 @@ app.use((req, res, next) => {
       statusCode: res.statusCode,
       responseTime: `${responseTime}ms`,
       ip: req.ip,
+      user: req.user?.username || "anonymous",
     });
   });
   next();
@@ -146,7 +153,7 @@ app.use("/api", mainRoutes);
 //////////////////////////////////////////////////////
 app.use("/", express.static("public"));
 const path = require('path');
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'Uploads')));
 
 //////////////////////////////////////////////////////
 // RESPONSE SANITIZATION & ERROR HANDLING
