@@ -2,38 +2,85 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 module.exports = {
-    // Get all users
-    readAllUsers: async () => {
+    // Get all users with pagination
+    readAllUsers: async (page = 1, limit = 10, search = '', sortBy = 'userId', sortOrder = 'asc', role = '') => {
         try {
+            const skip = (page - 1) * limit;
+            
+            // Build search and filter conditions
+            const whereCondition = {};
+            
+            // Add search condition - only search by username
+            if (search) {
+                whereCondition.username = { contains: search, mode: 'insensitive' };
+            }
+            
+            // Add role filter condition
+            if (role) {
+                whereCondition.role = {
+                    roleName: role
+                };
+            }
+
+            // Get total count for pagination
+            const totalUsers = await prisma.user.count({
+                where: whereCondition
+            });
+
+            // Build sort condition
+            let orderBy = {};
+            switch (sortBy) {
+                case 'userId':
+                    orderBy.userId = sortOrder;
+                    break;
+                case 'points':
+                    orderBy.points = sortOrder;
+                    break;
+                case 'createdAt':
+                    orderBy.createdAt = sortOrder;
+                    break;
+                default:
+                    orderBy.userId = 'asc';
+            }
+
+            // Get users with pagination
             const users = await prisma.user.findMany({
+                where: whereCondition,
                 select: {
                     userId: true,
                     username: true,
                     points: true,
                     createdAt: true,
                     updatedAt: true,
-                    userRole: {
+                    roleId: true,
+                    role: {
                         select: {
-                            role: {
-                                select: {
-                                    roleId: true,
-                                    roleName: true,
-                                    description: true,
-                                },
-                            },
+                            roleId: true,
+                            roleName: true,
+                            description: true,
                         },
                     },
                 },
-                orderBy: {
-                    createdAt: 'desc',
-                },
+                orderBy: orderBy,
+                skip: skip,
+                take: limit,
             });
 
-            if (users.length === 0) {
-                throw new Error('No users found.');
-            }
+            const totalPages = Math.ceil(totalUsers / limit);
 
-            return users;
+            // Transform the data to match expected format
+            const transformedUsers = users.map(user => ({
+                ...user,
+                role_id: user.roleId,
+                role_name: user.role?.roleName,
+            }));
+
+            return {
+                users: transformedUsers,
+                totalUsers,
+                totalPages,
+                currentPage: page
+            };
         } catch (error) {
             throw error;
         }
@@ -55,15 +102,12 @@ module.exports = {
                     points: true,
                     createdAt: true,
                     updatedAt: true,
-                    userRole: {
+                    roleId: true,
+                    role: {
                         select: {
-                            role: {
-                                select: {
-                                    roleId: true,
-                                    roleName: true,
-                                    description: true,
-                                },
-                            },
+                            roleId: true,
+                            roleName: true,
+                            description: true,
                         },
                     },
                     userActivities: {
@@ -97,13 +141,18 @@ module.exports = {
                 throw new Error(`User with ID ${id} not found.`);
             }
 
-            return user;
+            // Transform the data to match expected format
+            return {
+                ...user,
+                role_id: user.roleId,
+                role_name: user.role?.roleName,
+            };
         } catch (error) {
             throw error;
         }
     },
 
-    // Update user by ID
+    // Update user role by ID
     updateUserById: async (userId, userData) => {
         const id = parseInt(userId, 10);
         if (isNaN(id)) {
@@ -111,43 +160,80 @@ module.exports = {
         }
 
         try {
-            const { username, points, roleId } = userData;
+            const { roleId } = userData;
+            const roleIdInt = parseInt(roleId, 10);
 
-            // Update user basic info
+            // Update user role directly in the user table
             const updatedUser = await prisma.user.update({
                 where: { userId: id },
                 data: {
-                    username,
-                    points: points !== undefined ? parseInt(points, 10) : undefined,
+                    roleId: roleIdInt,
                     updatedAt: new Date(),
                 },
                 select: {
                     userId: true,
                     username: true,
-                    points: true,
+                    roleId: true,
+                    role: {
+                        select: {
+                            roleId: true,
+                            roleName: true
+                        }
+                    },
                     updatedAt: true,
                 },
             });
 
-            // Update user role if provided
-            if (roleId !== undefined) {
-                const roleIdInt = parseInt(roleId, 10);
-                
-                // Delete existing user role
-                await prisma.userRole.deleteMany({
-                    where: { userId: id },
-                });
+            return updatedUser;
+        } catch (error) {
+            throw error;
+        }
+    },
 
-                // Create new user role
-                await prisma.userRole.create({
-                    data: {
-                        userId: id,
-                        roleId: roleIdInt,
-                    },
-                });
+    // Update user role by role name
+    updateUserByRoleName: async (userId, roleName) => {
+        const id = parseInt(userId, 10);
+        if (isNaN(id)) {
+            throw new Error('Invalid user ID. It must be a number.');
+        }
+
+        try {
+            // First, find the role by name to get the roleId
+            const role = await prisma.role.findUnique({
+                where: { roleName: roleName }
+            });
+
+            if (!role) {
+                throw new Error(`Role '${roleName}' not found.`);
             }
 
-            return updatedUser;
+            // Update user role directly in the user table
+            const updatedUser = await prisma.user.update({
+                where: { userId: id },
+                data: {
+                    roleId: role.roleId,
+                    updatedAt: new Date(),
+                },
+                select: {
+                    userId: true,
+                    username: true,
+                    roleId: true,
+                    role: {
+                        select: {
+                            roleId: true,
+                            roleName: true
+                        }
+                    },
+                    updatedAt: true,
+                },
+            });
+
+            // Transform the data to match expected format
+            return {
+                ...updatedUser,
+                role_id: updatedUser.roleId,
+                role_name: updatedUser.role?.roleName,
+            };
         } catch (error) {
             throw error;
         }

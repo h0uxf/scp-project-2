@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { Menu, X, Crown, Play, GraduationCap, Home, Puzzle } from "lucide-react";
+import { Menu, X, Crown, Play, GraduationCap, Home, Puzzle, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../components/AuthProvider";
 
 const NavBar = () => {
   const [navOpen, setNavOpen] = useState(false);
   const navigate = useNavigate();
-  const { handleLogout, currentUser } = useAuth();
+  const { handleLogout, currentUser, hasRole } = useAuth();
 
   const toggleMenu = () => setNavOpen(!navOpen);
 
@@ -36,6 +36,16 @@ const NavBar = () => {
       color: "from-pink-500 to-rose-500",
       action: () => navigate("/leaderboard"),
     },
+    ...(currentUser && hasRole("content_manager", "moderator", "admin", "super_admin")
+      ? [
+          {
+            icon: Settings,
+            text: "Admin Dashboard",
+            color: "from-orange-500 to-red-500",
+            action: () => navigate("/admin"),
+          },
+        ]
+      : []),
     ...(currentUser
       ? [
           {
@@ -59,6 +69,7 @@ const NavBar = () => {
           <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
             EXPLORING SP GAME
           </h1>
+          
         </div>
 
         {/* Desktop Navigation Buttons */}

@@ -34,11 +34,7 @@ module.exports = {
                 username: data.username,
                 passwordHash: data.password,
                 points: 0,
-                userRole: {
-                create: {
-                    roleId: 1,
-                },
-                },
+                roleId: 1, // Default to user role (roleId: 1)
             },
             select: {
                 userId: true,
