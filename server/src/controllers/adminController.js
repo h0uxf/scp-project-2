@@ -7,6 +7,12 @@ const catchAsync = require("../utils/catchAsync");
 module.exports = {
   // Get all users with pagination
   getAllUsers: catchAsync(async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      logger.warn(`Validation errors: ${JSON.stringify(errors.array())}`);
+      return next(new AppError(errors.array()[0].msg, 400));
+    }
+    
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const search = req.query.search || '';
