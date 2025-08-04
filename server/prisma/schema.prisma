@@ -9,7 +9,7 @@ datasource db {
 
 model Word {
   wordId      Int          @id @default(autoincrement()) @map("word_id")
-  wordText    String       @map("word_text")
+  wordText    String       @map("word_text") 
   wordLength  Int          @map("word_length")
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")
@@ -91,7 +91,7 @@ model UserPuzzleProgress {
 
 model Question {
   questionId   Int          @id @default(autoincrement()) @map("question_id")
-  questionText String       @map("question_text")
+  questionText String       @map("question_text") @db.VarChar(100)
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
   order        Int          @default(0)
@@ -101,7 +101,7 @@ model Question {
 
 model Option {
   optionId      Int              @id @default(autoincrement()) @map("option_id")
-  optionText    String           @map("option_text")
+  optionText    String           @map("option_text") @db.VarChar(100)
   createdAt     DateTime         @default(now()) @map("created_at")
   updatedAt     DateTime         @updatedAt @map("updated_at")
   questionId    Int              @map("question_id")
@@ -126,7 +126,7 @@ model QuizResult {
 model PersonalityType {
   id          Int          @id @default(autoincrement())
   code        String       @unique
-  name        String
+  name        String       @unique @db.VarChar(50)
   description String
   options     Option[]
   userResults UserResult[]

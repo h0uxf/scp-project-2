@@ -44,7 +44,7 @@ router.post(
         user_id: res.locals.user_id,
         username: res.locals.username,
         role_id: res.locals.role_id,
-        role_name: req.user.role_name
+        role_name: res.locals.role_name
       }
     });
   }
@@ -66,7 +66,7 @@ router.post(
         user_id: res.locals.user_id,
         username: res.locals.username,
         role_id: res.locals.role_id,
-        role_name: req.user.role_name
+        role_name: res.locals.role_name
       }
     });
   }

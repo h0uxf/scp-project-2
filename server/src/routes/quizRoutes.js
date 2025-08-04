@@ -17,7 +17,8 @@ const roleMiddleware = require('../middlewares/roleMiddleware.js');
 const { sanitizeRequest, sanitizeResponse } = require('../middlewares/sanitizers.js');
 const {
     validate,
-    questionValidationRules
+    questionValidationRules,
+    optionValidationRules
 } = require('../middlewares/validators'); 
 
 //////////////////////////////////////////////////////
@@ -56,6 +57,7 @@ router.post(
     jwtMiddleware.verifyAccessToken,
     roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     questionValidationRules(), 
+    optionValidationRules(),
     validate,                  
     quizController.createQuizQuestion
 );
