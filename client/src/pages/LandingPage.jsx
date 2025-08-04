@@ -385,7 +385,7 @@ const LandingPage = () => {
                           <span className="text-white font-bold text-xl">
                             #{index + 1}
                           </span>
-                          <p className="text-gray-300 font-medium">{user.name}</p>
+                          <p className="text-gray-300 font-medium">{user.username}</p>
                         </div>
                       </div>
                       <div className="text-right">
