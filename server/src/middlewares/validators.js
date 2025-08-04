@@ -44,54 +44,6 @@ const questionValidationRules = () => {
     ];
 };
 
-// Validators for creating/updating an Option
-const optionValidationRules = (prisma) => { 
-    return [
-        body('optionText')
-            .trim()
-            .notEmpty()
-            .withMessage('Option text cannot be empty.')
-            .isString()
-            .withMessage('Option text must be a string.')
-            .isLength({ max: 100 }) 
-            .withMessage('Option text cannot exceed 100 characters.'),
-        body('questionId')
-            .isInt({ gt: 0 })
-            .withMessage('Question ID must be a positive integer.')
-            .custom(async (value) => {
-                if (!prisma) {
-                    console.warn("Prisma client not provided to optionValidationRules. Skipping DB check for questionId.");
-                    return true;
-                }
-                const question = await prisma.question.findUnique({
-                    where: { questionId: value },
-                });
-                if (!question) {
-                    throw new Error('Question with the provided ID does not exist.');
-                }
-                return true;
-            }),
-        body('personalityId')
-            .optional({ nullable: true })
-            .isInt({ gt: 0 })
-            .withMessage('Personality ID must be a positive integer if provided.')
-            .custom(async (value) => {
-                if (value === null || value === undefined) return true; 
-                if (!prisma) {
-                    console.warn("Prisma client not provided to optionValidationRules. Skipping DB check for personalityId.");
-                    return true;
-                }
-                const personalityType = await prisma.personalityType.findUnique({
-                    where: { id: value },
-                });
-                if (!personalityType) {
-                    throw new Error('Personality type with the provided ID does not exist.');
-                }
-                return true;
-            }),
-    ];
-};
-
 const activityValidationRules = () => {
     return [
         body('name')
@@ -133,7 +85,5 @@ module.exports = {
     userValidationRules,
     questionValidationRules,
     activityValidationRules,
-    optionValidationRules,
-    // quizResultValidationRules,
     rewardValidationRules,
 };

@@ -57,7 +57,6 @@ router.post(
     jwtMiddleware.verifyAccessToken,
     roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     questionValidationRules(), 
-    optionValidationRules(),
     validate,                  
     quizController.createQuizQuestion
 );

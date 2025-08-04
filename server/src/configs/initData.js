@@ -298,16 +298,190 @@ async function initializeQuizQuestions(personalityTypes) {
   }, {});
 
   const quizQuestions = [
-    {
-      questionText: "When working on a project, what do you enjoy the most?",
-      options: [
-        { optionText: "Understanding patterns and making sense of information", personalityCode: "DAAA" },
-        { optionText: "Creating something new and building things from scratch", personalityCode: "DCS" },
-        { optionText: "Keeping things safe and solving problems that protect others", personalityCode: "DCDF" },
-      ],
-    },
-    // Add other questions similarly (omitted for brevity, same as original)
-  ];
+      {
+        questionText: "When working on a project, what do you enjoy the most?",
+        options: [
+          {
+            optionText:
+              "Understanding patterns and making sense of information",
+            personalityCode: "DAAA",
+          },
+          {
+            optionText:
+              "Creating something new and building things from scratch",
+            personalityCode: "DCS",
+          },
+          {
+            optionText:
+              "Keeping things safe and solving problems that protect others",
+            personalityCode: "DCDF",
+          },
+        ],
+      },
+      {
+        questionText: "What kind of tasks do you prefer?",
+        options: [
+          {
+            optionText: "Exploring data and spotting trends",
+            personalityCode: "DAAA",
+          },
+          {
+            optionText: "Designing and making plans for new ideas",
+            personalityCode: "DCS",
+          },
+          {
+            optionText: "Finding solutions to keep things secure and protected",
+            personalityCode: "DCDF",
+          },
+        ],
+      },
+      {
+        questionText: "How do you like to spend your free time?",
+        options: [
+          {
+            optionText:
+              "Reading about new discoveries and learning how things work",
+            personalityCode: "DAAA",
+          },
+          {
+            optionText: "Making or fixing things, like DIY projects or crafts",
+            personalityCode: "DCS",
+          },
+          {
+            optionText:
+              "Playing detective games or puzzles that involve solving mysteries",
+            personalityCode: "DCDF",
+          },
+        ],
+      },
+      {
+        questionText: "What kind of teamwork do you enjoy?",
+        options: [
+          {
+            optionText:
+              "Collaborating to analyze information and make decisions",
+            personalityCode: "DAAA",
+          },
+          {
+            optionText:
+              "Working together to build or develop something tangible",
+            personalityCode: "DCS",
+          },
+          {
+            optionText: "Joining forces to guard and protect important things",
+            personalityCode: "DCDF",
+          },
+        ],
+      },
+      {
+        questionText: "What motivates you?",
+        options: [
+          {
+            optionText:
+              "Learning new things and understanding the “why” behind them",
+            personalityCode: "DAAA",
+          },
+          {
+            optionText:
+              "Creating and building useful things that people can use",
+            personalityCode: "DCS",
+          },
+          {
+            optionText:
+              "Helping keep people safe and solving problems that matter",
+            personalityCode: "DCDF",
+          },
+        ],
+      },
+      {
+        questionText: "How do you approach problems?",
+        options: [
+          {
+            optionText: "I try to understand all the facts before deciding",
+            personalityCode: "DAAA",
+          },
+          {
+            optionText: "I like to try different ideas until something works",
+            personalityCode: "DCS",
+          },
+          {
+            optionText: "I look for weaknesses or risks and try to fix them",
+            personalityCode: "DCDF",
+          },
+        ],
+      },
+      {
+        questionText: "What kind of stories or movies do you prefer?",
+        options: [
+          {
+            optionText: "Stories about discoveries and innovations",
+            personalityCode: "DAAA",
+          },
+          {
+            optionText:
+              "Adventures where characters build or invent something new",
+            personalityCode: "DCS",
+          },
+          {
+            optionText:
+              "Thrillers or mysteries involving secrets and investigations",
+            personalityCode: "DCDF",
+          },
+        ],
+      },
+      {
+        questionText: "If you had to choose, which sounds most interesting?",
+        options: [
+          {
+            optionText: "Finding useful patterns in everyday information",
+            personalityCode: "DAAA",
+          },
+          {
+            optionText: "Designing and building a new tool or app",
+            personalityCode: "DCS",
+          },
+          {
+            optionText: "Tracking down a mystery or stopping a bad actor",
+            personalityCode: "DCDF",
+          },
+        ],
+      },
+      {
+        questionText: "What skill would you like to get better at?",
+        options: [
+          {
+            optionText: "Understanding data and how to use it wisely",
+            personalityCode: "DAAA",
+          },
+          {
+            optionText: "Creating and building new things",
+            personalityCode: "DCS",
+          },
+          {
+            optionText: "Protecting others and solving tricky problems",
+            personalityCode: "DCDF",
+          },
+        ],
+      },
+      {
+        questionText: "What’s your preferred way to learn?",
+        options: [
+          {
+            optionText: "By analyzing facts and figures",
+            personalityCode: "DAAA",
+          },
+          {
+            optionText: "By making and doing hands-on projects",
+            personalityCode: "DCS",
+          },
+          {
+            optionText:
+              "By practicing real-life problem solving and investigation",
+            personalityCode: "DCDF",
+          },
+        ],
+      },
+    ];
 
   try {
     console.log("Creating quiz questions...");
@@ -377,36 +551,374 @@ async function initializeLocations() {
 // Initialize crossword data
 async function initializeCrosswordData() {
   const wordsData = [
-    { wordText: "CODE", difficulty: "Easy", category: "Programming" },
-    { wordText: "BYTE", difficulty: "Easy", category: "Computing" },
-    // Add other words (omitted for brevity, same as original)
-  ];
+      // Easy level words
+      { wordText: "CODE", difficulty: "Easy", category: "Programming" },
+      { wordText: "BYTE", difficulty: "Easy", category: "Computing" },
+      { wordText: "LOOP", difficulty: "Easy", category: "Programming" },
+      { wordText: "DATA", difficulty: "Easy", category: "Computing" },
+      { wordText: "FILE", difficulty: "Easy", category: "Computing" },
+      { wordText: "JAVA", difficulty: "Easy", category: "Programming" },
+      { wordText: "HTML", difficulty: "Easy", category: "Web Development" },
+      { wordText: "WIFI", difficulty: "Easy", category: "Networking" },
+      { wordText: "DISK", difficulty: "Easy", category: "Hardware" },
+      { wordText: "USER", difficulty: "Easy", category: "Computing" },
 
-  const cluesData = [
-    { clueText: "Instructions written for computers to follow", clueType: "DEFINITION", difficulty: "Easy", category: "Programming" },
-    { clueText: "Unit of computer memory equal to 8 bits", clueType: "DEFINITION", difficulty: "Easy", category: "Computing" },
-    // Add other clues
-  ];
+      // Medium level words
+      { wordText: "PYTHON", difficulty: "Medium", category: "Programming" },
+      { wordText: "MEMORY", difficulty: "Medium", category: "Hardware" },
+      { wordText: "SERVER", difficulty: "Medium", category: "Computing" },
+      { wordText: "FUNCTION", difficulty: "Medium", category: "Programming" },
+      { wordText: "DATABASE", difficulty: "Medium", category: "Data Management" },
+      { wordText: "VARIABLE", difficulty: "Medium", category: "Programming" },
+      { wordText: "COMPILER", difficulty: "Medium", category: "Programming" },
+      { wordText: "INTERNET", difficulty: "Medium", category: "Networking" },
+      { wordText: "SOFTWARE", difficulty: "Medium", category: "Computing" },
+      { wordText: "HARDWARE", difficulty: "Medium", category: "Computing" },
 
-  const puzzlesData = [
-    { title: "Programming Basics", difficulty: "Easy", gridSize: 10, isPublished: true },
-    { title: "Computer Hardware", difficulty: "Medium", gridSize: 12, isPublished: true },
-    { title: "Advanced Computing", difficulty: "Hard", gridSize: 15, isPublished: true },
-    { title: "Web Development Fundamentals", difficulty: "Medium", gridSize: 12, isPublished: false },
-  ];
+      // Hard level words
+      { wordText: "ALGORITHM", difficulty: "Hard", category: "Programming" },
+      { wordText: "JAVASCRIPT", difficulty: "Hard", category: "Programming" },
+      { wordText: "ENCRYPTION", difficulty: "Hard", category: "Security" },
+      { wordText: "FRAMEWORK", difficulty: "Hard", category: "Programming" },
+      { wordText: "DEBUGGING", difficulty: "Hard", category: "Programming" },
+      { wordText: "RECURSION", difficulty: "Hard", category: "Programming" },
+      { wordText: "PROCESSOR", difficulty: "Hard", category: "Hardware" },
+      { wordText: "INTERFACE", difficulty: "Hard", category: "Programming" },
+      { wordText: "PROTOCOL", difficulty: "Hard", category: "Networking" },
+      { wordText: "OPERATING", difficulty: "Hard", category: "Systems" },
+    ];
 
-  const puzzleWordsData = [
-    {
-      puzzleIndex: 0,
-      wordIndex: 0,
-      clueIndex: 0,
-      startRow: 1,
-      startCol: 1,
-      direction: "ACROSS",
-      clueNumber: 1,
-    },
-    // Add other puzzle words
-  ];
+    const cluesData = [
+      // Easy clues
+      {
+        clueText: "Instructions written for computers to follow",
+        clueType: "DEFINITION",
+        difficulty: "Easy",
+        category: "Programming",
+      }, // CODE
+      {
+        clueText: "Unit of computer memory equal to 8 bits",
+        clueType: "DEFINITION",
+        difficulty: "Easy",
+        category: "Computing",
+      }, // BYTE
+      {
+        clueText: "Programming structure that repeats instructions",
+        clueType: "DEFINITION",
+        difficulty: "Easy",
+        category: "Programming",
+      }, // LOOP
+      {
+        clueText: "Information stored and processed by computers",
+        clueType: "DEFINITION",
+        difficulty: "Easy",
+        category: "Computing",
+      }, // DATA
+      {
+        clueText: "Collection of information stored on a computer",
+        clueType: "DEFINITION",
+        difficulty: "Easy",
+        category: "Computing",
+      }, // FILE
+      {
+        clueText: "Popular programming language with coffee-inspired name",
+        clueType: "DEFINITION",
+        difficulty: "Easy",
+        category: "Programming",
+      }, // JAVA
+      {
+        clueText: "Markup language for creating web pages",
+        clueType: "DEFINITION",
+        difficulty: "Easy",
+        category: "Web Development",
+      }, // HTML
+      {
+        clueText: "Wireless internet connection technology",
+        clueType: "DEFINITION",
+        difficulty: "Easy",
+        category: "Networking",
+      }, // WIFI
+      {
+        clueText: "Storage device that spins to read data",
+        clueType: "DEFINITION",
+        difficulty: "Easy",
+        category: "Hardware",
+      }, // DISK
+      {
+        clueText: "Person who operates a computer system",
+        clueType: "DEFINITION",
+        difficulty: "Easy",
+        category: "Computing",
+      }, // USER
+
+      // Medium clues
+      {
+        clueText: "Programming language named after a snake",
+        clueType: "DEFINITION",
+        difficulty: "Medium",
+        category: "Programming",
+      }, // PYTHON
+      {
+        clueText: "Computer component that stores running programs",
+        clueType: "DEFINITION",
+        difficulty: "Medium",
+        category: "Hardware",
+      }, // MEMORY
+      {
+        clueText: "Computer that provides services to other computers",
+        clueType: "DEFINITION",
+        difficulty: "Medium",
+        category: "Computing",
+      }, // SERVER
+      {
+        clueText: "Reusable block of code that performs a task",
+        clueType: "DEFINITION",
+        difficulty: "Medium",
+        category: "Programming",
+      }, // FUNCTION
+      {
+        clueText: "Organized collection of structured information",
+        clueType: "DEFINITION",
+        difficulty: "Medium",
+        category: "Data Management",
+      }, // DATABASE
+      {
+        clueText: "Named storage location in programming",
+        clueType: "DEFINITION",
+        difficulty: "Medium",
+        category: "Programming",
+      }, // VARIABLE
+      {
+        clueText: "Program that translates source code to machine code",
+        clueType: "DEFINITION",
+        difficulty: "Medium",
+        category: "Programming",
+      }, // COMPILER
+      {
+        clueText: "Global network connecting computers worldwide",
+        clueType: "DEFINITION",
+        difficulty: "Medium",
+        category: "Networking",
+      }, // INTERNET
+      {
+        clueText: "Computer programs and applications",
+        clueType: "DEFINITION",
+        difficulty: "Medium",
+        category: "Computing",
+      }, // SOFTWARE
+      {
+        clueText: "Physical components of a computer system",
+        clueType: "DEFINITION",
+        difficulty: "Medium",
+        category: "Computing",
+      }, // HARDWARE
+
+      // Hard clues
+      {
+        clueText: "Step-by-step procedure for solving a problem",
+        clueType: "DEFINITION",
+        difficulty: "Hard",
+        category: "Programming",
+      }, // ALGORITHM
+      {
+        clueText: "Scripting language that makes web pages interactive",
+        clueType: "DEFINITION",
+        difficulty: "Hard",
+        category: "Programming",
+      }, // JAVASCRIPT
+      {
+        clueText: "Process of converting data into secret code",
+        clueType: "DEFINITION",
+        difficulty: "Hard",
+        category: "Security",
+      }, // ENCRYPTION
+      {
+        clueText: "Pre-built structure for developing applications",
+        clueType: "DEFINITION",
+        difficulty: "Hard",
+        category: "Programming",
+      }, // FRAMEWORK
+      {
+        clueText: "Process of finding and fixing programming errors",
+        clueType: "DEFINITION",
+        difficulty: "Hard",
+        category: "Programming",
+      }, // DEBUGGING
+      {
+        clueText: "Programming technique where function calls itself",
+        clueType: "DEFINITION",
+        difficulty: "Hard",
+        category: "Programming",
+      }, // RECURSION
+      {
+        clueText: "Central processing unit of a computer",
+        clueType: "DEFINITION",
+        difficulty: "Hard",
+        category: "Hardware",
+      }, // PROCESSOR
+      {
+        clueText: "Boundary between different software components",
+        clueType: "DEFINITION",
+        difficulty: "Hard",
+        category: "Programming",
+      }, // INTERFACE
+      {
+        clueText: "Set of rules for network communication",
+        clueType: "DEFINITION",
+        difficulty: "Hard",
+        category: "Networking",
+      }, // PROTOCOL
+      {
+        clueText: "System software that manages computer resources",
+        clueType: "DEFINITION",
+        difficulty: "Hard",
+        category: "Systems",
+      }, // OPERATING
+    ];
+
+    // Create sample crossword puzzles
+    const puzzlesData = [
+      {
+        title: "Programming Basics",
+        difficulty: "Easy",
+        gridSize: 10,
+        isPublished: true,
+      },
+      {
+        title: "Computer Hardware",
+        difficulty: "Medium",
+        gridSize: 12,
+        isPublished: true,
+      },
+      {
+        title: "Advanced Computing",
+        difficulty: "Hard",
+        gridSize: 15,
+        isPublished: true,
+      },
+      {
+        title: "Web Development Fundamentals",
+        difficulty: "Medium",
+        gridSize: 12,
+        isPublished: false, // Draft puzzle
+      },
+    ];
+
+    const puzzleWordsData = [
+      // Programming Basics puzzle (Easy words)
+      {
+        puzzleIndex: 0,
+        wordIndex: 0,
+        clueIndex: 0,
+        startRow: 1,
+        startCol: 1,
+        direction: "ACROSS",
+        clueNumber: 1,
+      },
+      {
+        puzzleIndex: 0,
+        wordIndex: 1,
+        clueIndex: 1,
+        startRow: 3,
+        startCol: 2,
+        direction: "DOWN",
+        clueNumber: 2,
+      },
+      {
+        puzzleIndex: 0,
+        wordIndex: 2,
+        clueIndex: 2,
+        startRow: 5,
+        startCol: 1,
+        direction: "ACROSS",
+        clueNumber: 3,
+      },
+      {
+        puzzleIndex: 0,
+        wordIndex: 3,
+        clueIndex: 3,
+        startRow: 2,
+        startCol: 6,
+        direction: "DOWN",
+        clueNumber: 4,
+      },
+      {
+        puzzleIndex: 0,
+        wordIndex: 4,
+        clueIndex: 4,
+        startRow: 7,
+        startCol: 3,
+        direction: "ACROSS",
+        clueNumber: 5,
+      },
+
+      // Computer Hardware puzzle (Medium words)
+      {
+        puzzleIndex: 1,
+        wordIndex: 11,
+        clueIndex: 11,
+        startRow: 1,
+        startCol: 1,
+        direction: "ACROSS",
+        clueNumber: 1,
+      },
+      {
+        puzzleIndex: 1,
+        wordIndex: 12,
+        clueIndex: 12,
+        startRow: 3,
+        startCol: 2,
+        direction: "DOWN",
+        clueNumber: 2,
+      },
+      {
+        puzzleIndex: 1,
+        wordIndex: 13,
+        clueIndex: 13,
+        startRow: 5,
+        startCol: 1,
+        direction: "ACROSS",
+        clueNumber: 3,
+      },
+      {
+        puzzleIndex: 1,
+        wordIndex: 8,
+        clueIndex: 8,
+        startRow: 2,
+        startCol: 8,
+        direction: "DOWN",
+        clueNumber: 4,
+      },
+
+      // Advanced Computing puzzle (Hard words)
+      {
+        puzzleIndex: 2,
+        wordIndex: 20,
+        clueIndex: 20,
+        startRow: 1,
+        startCol: 1,
+        direction: "ACROSS",
+        clueNumber: 1,
+      },
+      {
+        puzzleIndex: 2,
+        wordIndex: 21,
+        clueIndex: 21,
+        startRow: 3,
+        startCol: 3,
+        direction: "DOWN",
+        clueNumber: 2,
+      },
+      {
+        puzzleIndex: 2,
+        wordIndex: 22,
+        clueIndex: 22,
+        startRow: 8,
+        startCol: 1,
+        direction: "ACROSS",
+        clueNumber: 3,
+      },
+    ];
 
   try {
     console.log("Creating crossword words...");

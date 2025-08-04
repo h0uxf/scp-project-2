@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../components/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+import useApi from "../hooks/useApi";
 
 class ActivityErrorBoundary extends React.Component {
   state = { hasError: false, errorMessage: "" };
@@ -34,25 +34,17 @@ class ActivityErrorBoundary extends React.Component {
 
 const ActivitiesPage = ({ isEmbedded = false }) => {
   const { currentUser, hasRole, loading: authLoading } = useAuth();
+  const { makeApiCall, loading: apiLoading, error: apiError } = useApi();
   const [activities, setActivities] = useState([]);
   const [newActivity, setNewActivity] = useState({ name: "", description: "", route: "" });
   const [editingActivityId, setEditingActivityId] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   // Fetch all activities
   const fetchActivities = async () => {
     try {
-      setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/activities`, {
-        credentials: "include",
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to fetch activities");
-      }
-      const data = await response.json();
+      const data = await makeApiCall('/activities', 'GET');
       if (data.status !== "success") {
         throw new Error(data.message || "Failed to fetch activities");
       }
@@ -68,8 +60,6 @@ const ActivitiesPage = ({ isEmbedded = false }) => {
       console.error("Failed to fetch activities:", err);
       toast.error(err.message);
       setError(err.message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -84,19 +74,12 @@ const ActivitiesPage = ({ isEmbedded = false }) => {
       return;
     }
     try {
-      const response = await fetch(`${API_BASE_URL}/api/activities`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(newActivity),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create activity");
+      const data = await makeApiCall('/activities', 'POST', newActivity);
+      if (data.status !== "success") {
+        throw new Error(data.message || "Failed to create activity");
       }
-      const result = await response.json();
-      console.log("Created activity:", result.data);
-      setActivities([...activities, { ...result.data, activityId: parseInt(result.data.activityId, 10) }]);
+      console.log("Created activity:", data.data);
+      setActivities([...activities, { ...data.data, activityId: parseInt(data.data.activityId, 10) }]);
       setNewActivity({ name: "", description: "", route: "" });
       toast.success("Activity created successfully!");
     } catch (err) {
@@ -116,20 +99,13 @@ const ActivitiesPage = ({ isEmbedded = false }) => {
       return;
     }
     try {
-      const response = await fetch(`${API_BASE_URL}/api/activities/${activityId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(newActivity),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update activity");
+      const data = await makeApiCall(`/activities/${activityId}`, 'PUT', newActivity);
+      if (data.status !== "success") {
+        throw new Error(data.message || "Failed to update activity");
       }
-      const result = await response.json();
-      console.log("Updated activity:", result.data);
+      console.log("Updated activity:", data.data);
       setActivities(activities.map((a) =>
-        a.activityId === activityId ? { ...result.data, activityId: parseInt(result.data.activityId, 10) } : a
+        a.activityId === activityId ? { ...data.data, activityId: parseInt(data.data.activityId, 10) } : a
       ));
       setNewActivity({ name: "", description: "", route: "" });
       setEditingActivityId(null);
@@ -144,13 +120,9 @@ const ActivitiesPage = ({ isEmbedded = false }) => {
   const handleDeleteActivity = async (activityId) => {
     if (!window.confirm("Are you sure you want to delete this activity?")) return;
     try {
-      const response = await fetch(`${API_BASE_URL}/api/activities/${activityId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to delete activity");
+      const data = await makeApiCall(`/activities/${activityId}`, 'DELETE');
+      if (data.status !== "success") {
+        throw new Error(data.message || "Failed to delete activity");
       }
       setActivities(activities.filter((a) => a.activityId !== activityId));
       toast.success("Activity deleted successfully!");
@@ -177,20 +149,12 @@ const ActivitiesPage = ({ isEmbedded = false }) => {
 
     try {
       console.log("Sending activityIds to reorder:", activityIds);
-      const response = await fetch(`${API_BASE_URL}/api/activities/reorder`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ activities: newActivities.map(({ activityId }) => ({ activityId })) }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Reorder response error:", errorData);
-        throw new Error(errorData.message || "Failed to reorder activities");
+      const data = await makeApiCall('/activities/reorder', 'PUT', { activities: newActivities.map(({ activityId }) => ({ activityId })) });
+      if (data.status !== "success") {
+        throw new Error(data.message || "Failed to reorder activities");
       }
-      const result = await response.json();
-      console.log("Reorder response:", result.data);
-      setActivities(result.data.map((activity) => ({
+      console.log("Reorder response:", data.data);
+      setActivities(data.data.map((activity) => ({
         ...activity,
         activityId: parseInt(activity.activityId, 10),
       })));
@@ -213,16 +177,12 @@ const ActivitiesPage = ({ isEmbedded = false }) => {
 
   // Fetch activities on mount for admins only
   useEffect(() => {
-    if (!authLoading) {
-      if (hasRole("content_manager", "moderator", "admin", "super_admin")) {
-        fetchActivities();
-      } else {
-        setLoading(false);
-      }
+    if (!authLoading && hasRole("content_manager", "moderator", "admin", "super_admin")) {
+      fetchActivities();
     }
-  }, [authLoading]);
+  }, [authLoading, makeApiCall]);
 
-  if (authLoading || loading) {
+  if (authLoading || apiLoading) {
     if (isEmbedded) {
       return (
         <div className="p-8 text-white text-center">
@@ -238,11 +198,11 @@ const ActivitiesPage = ({ isEmbedded = false }) => {
     );
   }
 
-  if (error) {
+  if (error || apiError) {
     if (isEmbedded) {
       return (
         <div className="p-8 text-white text-center">
-          <p className="text-lg text-red-300">{error}</p>
+          <p className="text-lg text-red-300">{error || apiError}</p>
           <button
             onClick={() => window.location.reload()}
             className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full transition-all duration-300"
@@ -255,7 +215,7 @@ const ActivitiesPage = ({ isEmbedded = false }) => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4 sm:px-6 text-white text-center">
         <h1 className="text-2xl sm:text-4xl font-bold mb-4">Manage Activities</h1>
-        <p className="text-lg sm:text-xl text-red-300">{error}</p>
+        <p className="text-lg sm:text-xl text-red-300">{error || apiError}</p>
         <button
           onClick={() => window.location.reload()}
           className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 text-sm sm:text-base"
@@ -299,6 +259,7 @@ const ActivitiesPage = ({ isEmbedded = false }) => {
               onChange={(e) => setNewActivity({ ...newActivity, name: e.target.value })}
               placeholder="Enter activity name"
               className="w-full bg-white/10 text-white p-3 rounded-lg mb-4 text-sm sm:text-base"
+              aria-label="Activity name"
             />
             <textarea
               value={newActivity.description}
@@ -306,6 +267,7 @@ const ActivitiesPage = ({ isEmbedded = false }) => {
               placeholder="Enter activity description"
               className="w-full bg-white/10 text-white p-3 rounded-lg mb-4 text-sm sm:text-base"
               rows="4"
+              aria-label="Activity description"
             />
             <input
               type="text"
@@ -313,15 +275,29 @@ const ActivitiesPage = ({ isEmbedded = false }) => {
               onChange={(e) => setNewActivity({ ...newActivity, route: e.target.value })}
               placeholder="Enter activity route (e.g., /quiz)"
               className="w-full bg-white/10 text-white p-3 rounded-lg mb-4 text-sm sm:text-base"
+              aria-label="Activity route"
             />
             <div className="flex justify-center gap-2 sm:gap-4 flex-wrap">
               <button
                 onClick={editingActivityId ? () => handleUpdateActivity(editingActivityId) : handleCreateActivity}
                 disabled={!newActivity.name || !newActivity.description}
                 className="bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                aria-label={editingActivityId ? "Update activity" : "Create activity"}
               >
                 {editingActivityId ? "Update Activity" : "Create Activity"}
               </button>
+              {editingActivityId && (
+                <button
+                  onClick={() => {
+                    setNewActivity({ name: "", description: "", route: "" });
+                    setEditingActivityId(null);
+                  }}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 text-sm sm:text-base"
+                  aria-label="Cancel editing"
+                >
+                  Cancel Editing
+                </button>
+              )}
             </div>
           </div>
           {/* Existing Activities */}
@@ -347,6 +323,7 @@ const ActivitiesPage = ({ isEmbedded = false }) => {
                       onClick={() => handleMoveActivity(index, "up")}
                       disabled={index === 0}
                       className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-full disabled:opacity-50 min-w-[40px] flex items-center justify-center"
+                      aria-label={`Move activity ${index + 1} up`}
                     >
                       <ArrowUp size={16} />
                     </button>
@@ -354,18 +331,35 @@ const ActivitiesPage = ({ isEmbedded = false }) => {
                       onClick={() => handleMoveActivity(index, "down")}
                       disabled={index === activities.length - 1}
                       className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-full disabled:opacity-50 min-w-[40px] flex items-center justify-center"
+                      aria-label={`Move activity ${index + 1} down`}
                     >
                       <ArrowDown size={16} />
                     </button>
                     <button
+                      onClick={() => {
+                        setEditingActivityId(activity.activityId);
+                        setNewActivity({
+                          name: activity.name || "",
+                          description: activity.description || "",
+                          route: activity.route || "",
+                        });
+                      }}
+                      className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 sm:px-4 py-2 rounded-full transition-all duration-300 text-sm sm:text-base min-w-[40px]"
+                      aria-label={`Edit activity ${index + 1}`}
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button
                       onClick={() => handleEditMoreDetails(activity)}
                       className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-full transition-all duration-300 text-sm sm:text-base min-w-[40px]"
+                      aria-label={`Edit more details for activity ${index + 1}`}
                     >
                       <Edit2 size={16} />
                     </button>
                     <button
                       onClick={() => handleDeleteActivity(activity.activityId)}
                       className="bg-red-600 hover:bg-red-700 text-white px-3 sm:px-4 py-2 rounded-full transition-all duration-300 text-sm sm:text-base min-w-[80px]"
+                      aria-label={`Delete activity ${index + 1}`}
                     >
                       Delete
                     </button>

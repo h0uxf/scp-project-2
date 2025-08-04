@@ -62,11 +62,9 @@ const csrfProtection = csrf({
 
 // Apply CSRF protection to state-changing operations only
 app.use('/api', (req, res, next) => {
-  // Skip CSRF for GET, HEAD, OPTIONS requests (safe methods)
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
     return next();
   }
-  // Apply CSRF protection for POST, PUT, DELETE, PATCH
   csrfProtection(req, res, next);
 });
 

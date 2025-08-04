@@ -6,8 +6,7 @@ import { useAuth } from "../components/AuthProvider";
 import toast, { Toaster } from "react-hot-toast";
 import BackgroundEffects from "../components/BackgroundEffects";
 import CrosswordGrid from "../components/CrosswordGrid";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+import useApi from "../hooks/useApi";
 
 class CrosswordErrorBoundary extends React.Component {
   state = { hasError: false, errorMessage: "" };
@@ -25,6 +24,7 @@ class CrosswordErrorBoundary extends React.Component {
           <button
             onClick={() => window.location.reload()}
             className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 text-sm sm:text-base"
+            aria-label="Retry loading page"
           >
             Retry
           </button>
@@ -39,6 +39,7 @@ const CrosswordPage = () => {
   const { puzzleId } = useParams();
   const navigate = useNavigate();
   const { currentUser, authLoading } = useAuth();
+  const { makeApiCall, loading: apiLoading, error: apiError } = useApi();
   
   const [puzzle, setPuzzle] = useState(null);
   const [progress, setProgress] = useState(null);
@@ -49,8 +50,6 @@ const CrosswordPage = () => {
   const [timeSpent, setTimeSpent] = useState(0);
   const [startTime, setStartTime] = useState(null);
   const [hintsUsed, setHintsUsed] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [showClues, setShowClues] = useState(true);
 
   // Timer effect
@@ -66,27 +65,15 @@ const CrosswordPage = () => {
   // Fetch puzzle data
   const fetchPuzzle = async () => {
     try {
-      setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/crossword/${puzzleId}`, {
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch puzzle: ${response.status}`);
-      }
-
-      const data = await response.json();
-      if (data.status === "success") {
-        setPuzzle(data.data);
-        initializeGrid(data.data);
-      } else {
+      const data = await makeApiCall(`/crossword/${puzzleId}`, 'GET');
+      if (data.status !== "success") {
         throw new Error(data.message || "Failed to fetch puzzle");
       }
+      setPuzzle(data.data);
+      initializeGrid(data.data);
     } catch (err) {
-      setError(err.message);
+      console.error("Error fetching puzzle:", err);
       toast.error(err.message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -95,32 +82,25 @@ const CrosswordPage = () => {
     if (!currentUser) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/crossword/${puzzleId}/progress`, {
-        credentials: "include",
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.status === "success" && data.data) {
-          setProgress(data.data);
-          setHintsUsed(data.data.hintsUsed || 0);
-          setTimeSpent(data.data.timeSpent || 0);
-          if (data.data.currentGrid && puzzle) {
-            const savedGrid = JSON.parse(data.data.currentGrid);
-            // Merge saved progress with current grid structure
-            const newGrid = [...currentGrid];
-            for (let row = 0; row < newGrid.length; row++) {
-              for (let col = 0; col < newGrid[row].length; col++) {
-                if (savedGrid[row] && savedGrid[row][col] && !newGrid[row][col].isBlack) {
-                  newGrid[row][col] = {
-                    ...newGrid[row][col],
-                    letter: savedGrid[row][col].letter || ''
-                  };
-                }
+      const data = await makeApiCall(`/crossword/${puzzleId}/progress`, 'GET');
+      if (data.status === "success" && data.data) {
+        setProgress(data.data);
+        setHintsUsed(data.data.hintsUsed || 0);
+        setTimeSpent(data.data.timeSpent || 0);
+        if (data.data.currentGrid && puzzle) {
+          const savedGrid = JSON.parse(data.data.currentGrid);
+          const newGrid = [...currentGrid];
+          for (let row = 0; row < newGrid.length; row++) {
+            for (let col = 0; col < newGrid[row].length; col++) {
+              if (savedGrid[row] && savedGrid[row][col] && !newGrid[row][col].isBlack) {
+                newGrid[row][col] = {
+                  ...newGrid[row][col],
+                  letter: savedGrid[row][col].letter || ''
+                };
               }
             }
-            setCurrentGrid(newGrid);
           }
+          setCurrentGrid(newGrid);
         }
       }
     } catch (err) {
@@ -137,28 +117,18 @@ const CrosswordPage = () => {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/crossword/${puzzleId}/start`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.status === "success") {
-          setProgress(data.data);
-          setStartTime(Date.now());
-          toast.success("Puzzle started!");
-        }
-      } else if (response.status === 409) {
-        // Already started, fetch existing progress
+      const data = await makeApiCall(`/crossword/${puzzleId}/start`, 'POST');
+      if (data.status === "success") {
+        setProgress(data.data);
+        setStartTime(Date.now());
+        toast.success("Puzzle started!");
+      } else if (data.status === "error" && data.message.includes("already started")) {
         await fetchProgress();
         setStartTime(Date.now() - (progress?.timeSpent || 0) * 1000);
       }
     } catch (err) {
-      toast.error("Failed to start puzzle");
+      console.error("Error starting puzzle:", err);
+      toast.error(err.message || "Failed to start puzzle");
     }
   };
 
@@ -175,22 +145,11 @@ const CrosswordPage = () => {
         score: completed ? calculateScore() : null,
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/crossword/${puzzleId}/progress`, {
-        method: "PUT",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(progressData),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.status === "success") {
-          setProgress(data.data);
-          if (completed) {
-            toast.success("Puzzle completed! Well done!");
-          }
+      const data = await makeApiCall(`/crossword/${puzzleId}/progress`, 'PUT', progressData);
+      if (data.status === "success") {
+        setProgress(data.data);
+        if (completed) {
+          toast.success("Puzzle completed! Well done!");
         }
       }
     } catch (err) {
@@ -205,7 +164,6 @@ const CrosswordPage = () => {
       Array(size).fill({ letter: '', isBlack: true, clueNumber: null })
     );
 
-    // Mark cells that contain letters
     puzzleData.puzzleWords.forEach(wordData => {
       const { startRow, startCol, direction, clueNumber, word } = wordData;
       const wordText = word.wordText.toUpperCase();
@@ -234,7 +192,7 @@ const CrosswordPage = () => {
   // Calculate score
   const calculateScore = () => {
     const baseScore = 1000;
-    const timeBonus = Math.max(0, 300 - Math.floor(timeSpent / 60)); // Bonus for completing faster
+    const timeBonus = Math.max(0, 300 - Math.floor(timeSpent / 60));
     const hintPenalty = hintsUsed * 50;
     return Math.max(0, baseScore + timeBonus - hintPenalty);
   };
@@ -275,7 +233,6 @@ const CrosswordPage = () => {
     if (isCompleted && !progress?.isCompleted) {
       saveProgress(newGrid, true);
     } else {
-      // Auto-save progress every few seconds
       const saveTimer = setTimeout(() => {
         saveProgress(newGrid, false);
       }, 2000);
@@ -298,7 +255,6 @@ const CrosswordPage = () => {
       const wordText = word.wordText.toUpperCase();
       const normalizedDirection = wordData.direction.toLowerCase();
       
-      // Find first empty cell in the word
       for (let i = 0; i < wordText.length; i++) {
         const row = normalizedDirection === 'down' ? startRow + i : startRow;
         const col = normalizedDirection === 'across' ? startCol + i : startCol;
@@ -327,15 +283,15 @@ const CrosswordPage = () => {
 
   useEffect(() => {
     fetchPuzzle();
-  }, [puzzleId]);
+  }, [puzzleId, makeApiCall]);
 
   useEffect(() => {
     if (currentUser && puzzle && currentGrid.length > 0) {
       fetchProgress();
     }
-  }, [currentUser, puzzle, currentGrid.length]);
+  }, [currentUser, puzzle, currentGrid.length, makeApiCall]);
 
-  if (authLoading || loading) {
+  if (authLoading || apiLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-white text-xl">Loading puzzle...</div>
@@ -343,14 +299,15 @@ const CrosswordPage = () => {
     );
   }
 
-  if (error) {
+  if (apiError) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4 sm:px-6 text-white text-center">
         <h1 className="text-2xl sm:text-4xl font-bold mb-4">Error</h1>
-        <p className="text-lg sm:text-xl text-red-300">{error}</p>
+        <p className="text-lg sm:text-xl text-red-300">{apiError}</p>
         <button
           onClick={() => navigate("/crossword")}
           className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 text-sm sm:text-base"
+          aria-label="Back to puzzles list"
         >
           Back to Puzzles
         </button>
@@ -401,6 +358,7 @@ const CrosswordPage = () => {
                 <button
                   onClick={startPuzzle}
                   className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full font-semibold transition-all duration-300"
+                  aria-label="Start puzzle"
                 >
                   Start Puzzle
                 </button>
@@ -413,6 +371,7 @@ const CrosswordPage = () => {
                 <button
                   onClick={() => navigate("/login")}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-semibold transition-all duration-300"
+                  aria-label="Go to login page"
                 >
                   Login
                 </button>
@@ -429,6 +388,7 @@ const CrosswordPage = () => {
                       <button
                         onClick={() => setShowClues(!showClues)}
                         className="w-full flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+                        aria-label={showClues ? 'Hide clues' : 'Show clues'}
                       >
                         <Eye className="w-4 h-4" />
                         {showClues ? 'Hide' : 'Show'} Clues
@@ -437,6 +397,7 @@ const CrosswordPage = () => {
                         onClick={useHint}
                         disabled={hintsUsed >= 3 || !selectedWord}
                         className="w-full flex items-center gap-2 text-white/80 hover:text-white disabled:text-white/40 transition-colors"
+                        aria-label="Use hint"
                       >
                         <HelpCircle className="w-4 h-4" />
                         Use Hint ({3 - hintsUsed} left)
@@ -444,6 +405,7 @@ const CrosswordPage = () => {
                       <button
                         onClick={resetPuzzle}
                         className="w-full flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+                        aria-label="Reset puzzle"
                       >
                         <RotateCcw className="w-4 h-4" />
                         Reset Puzzle
@@ -507,6 +469,8 @@ const CrosswordPage = () => {
                                     setSelectedWord(wordData);
                                     setDirection('across');
                                   }}
+                                  role="button"
+                                  aria-label={`Select clue ${wordData.clueNumber} across: ${wordData.clue.clueText}`}
                                 >
                                   <span className="font-medium">{wordData.clueNumber}.</span> {wordData.clue.clueText}
                                 </div>
@@ -531,6 +495,8 @@ const CrosswordPage = () => {
                                     setSelectedWord(wordData);
                                     setDirection('down');
                                   }}
+                                  role="button"
+                                  aria-label={`Select clue ${wordData.clueNumber} down: ${wordData.clue.clueText}`}
                                 >
                                   <span className="font-medium">{wordData.clueNumber}.</span> {wordData.clue.clueText}
                                 </div>

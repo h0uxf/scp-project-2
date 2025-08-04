@@ -5,8 +5,7 @@ import { useAuth } from "../components/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import BackgroundEffects from "../components/BackgroundEffects";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+import useApi from "../hooks/useApi";
 
 class CrosswordAdminErrorBoundary extends React.Component {
   state = { hasError: false, errorMessage: "" };
@@ -37,15 +36,11 @@ class CrosswordAdminErrorBoundary extends React.Component {
 const CrosswordAdminPage = () => {
   const { currentUser, hasRole, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  
+  const { makeApiCall, loading: apiLoading, error: apiError } = useApi();
   const [puzzles, setPuzzles] = useState([]);
   const [words, setWords] = useState([]);
   const [clues, setClues] = useState([]);
   const [activeTab, setActiveTab] = useState('puzzles');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  
-  // Forms
   const [showPuzzleForm, setShowPuzzleForm] = useState(false);
   const [showWordForm, setShowWordForm] = useState(false);
   const [showClueForm, setShowClueForm] = useState(false);
@@ -72,7 +67,7 @@ const CrosswordAdminPage = () => {
 
   // Check admin permissions
   useEffect(() => {
-    if (!authLoading && currentUser && !hasRole("content_manager", "moderator", "admin", "super_admin" )) {
+    if (!authLoading && currentUser && !hasRole("content_manager", "moderator", "admin", "super_admin")) {
       navigate('/');
       toast.error('Access denied. Admin privileges required.');
     }
@@ -80,86 +75,67 @@ const CrosswordAdminPage = () => {
 
   // Fetch data based on active tab
   useEffect(() => {
-    if (currentUser && hasRole("content_manager", "moderator", "admin", "super_admin" )) {
+    if (currentUser && hasRole("content_manager", "moderator", "admin", "super_admin")) {
       fetchData();
     }
-  }, [activeTab, currentUser, hasRole]);
+  }, [activeTab, currentUser, hasRole, makeApiCall]);
 
   const fetchData = async () => {
     try {
-      setLoading(true);
       let endpoint = '';
-      
       switch (activeTab) {
         case 'puzzles':
-          endpoint = '/api/crossword/admin/puzzles';
+          endpoint = '/crossword/admin/puzzles';
           break;
         case 'words':
-          endpoint = '/api/crossword/admin/words';
+          endpoint = '/crossword/admin/words';
           break;
         case 'clues':
-          endpoint = '/api/crossword/admin/clues';
+          endpoint = '/crossword/admin/clues';
           break;
         default:
           return;
       }
       
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data: ${response.status}`);
+      const data = await makeApiCall(endpoint, 'GET');
+      if (data.status !== "success") {
+        throw new Error(data.message || `Failed to fetch ${activeTab}`);
       }
 
-      const data = await response.json();
-      if (data.status === "success") {
-        switch (activeTab) {
-          case 'puzzles':
-            setPuzzles(data.data);
-            break;
-          case 'words':
-            setWords(data.data);
-            break;
-          case 'clues':
-            setClues(data.data);
-            break;
-        }
-      } else {
-        throw new Error(data.message || "Failed to fetch data");
+      switch (activeTab) {
+        case 'puzzles':
+          setPuzzles(data.data || []);
+          break;
+        case 'words':
+          setWords(data.data || []);
+          break;
+        case 'clues':
+          setClues(data.data || []);
+          break;
       }
     } catch (err) {
-      setError(err.message);
+      console.error(`Failed to fetch ${activeTab}:`, err);
       toast.error(err.message);
-    } finally {
-      setLoading(false);
     }
   };
 
   // Create puzzle
   const createPuzzle = async () => {
+    if (!puzzleForm.title) {
+      toast.error("Puzzle title is required");
+      return;
+    }
     try {
-      const response = await fetch(`${API_BASE_URL}/api/crossword/admin/puzzles`, {
-        method: 'POST',
-        credentials: "include",
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(puzzleForm),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.status === "success") {
-          setPuzzles([data.data, ...puzzles]);
-          setPuzzleForm({ title: '', difficulty: 'easy', gridSize: 15 });
-          setShowPuzzleForm(false);
-          toast.success('Puzzle created successfully!');
-        }
-      } else {
-        throw new Error('Failed to create puzzle');
+      const data = await makeApiCall('/crossword/admin/puzzles', 'POST', puzzleForm);
+      if (data.status !== "success") {
+        throw new Error(data.message || "Failed to create puzzle");
       }
+      setPuzzles([data.data, ...puzzles]);
+      setPuzzleForm({ title: '', difficulty: 'easy', gridSize: 15 });
+      setShowPuzzleForm(false);
+      toast.success('Puzzle created successfully!');
     } catch (err) {
+      console.error("Error creating puzzle:", err);
       toast.error(err.message);
     }
   };
@@ -167,25 +143,14 @@ const CrosswordAdminPage = () => {
   // Update puzzle
   const updatePuzzle = async (puzzleId, updates) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/crossword/admin/puzzles/${puzzleId}`, {
-        method: 'PUT',
-        credentials: "include",
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updates),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.status === "success") {
-          setPuzzles(puzzles.map(p => p.puzzleId === puzzleId ? data.data : p));
-          toast.success('Puzzle updated successfully!');
-        }
-      } else {
-        throw new Error('Failed to update puzzle');
+      const data = await makeApiCall(`/crossword/admin/puzzles/${puzzleId}`, 'PUT', updates);
+      if (data.status !== "success") {
+        throw new Error(data.message || "Failed to update puzzle");
       }
+      setPuzzles(puzzles.map(p => p.puzzleId === puzzleId ? data.data : p));
+      toast.success('Puzzle updated successfully!');
     } catch (err) {
+      console.error("Error updating puzzle:", err);
       toast.error(err.message);
     }
   };
@@ -195,74 +160,56 @@ const CrosswordAdminPage = () => {
     if (!confirm('Are you sure you want to delete this puzzle?')) return;
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/crossword/admin/puzzles/${puzzleId}`, {
-        method: 'DELETE',
-        credentials: "include",
-      });
-
-      if (response.ok) {
-        setPuzzles(puzzles.filter(p => p.puzzleId !== puzzleId));
-        toast.success('Puzzle deleted successfully!');
-      } else {
-        throw new Error('Failed to delete puzzle');
+      const data = await makeApiCall(`/crossword/admin/puzzles/${puzzleId}`, 'DELETE');
+      if (data.status !== "success") {
+        throw new Error(data.message || "Failed to delete puzzle");
       }
+      setPuzzles(puzzles.filter(p => p.puzzleId !== puzzleId));
+      toast.success('Puzzle deleted successfully!');
     } catch (err) {
+      console.error("Error deleting puzzle:", err);
       toast.error(err.message);
     }
   };
 
   // Create word
   const createWord = async () => {
+    if (!wordForm.wordText) {
+      toast.error("Word text is required");
+      return;
+    }
     try {
-      const response = await fetch(`${API_BASE_URL}/api/crossword/admin/words`, {
-        method: 'POST',
-        credentials: "include",
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(wordForm),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.status === "success") {
-          setWords([data.data, ...words]);
-          setWordForm({ wordText: '', difficulty: 'easy', category: '' });
-          setShowWordForm(false);
-          toast.success('Word created successfully!');
-        }
-      } else {
-        throw new Error('Failed to create word');
+      const data = await makeApiCall('/crossword/admin/words', 'POST', wordForm);
+      if (data.status !== "success") {
+        throw new Error(data.message || "Failed to create word");
       }
+      setWords([data.data, ...words]);
+      setWordForm({ wordText: '', difficulty: 'easy', category: '' });
+      setShowWordForm(false);
+      toast.success('Word created successfully!');
     } catch (err) {
+      console.error("Error creating word:", err);
       toast.error(err.message);
     }
   };
 
   // Create clue
   const createClue = async () => {
+    if (!clueForm.clueText) {
+      toast.error("Clue text is required");
+      return;
+    }
     try {
-      const response = await fetch(`${API_BASE_URL}/api/crossword/admin/clues`, {
-        method: 'POST',
-        credentials: "include",
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(clueForm),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.status === "success") {
-          setClues([data.data, ...clues]);
-          setClueForm({ clueText: '', clueType: 'definition', difficulty: 'easy', category: '' });
-          setShowClueForm(false);
-          toast.success('Clue created successfully!');
-        }
-      } else {
-        throw new Error('Failed to create clue');
+      const data = await makeApiCall('/crossword/admin/clues', 'POST', clueForm);
+      if (data.status !== "success") {
+        throw new Error(data.message || "Failed to create clue");
       }
+      setClues([data.data, ...clues]);
+      setClueForm({ clueText: '', clueType: 'definition', difficulty: 'easy', category: '' });
+      setShowClueForm(false);
+      toast.success('Clue created successfully!');
     } catch (err) {
+      console.error("Error creating clue:", err);
       toast.error(err.message);
     }
   };
@@ -278,7 +225,7 @@ const CrosswordAdminPage = () => {
     });
   };
 
-  if (authLoading || loading) {
+  if (authLoading || apiLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-white text-xl">Loading...</div>
@@ -286,10 +233,26 @@ const CrosswordAdminPage = () => {
     );
   }
 
-  if (!currentUser || !hasRole("content_manager", "moderator", "admin", "super_admin" )) {
+  if (!currentUser || !hasRole("content_manager", "moderator", "admin", "super_admin")) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-white text-xl">Access Denied</div>
+      </div>
+    );
+  }
+
+  if (apiError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-300 text-xl mb-4">{apiError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full transition-all duration-300"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -329,6 +292,7 @@ const CrosswordAdminPage = () => {
                           ? 'bg-blue-500 text-white'
                           : 'text-white/80 hover:text-white hover:bg-white/10'
                       }`}
+                      aria-label={`Switch to ${tab.label} tab`}
                     >
                       {tab.label}
                     </button>
@@ -345,6 +309,7 @@ const CrosswordAdminPage = () => {
                   <button
                     onClick={() => setShowPuzzleForm(true)}
                     className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center gap-2"
+                    aria-label="Add new puzzle"
                   >
                     <Plus className="w-5 h-5" />
                     Add Puzzle
@@ -353,62 +318,70 @@ const CrosswordAdminPage = () => {
 
                 {/* Puzzles Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {puzzles.map((puzzle) => (
-                    <div
-                      key={puzzle.puzzleId}
-                      className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6"
-                    >
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <h3 className="text-xl font-bold text-white mb-2">
-                            {puzzle.title}
-                          </h3>
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium border ${
-                              puzzle.difficulty === 'easy' ? 'text-green-400 border-green-400/30 bg-green-500/10' :
-                              puzzle.difficulty === 'medium' ? 'text-yellow-400 border-yellow-400/30 bg-yellow-500/10' :
-                              'text-red-400 border-red-400/30 bg-red-500/10'
-                            }`}>
-                              {puzzle.difficulty}
-                            </span>
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium border ${
-                              puzzle.isPublished 
-                                ? 'text-green-400 border-green-400/30 bg-green-500/10'
-                                : 'text-gray-400 border-gray-400/30 bg-gray-500/10'
-                            }`}>
-                              {puzzle.isPublished ? 'Published' : 'Draft'}
-                            </span>
+                  <AnimatePresence>
+                    {puzzles.map((puzzle) => (
+                      <motion.div
+                        key={puzzle.puzzleId}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3 }}
+                        className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-6"
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <h3 className="text-xl font-bold text-white mb-2">
+                              {puzzle.title}
+                            </h3>
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className={`px-3 py-1 rounded-full text-sm font-medium border ${
+                                puzzle.difficulty === 'easy' ? 'text-green-400 border-green-400/30 bg-green-500/10' :
+                                puzzle.difficulty === 'medium' ? 'text-yellow-400 border-yellow-400/30 bg-yellow-500/10' :
+                                'text-red-400 border-red-400/30 bg-red-500/10'
+                              }`}>
+                                {puzzle.difficulty}
+                              </span>
+                              <span className={`px-3 py-1 rounded-full text-sm font-medium border ${
+                                puzzle.isPublished 
+                                  ? 'text-green-400 border-green-400/30 bg-green-500/10'
+                                  : 'text-gray-400 border-gray-400/30 bg-gray-500/10'
+                              }`}>
+                                {puzzle.isPublished ? 'Published' : 'Draft'}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="text-white/70 text-sm mb-4">
-                        <p>Grid: {puzzle.gridSize}×{puzzle.gridSize}</p>
-                        <p>Created: {formatDate(puzzle.createdAt)}</p>
-                      </div>
+                        <div className="text-white/70 text-sm mb-4">
+                          <p>Grid: {puzzle.gridSize}×{puzzle.gridSize}</p>
+                          <p>Created: {formatDate(puzzle.createdAt)}</p>
+                        </div>
 
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => updatePuzzle(puzzle.puzzleId, { isPublished: !puzzle.isPublished })}
-                          className={`flex-1 px-3 py-2 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
-                            puzzle.isPublished
-                              ? 'bg-gray-600 hover:bg-gray-700 text-white'
-                              : 'bg-green-600 hover:bg-green-700 text-white'
-                          }`}
-                        >
-                          {puzzle.isPublished ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          {puzzle.isPublished ? 'Unpublish' : 'Publish'}
-                        </button>
-                        <button
-                          onClick={() => deletePuzzle(puzzle.puzzleId)}
-                          className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300"
-                          disabled={!hasRole("admin", "super_admin")}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => updatePuzzle(puzzle.puzzleId, { isPublished: !puzzle.isPublished })}
+                            className={`flex-1 px-3 py-2 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
+                              puzzle.isPublished
+                                ? 'bg-gray-600 hover:bg-gray-700 text-white'
+                                : 'bg-green-600 hover:bg-green-700 text-white'
+                            }`}
+                            aria-label={puzzle.isPublished ? 'Unpublish puzzle' : 'Publish puzzle'}
+                          >
+                            {puzzle.isPublished ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            {puzzle.isPublished ? 'Unpublish' : 'Publish'}
+                          </button>
+                          <button
+                            onClick={() => deletePuzzle(puzzle.puzzleId)}
+                            className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300"
+                            disabled={!hasRole("admin", "super_admin")}
+                            aria-label="Delete puzzle"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 </div>
               </div>
             )}
@@ -421,6 +394,7 @@ const CrosswordAdminPage = () => {
                   <button
                     onClick={() => setShowWordForm(true)}
                     className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center gap-2"
+                    aria-label="Add new word"
                   >
                     <Plus className="w-5 h-5" />
                     Add Word
@@ -433,7 +407,7 @@ const CrosswordAdminPage = () => {
                     <table className="w-full">
                       <thead className="bg-white/10">
                         <tr>
-                          <th className="px-6 py-3 text-left text-white font-semibold">Word</th>
+                          <th className="px-6 py-3 text-left text-white  font-semibold">Word</th>
                           <th className="px-6 py-3 text-left text-white font-semibold">Length</th>
                           <th className="px-6 py-3 text-left text-white font-semibold">Difficulty</th>
                           <th className="px-6 py-3 text-left text-white font-semibold">Category</th>
@@ -473,6 +447,7 @@ const CrosswordAdminPage = () => {
                   <button
                     onClick={() => setShowClueForm(true)}
                     className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center gap-2"
+                    aria-label="Add new clue"
                   >
                     <Plus className="w-5 h-5" />
                     Add Clue
@@ -543,6 +518,7 @@ const CrosswordAdminPage = () => {
                       <button
                         onClick={() => setShowPuzzleForm(false)}
                         className="text-white/60 hover:text-white"
+                        aria-label="Close puzzle form"
                       >
                         <X className="w-6 h-6" />
                       </button>
@@ -559,6 +535,7 @@ const CrosswordAdminPage = () => {
                           onChange={(e) => setPuzzleForm({ ...puzzleForm, title: e.target.value })}
                           className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="Enter puzzle title"
+                          aria-label="Puzzle title"
                         />
                       </div>
 
@@ -570,6 +547,7 @@ const CrosswordAdminPage = () => {
                           value={puzzleForm.difficulty}
                           onChange={(e) => setPuzzleForm({ ...puzzleForm, difficulty: e.target.value })}
                           className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          aria-label="Puzzle difficulty"
                         >
                           <option value="easy" className="bg-gray-800 text-white">Easy</option>
                           <option value="medium" className="bg-gray-800 text-white">Medium</option>
@@ -585,6 +563,7 @@ const CrosswordAdminPage = () => {
                           value={puzzleForm.gridSize}
                           onChange={(e) => setPuzzleForm({ ...puzzleForm, gridSize: parseInt(e.target.value) })}
                           className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          aria-label="Puzzle grid size"
                         >
                           <option value={10} className="bg-gray-800 text-white">10×10</option>
                           <option value={15} className="bg-gray-800 text-white">15×15</option>
@@ -597,12 +576,14 @@ const CrosswordAdminPage = () => {
                       <button
                         onClick={() => setShowPuzzleForm(false)}
                         className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-all duration-300"
+                        aria-label="Cancel puzzle creation"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={createPuzzle}
                         className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all duration-300"
+                        aria-label="Create puzzle"
                       >
                         Create
                       </button>
@@ -634,6 +615,7 @@ const CrosswordAdminPage = () => {
                       <button
                         onClick={() => setShowWordForm(false)}
                         className="text-white/60 hover:text-white"
+                        aria-label="Close word form"
                       >
                         <X className="w-6 h-6" />
                       </button>
@@ -650,6 +632,7 @@ const CrosswordAdminPage = () => {
                           onChange={(e) => setWordForm({ ...wordForm, wordText: e.target.value.toUpperCase() })}
                           className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="Enter word"
+                          aria-label="Word text"
                         />
                       </div>
 
@@ -661,6 +644,7 @@ const CrosswordAdminPage = () => {
                           value={wordForm.difficulty}
                           onChange={(e) => setWordForm({ ...wordForm, difficulty: e.target.value })}
                           className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          aria-label="Word difficulty"
                         >
                           <option value="easy" className="bg-gray-800 text-white">Easy</option>
                           <option value="medium" className="bg-gray-800 text-white">Medium</option>
@@ -678,6 +662,7 @@ const CrosswordAdminPage = () => {
                           onChange={(e) => setWordForm({ ...wordForm, category: e.target.value })}
                           className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="e.g., Animals, Sports, Science"
+                          aria-label="Word category"
                         />
                       </div>
                     </div>
@@ -686,12 +671,14 @@ const CrosswordAdminPage = () => {
                       <button
                         onClick={() => setShowWordForm(false)}
                         className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-all duration-300"
+                        aria-label="Cancel word creation"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={createWord}
                         className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all duration-300"
+                        aria-label="Add word"
                       >
                         Add Word
                       </button>
@@ -723,6 +710,7 @@ const CrosswordAdminPage = () => {
                       <button
                         onClick={() => setShowClueForm(false)}
                         className="text-white/60 hover:text-white"
+                        aria-label="Close clue form"
                       >
                         <X className="w-6 h-6" />
                       </button>
@@ -738,6 +726,7 @@ const CrosswordAdminPage = () => {
                           onChange={(e) => setClueForm({ ...clueForm, clueText: e.target.value })}
                           className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 h-24"
                           placeholder="Enter clue text"
+                          aria-label="Clue text"
                         />
                       </div>
 
@@ -749,6 +738,7 @@ const CrosswordAdminPage = () => {
                           value={clueForm.clueType}
                           onChange={(e) => setClueForm({ ...clueForm, clueType: e.target.value })}
                           className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          aria-label="Clue type"
                         >
                           <option value="definition" className="bg-gray-800 text-white">Definition</option>
                           <option value="synonym" className="bg-gray-800 text-white">Synonym</option>
@@ -766,6 +756,7 @@ const CrosswordAdminPage = () => {
                           value={clueForm.difficulty}
                           onChange={(e) => setClueForm({ ...clueForm, difficulty: e.target.value })}
                           className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          aria-label="Clue difficulty"
                         >
                           <option value="easy" className="bg-gray-800 text-white">Easy</option>
                           <option value="medium" className="bg-gray-800 text-white">Medium</option>
@@ -783,6 +774,7 @@ const CrosswordAdminPage = () => {
                           onChange={(e) => setClueForm({ ...clueForm, category: e.target.value })}
                           className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="e.g., Animals, Sports, Science"
+                          aria-label="Clue category"
                         />
                       </div>
                     </div>
@@ -791,12 +783,14 @@ const CrosswordAdminPage = () => {
                       <button
                         onClick={() => setShowClueForm(false)}
                         className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-all duration-300"
+                        aria-label="Cancel clue creation"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={createClue}
                         className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all duration-300"
+                        aria-label="Add clue"
                       >
                         Add Clue
                       </button>

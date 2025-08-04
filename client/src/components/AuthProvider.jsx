@@ -151,6 +151,8 @@ export function AuthProvider({ children }) {
         handleRegister,
         handleLogout,
         hasRole,
+        fetchCsrfToken, 
+        getHeaders
       }}
     >
       {children}

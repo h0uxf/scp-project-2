@@ -3,13 +3,12 @@ import jsQR from "jsqr";
 import { Camera, CheckCircle, XCircle, Users, Gift, AlertCircle, Scan, RefreshCw, X } from "lucide-react";
 import { useAuth } from "../components/AuthProvider";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+import useApi from "../hooks/useApi";
 
 const AdminQRScanner = () => {
   const { currentUser, loading, hasRole } = useAuth();
   const navigate = useNavigate();
-
+  const { makeApiCall, loading: apiLoading, error: apiError } = useApi();
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState(null);
   const [error, setError] = useState("");
@@ -59,9 +58,8 @@ const AdminQRScanner = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/rewards/stats`, {
-        withCredentials: true,
-      });
+      const response = await makeApiCall('/rewards/stats', 'GET')
+
       console.log("Admin stats fetched:", response.data);
       setStats(response.data.data);
     } catch (err) {
@@ -156,11 +154,7 @@ const AdminQRScanner = () => {
         qrToken = url.searchParams.get('qrToken');
       }
 
-      const response = await axios.post(
-        `${API_BASE_URL}/api/rewards/redeem`,
-        { qrToken },
-        { withCredentials: true }
-      );
+      const response = await makeApiCall('/rewards/redeem', 'POST', { qrToken }); 
 
       const result = response.data.data;
       setScanResult(result);
@@ -178,9 +172,7 @@ const AdminQRScanner = () => {
     setError("");
     setSuccess("");
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/rewards/1`, {
-        withCredentials: true,
-      });
+      const response = await makeApiCall('/rewards/1', 'GET');
       console.log("Mock QR token response:", response.data);
       const mockToken = response.data.data.qrToken;
       if (!mockToken) {

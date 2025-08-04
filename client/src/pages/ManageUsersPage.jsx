@@ -4,17 +4,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../components/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+import useApi from "../hooks/useApi";
 
 const ManageUsersPage = () => {
   const { currentUser, hasRole, loading: authLoading } = useAuth();
+  const { makeApiCall, loading: apiLoading, error: apiError } = useApi();
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchLoading, setSearchLoading] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [newRoleId, setNewRoleId] = useState("");
-  const [csrfToken, setCsrfToken] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
@@ -26,35 +23,6 @@ const ManageUsersPage = () => {
   const [roleFilter, setRoleFilter] = useState("");
   const navigate = useNavigate();
 
-  // Fetch CSRF token
-  const fetchCsrfToken = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/csrf-token`, {
-        credentials: "include",
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setCsrfToken(data.csrfToken);
-        return data.csrfToken;
-      }
-    } catch (error) {
-      console.error("Failed to fetch CSRF token:", error);
-    }
-    return null;
-  };
-
-  // Get headers with CSRF token
-  const getHeaders = async () => {
-    let token = csrfToken;
-    if (!token) {
-      token = await fetchCsrfToken();
-    }
-    return {
-      "Content-Type": "application/json",
-      ...(token && { "X-CSRF-Token": token }),
-    };
-  };
-
   const roles = [
     { id: 1, name: "user", displayName: "User", icon: User, color: "text-gray-400" },
     { id: 2, name: "content_manager", displayName: "Content Manager", icon: Edit2, color: "text-blue-400" },
@@ -64,93 +32,74 @@ const ManageUsersPage = () => {
   ];
 
   const getRoleInfo = (roleName) => {
-    return roles.find(role => role.name === roleName) || { displayName: "Unknown", icon: User, color: "text-gray-400" };
+    return roles.find((role) => role.name === roleName) || { displayName: "Unknown", icon: User, color: "text-gray-400" };
   };
 
   const getRoleByName = (roleName) => {
-    return roles.find(role => role.name === roleName);
+    return roles.find((role) => role.name === roleName);
   };
 
   const canEditUser = (targetUser) => {
     const currentUserRole = currentUser?.role_name;
     const targetRoleName = targetUser.role_name;
-    
-    // Super admin can edit anyone except other super admins
+
     if (currentUserRole === "super_admin") {
       return targetRoleName !== "super_admin";
     }
-    
-    // Admin can edit users, content managers, and moderators
+
     if (currentUserRole === "admin") {
       return ["user", "content_manager", "moderator"].includes(targetRoleName);
     }
-    
+
     return false;
   };
 
   const canDeleteUser = (targetUser) => {
     const currentUserRole = currentUser?.role_name;
     const targetRoleName = targetUser.role_name;
-    
-    // Super admin can delete anyone except other super admins
+
     if (currentUserRole === "super_admin") {
       return targetRoleName !== "super_admin";
     }
-    
-    // Admin can delete users, content managers, and moderators
+
     if (currentUserRole === "admin") {
       return ["user", "content_manager", "moderator"].includes(targetRoleName);
     }
-    
+
     return false;
   };
 
   const getAvailableRoles = () => {
     const currentUserRole = currentUser?.role_name;
-    
+
     if (currentUserRole === "super_admin") {
-      // Super admin can assign up to admin role
-      return roles.filter(role => role.name !== "super_admin");
+      return roles.filter((role) => role.name !== "super_admin");
     }
-    
+
     if (currentUserRole === "admin") {
-      // Admin can assign up to moderator role
-      return roles.filter(role => ["user", "content_manager", "moderator"].includes(role.name));
+      return roles.filter((role) => ["user", "content_manager", "moderator"].includes(role.name));
     }
-    
+
     return [];
   };
 
-  // Fetch all users with pagination
-  const fetchUsers = async (page = 1, search = "", isSearch = false, sort = sortField, direction = sortDirection, role = roleFilter) => {
+  const fetchUsers = async (page = 1, search = "", sort = sortField, direction = sortDirection, role = roleFilter) => {
     try {
-      if (isSearch) {
-        setSearchLoading(true);
-      } else {
-        setLoading(true);
-      }
-      
       const queryParams = new URLSearchParams({
         page: page.toString(),
         limit: usersPerPage.toString(),
         ...(search && { search }),
         ...(sort && { sortBy: sort }),
         ...(direction && { sortOrder: direction }),
-        ...(role && { role })
+        ...(role && { role }),
       });
-      
-      const response = await fetch(`${API_BASE_URL}/api/admin/users?${queryParams}`, {
-        credentials: "include",
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to fetch users");
+
+      const data = await makeApiCall(`/admin/users?${queryParams}`, "GET");
+      if (data.status !== "success" || !Array.isArray(data.data)) {
+        throw new Error(data.message || "Unexpected API response format");
       }
-      
-      const data = await response.json();
-      setUsers(data.data || []);
-      
+
+      setUsers(data.data);
       if (data.pagination) {
         setCurrentPage(data.pagination.currentPage);
         setTotalPages(data.pagination.totalPages);
@@ -158,81 +107,54 @@ const ManageUsersPage = () => {
       }
     } catch (err) {
       console.error("Failed to fetch users:", err);
-      toast.error(err.message);
-    } finally {
-      if (isSearch) {
-        setSearchLoading(false);
-      } else {
-        setLoading(false);
-      }
+      toast.error(err.message || "Failed to load users");
     }
   };
 
-  // Update user role
   const handleUpdateUserRole = async (userId, roleName) => {
     try {
       const role = getRoleByName(roleName);
       if (!role) {
-        toast.error("Invalid role selected");
-        return;
+        throw new Error("Invalid role selected");
       }
-      
-      const headers = await getHeaders();
-      const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
-        method: "PUT",
-        headers,
-        credentials: "include",
-        body: JSON.stringify({ role_name: roleName }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update user role");
+
+      const data = await makeApiCall(`/admin/users/${userId}`, "PUT", { role_name: roleName });
+      if (data.status !== "success") {
+        throw new Error(data.message || "Failed to update user role");
       }
-      
-      const result = await response.json();
-      
-      // Update the user in the local state
-      setUsers(users.map(user => 
-        user.userId === userId 
-          ? { ...user, role_name: roleName, role: result.data.role }
+
+      setUsers(users.map((user) =>
+        user.userId === userId
+          ? { ...user, role_name: roleName, role: data.data.role }
           : user
       ));
-      
+
       setEditingUser(null);
       setNewRoleId("");
       toast.success("User role updated successfully!");
     } catch (err) {
       console.error("Error updating user role:", err);
-      toast.error(err.message);
+      toast.error(err.message || "Failed to update user role");
     }
   };
 
-  // Delete user
   const handleDeleteUser = async (userId) => {
-    const user = users.find(u => u.userId === userId);
+    const user = users.find((u) => u.userId === userId);
     if (!window.confirm(`Are you sure you want to delete user "${user?.username}"?`)) {
       return;
     }
-    
+
     try {
-      const headers = await getHeaders();
-      const response = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
-        method: "DELETE",
-        headers,
-        credentials: "include",
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to delete user");
+      const data = await makeApiCall(`/admin/users/${userId}`, "DELETE");
+      if (data.status !== "success") {
+        throw new Error(data.message || "Failed to delete user");
       }
-      
-      setUsers(users.filter(user => user.userId !== userId));
+
+      setUsers(users.filter((user) => user.userId !== userId));
       toast.success("User deleted successfully!");
     } catch (err) {
       console.error("Error deleting user:", err);
-      toast.error(err.message);
+      toast.error(err.message || "Failed to delete user");
     }
   };
 
@@ -246,21 +168,19 @@ const ManageUsersPage = () => {
     setNewRoleId("");
   };
 
-  // Pagination handlers
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
-      fetchUsers(newPage, searchTerm, !!searchTerm, sortField, sortDirection, roleFilter);
+      fetchUsers(newPage, searchTerm, sortField, sortDirection, roleFilter);
     }
   };
 
-  // Sorting handlers
   const handleSort = (field) => {
     const newDirection = field === sortField && sortDirection === "asc" ? "desc" : "asc";
     setSortField(field);
     setSortDirection(newDirection);
     setCurrentPage(1);
-    fetchUsers(1, searchTerm, !!searchTerm, field, newDirection, roleFilter);
+    fetchUsers(1, searchTerm, field, newDirection, roleFilter);
   };
 
   const getSortIcon = (field) => {
@@ -268,54 +188,47 @@ const ManageUsersPage = () => {
     return sortDirection === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />;
   };
 
-  // Role filter handler
   const handleRoleFilter = (role) => {
     setRoleFilter(role);
     setCurrentPage(1);
-    fetchUsers(1, searchTerm, !!searchTerm, sortField, sortDirection, role);
+    fetchUsers(1, searchTerm, sortField, sortDirection, role);
   };
 
-  // Debounced search - for all search term changes including empty string
   useEffect(() => {
-    // Skip the initial mount to avoid duplicate API calls
     if (isInitialMount) {
       setIsInitialMount(false);
       return;
     }
-    
+
     const delayedSearch = setTimeout(() => {
       setCurrentPage(1);
-      fetchUsers(1, searchTerm, true, sortField, sortDirection, roleFilter); // Mark as search operation
+      fetchUsers(1, searchTerm, sortField, sortDirection, roleFilter);
     }, 50);
 
     return () => clearTimeout(delayedSearch);
   }, [searchTerm, isInitialMount]);
 
-  // Handle sorting and filtering changes
   useEffect(() => {
     if (!isInitialMount && currentUser && hasRole("admin", "super_admin")) {
       setCurrentPage(1);
-      fetchUsers(1, searchTerm, !!searchTerm, sortField, sortDirection, roleFilter);
+      fetchUsers(1, searchTerm, sortField, sortDirection, roleFilter);
     }
-  }, [sortField, sortDirection, roleFilter]);
+  }, [sortField, sortDirection, roleFilter, currentUser, hasRole, isInitialMount]);
 
-  // Check admin permissions
   useEffect(() => {
     if (!authLoading && currentUser && !hasRole("admin", "super_admin")) {
-      navigate('/');
-      toast.error('Access denied. Admin privileges required.');
+      navigate("/");
+      toast.error("Access denied. Admin privileges required.");
     }
   }, [currentUser, hasRole, authLoading, navigate]);
 
-  // Fetch users on mount - only run once when user is authenticated
   useEffect(() => {
     if (currentUser && hasRole("admin", "super_admin")) {
-      fetchCsrfToken(); // Fetch CSRF token on mount
-      fetchUsers(1, "", false, "userId", "asc", ""); // Always start with empty search on mount, mark as initial load
+      fetchUsers(1, "", "userId", "asc", "");
     }
   }, [currentUser, hasRole]);
 
-  if (authLoading || loading) {
+  if (authLoading || apiLoading) {
     return (
       <div className="p-8 text-white text-center">
         <p className="text-lg">Loading users...</p>
@@ -334,17 +247,42 @@ const ManageUsersPage = () => {
   return (
     <div className="p-8 text-white">
       <Toaster position="top-right" />
-      
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
           <h2 className="text-3xl font-bold mb-2">Manage Users</h2>
           <p className="text-gray-300">
             Manage user roles and permissions. You can update roles and delete users based on your permissions.
           </p>
-        </div>
+        </motion.div>
+
+        {apiError && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="bg-red-500/20 backdrop-blur-md rounded-xl p-6 border border-red-400/30 mb-8"
+          >
+            <p className="text-red-300">{apiError}</p>
+            <button
+              onClick={() => fetchUsers(currentPage, searchTerm, sortField, sortDirection, roleFilter)}
+              className="mt-4 bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-full transition-all duration-300"
+              aria-label="Retry loading users"
+            >
+              Try Again
+            </button>
+          </motion.div>
+        )}
 
         {/* Filters */}
-        <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 bg-white/5 border border-white/20 rounded-xl">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 bg-white/5 border border-white/20 rounded-xl"
+        >
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-gray-400" />
             <span className="text-sm font-medium text-gray-300">Filters:</span>
@@ -356,6 +294,7 @@ const ManageUsersPage = () => {
                 value={roleFilter}
                 onChange={(e) => handleRoleFilter(e.target.value)}
                 className="bg-white/10 text-white border border-white/20 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 backdrop-blur-sm"
+                aria-label="Filter by role"
               >
                 <option value="" className="bg-gray-800 text-white">All Roles</option>
                 {roles.map((role) => (
@@ -371,6 +310,7 @@ const ManageUsersPage = () => {
                 value={sortField}
                 onChange={(e) => handleSort(e.target.value)}
                 className="bg-white/10 text-white border border-white/20 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 backdrop-blur-sm"
+                aria-label="Sort by field"
               >
                 <option value="userId" className="bg-gray-800 text-white">User ID</option>
                 <option value="points" className="bg-gray-800 text-white">Points</option>
@@ -384,17 +324,23 @@ const ManageUsersPage = () => {
                 setSortDirection("asc");
                 setSearchTerm("");
                 setCurrentPage(1);
-                fetchUsers(1, "", false, "userId", "asc", "");
+                fetchUsers(1, "", "userId", "asc", "");
               }}
               className="px-4 py-2 text-sm bg-white/10 border border-white/20 hover:bg-white/20 text-white rounded-xl transition-colors backdrop-blur-sm"
+              aria-label="Reset filters"
             >
               Reset
             </button>
           </div>
-        </div>
+        </motion.div>
 
         {/* Search and Stats */}
-        <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+        >
           <div className="flex-1 max-w-md relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
@@ -403,8 +349,9 @@ const ManageUsersPage = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-white/10 text-white placeholder-gray-400 border border-white/20 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="Search users by username"
             />
-            {searchLoading && (
+            {apiLoading && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
               </div>
@@ -416,15 +363,20 @@ const ManageUsersPage = () => {
             {roleFilter && ` (role: ${getRoleInfo(roleFilter).displayName})`}
             {sortField && ` (sorted by ${sortField} ${sortDirection})`}
           </div>
-        </div>
+        </motion.div>
 
         {/* Users List */}
-        <div className="bg-white/5 border border-white/20 rounded-2xl overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+          className="bg-white/5 border border-white/20 rounded-2xl overflow-hidden"
+        >
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-white/10">
                 <tr>
-                  <th 
+                  <th
                     className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-colors"
                     onClick={() => handleSort("userId")}
                   >
@@ -436,7 +388,7 @@ const ManageUsersPage = () => {
                   <th className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider">
                     Current Role
                   </th>
-                  <th 
+                  <th
                     className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-colors"
                     onClick={() => handleSort("points")}
                   >
@@ -445,7 +397,7 @@ const ManageUsersPage = () => {
                       {getSortIcon("points")}
                     </div>
                   </th>
-                  <th 
+                  <th
                     className="px-6 py-4 text-left text-sm font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-white/5 transition-colors"
                     onClick={() => handleSort("createdAt")}
                   >
@@ -464,7 +416,11 @@ const ManageUsersPage = () => {
                   {users.length === 0 ? (
                     <tr>
                       <td colSpan="5" className="px-6 py-12 text-center">
-                        <div className="flex flex-col items-center gap-4">
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="flex flex-col items-center gap-4"
+                        >
                           <User className="w-16 h-16 text-gray-500" />
                           <div>
                             <p className="text-lg text-gray-400 mb-2">
@@ -482,15 +438,16 @@ const ManageUsersPage = () => {
                                   setSearchTerm("");
                                   setRoleFilter("");
                                   setCurrentPage(1);
-                                  fetchUsers(1, "", false, sortField, sortDirection, "");
+                                  fetchUsers(1, "", "userId", "asc", "");
                                 }}
                                 className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
+                                aria-label="Clear filters"
                               >
                                 Clear Filters
                               </button>
                             )}
                           </div>
-                        </div>
+                        </motion.div>
                       </td>
                     </tr>
                   ) : (
@@ -526,6 +483,7 @@ const ManageUsersPage = () => {
                                 value={newRoleId}
                                 onChange={(e) => setNewRoleId(e.target.value)}
                                 className="bg-white/10 text-white border border-white/20 rounded-lg px-3 py-2"
+                                aria-label="Select new role"
                               >
                                 {getAvailableRoles().map((role) => (
                                   <option key={role.id} value={role.name} className="bg-gray-800 text-white">
@@ -554,12 +512,14 @@ const ManageUsersPage = () => {
                                 <button
                                   onClick={() => handleUpdateUserRole(user.userId, newRoleId)}
                                   className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm transition-colors"
+                                  aria-label="Save role change"
                                 >
                                   Save
                                 </button>
                                 <button
                                   onClick={cancelEditing}
                                   className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded-lg text-sm transition-colors"
+                                  aria-label="Cancel editing"
                                 >
                                   Cancel
                                 </button>
@@ -571,6 +531,7 @@ const ManageUsersPage = () => {
                                     onClick={() => startEditing(user)}
                                     className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors"
                                     title="Edit Role"
+                                    aria-label="Edit user role"
                                   >
                                     <Edit2 size={16} />
                                   </button>
@@ -580,6 +541,7 @@ const ManageUsersPage = () => {
                                     onClick={() => handleDeleteUser(user.userId)}
                                     className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg transition-colors"
                                     title="Delete User"
+                                    aria-label="Delete user"
                                   >
                                     <Trash2 size={16} />
                                   </button>
@@ -595,26 +557,30 @@ const ManageUsersPage = () => {
               </tbody>
             </table>
           </div>
-        </div>
+        </motion.div>
 
         {/* Pagination Controls */}
         {totalPages > 1 && (
-          <div className="mt-6 flex justify-center items-center gap-2">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.8 }}
+            className="mt-6 flex justify-center items-center gap-2"
+          >
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
               className="flex items-center gap-2 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
+              aria-label="Previous page"
             >
               <ChevronLeft className="w-4 h-4" />
               Previous
             </button>
-            
             <div className="flex gap-1">
               {[...Array(totalPages)].map((_, index) => {
                 const page = index + 1;
                 const isCurrentPage = page === currentPage;
-                
-                // Show first, last, current, and pages around current
+
                 if (
                   page === 1 ||
                   page === totalPages ||
@@ -626,9 +592,10 @@ const ManageUsersPage = () => {
                       onClick={() => handlePageChange(page)}
                       className={`px-3 py-2 rounded-lg transition-colors ${
                         isCurrentPage
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
+                          ? "bg-blue-600 text-white"
+                          : "bg-white/10 border border-white/20 text-white hover:bg-white/20"
                       }`}
+                      aria-label={`Go to page ${page}`}
                     >
                       {page}
                     </button>
@@ -642,16 +609,16 @@ const ManageUsersPage = () => {
                 return null;
               })}
             </div>
-            
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
               className="flex items-center gap-2 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
+              aria-label="Next page"
             >
               Next
               <ChevronRight className="w-4 h-4" />
             </button>
-          </div>
+          </motion.div>
         )}
       </div>
     </div>
