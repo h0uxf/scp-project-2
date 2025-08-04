@@ -64,31 +64,47 @@ const csrfProtection = csrf({
   },
 });
 
-// CSRF Token Endpoint (No CSRF Protection)
+// Apply CSRF middleware to the token endpoint specifically
+app.use('/api/csrf-token', csrfProtection);
+
+// CSRF Token Endpoint - Now middleware has run and req.csrfToken() is available
 app.get('/api/csrf-token', (req, res) => {
-  const token = req.csrfToken ? req.csrfToken() : null;
-  if (!token) {
-    logger.error("Failed to generate CSRF token");
-    return res.status(500).json({ status: "error", message: "Failed to generate CSRF token" });
+  try {
+    const token = req.csrfToken();
+    res.json({ csrfToken: token });
+  } catch (error) {
+    logger.error("Failed to generate CSRF token", error);
+    return res.status(500).json({ 
+      status: "error", 
+      message: "Failed to generate CSRF token" 
+    });
   }
-  res.json({ status: "success", data: { csrfToken: token } });
 });
 
-// Selective CSRF Protection
+// Selective CSRF Protection for other API routes
 app.use('/api', (req, res, next) => {
+  // Skip CSRF for safe methods
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
     return next();
   }
-  if (req.path === '/login' && req.method === 'POST') {
+  
+  // Skip CSRF for login/register (first-time visitors won't have token)
+  if ((req.path === '/login' || req.path === '/register') && req.method === 'POST') {
     return next();
   }
-  if (req.path === '/register' && req.method === 'POST') {
-    return next();
-  }
+  
+  // Apply CSRF protection to other POST/PUT/DELETE requests
   csrfProtection(req, res, (err) => {
     if (err) {
-      logger.error("CSRF validation failed", { path: req.originalUrl, method: req.method });
-      return res.status(403).json({ status: "error", message: "Invalid CSRF token" });
+      logger.error("CSRF validation failed", { 
+        path: req.originalUrl, 
+        method: req.method,
+        error: err.message 
+      });
+      return res.status(403).json({ 
+        status: "error", 
+        message: "Invalid CSRF token" 
+      });
     }
     next();
   });
