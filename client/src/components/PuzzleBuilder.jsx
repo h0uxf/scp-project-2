@@ -243,9 +243,9 @@ const PuzzleBuilder = ({
                       }}
                       className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded text-white text-sm"
                     >
-                      <option value="">Select Word</option>
+                      <option value="" className="bg-gray-800 text-white">Select Word</option>
                       {words.map(word => (
-                        <option key={word.wordId} value={word.wordId}>
+                        <option key={word.wordId} value={word.wordId} className="bg-gray-800 text-white">
                           {word.wordText} ({word.wordLength} letters)
                         </option>
                       ))}
@@ -259,9 +259,9 @@ const PuzzleBuilder = ({
                       onChange={(e) => setWordClueForm({ ...wordClueForm, clueId: e.target.value })}
                       className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded text-white text-sm"
                     >
-                      <option value="">Select Clue</option>
+                      <option value="" className="bg-gray-800 text-white">Select Clue</option>
                       {clues.map(clue => (
-                        <option key={clue.clueId} value={clue.clueId}>
+                        <option key={clue.clueId} value={clue.clueId} className="bg-gray-800 text-white">
                           {clue.clueText}
                         </option>
                       ))}
@@ -276,8 +276,8 @@ const PuzzleBuilder = ({
                         onChange={(e) => setWordClueForm({ ...wordClueForm, direction: e.target.value })}
                         className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded text-white text-sm"
                       >
-                        <option value="across">Across</option>
-                        <option value="down">Down</option>
+                        <option value="across" className="bg-gray-800 text-white">Across</option>
+                        <option value="down" className="bg-gray-800 text-white">Down</option>
                       </select>
                     </div>
 
