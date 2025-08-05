@@ -38,7 +38,6 @@ router.get('/:questionId', quizController.getQuizQuestionById);
 router.post(
     '/submit',
     jwtMiddleware.verifyAccessToken,
-    validate,                           
     quizController.submitQuizAndCalculatePersonality
 );
 

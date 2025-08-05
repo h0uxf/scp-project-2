@@ -38,7 +38,7 @@ class CrosswordErrorBoundary extends React.Component {
 const CrosswordPage = () => {
   const { puzzleId } = useParams();
   const navigate = useNavigate();
-  const { currentUser, authLoading } = useAuth();
+  const { currentUser, loading } = useAuth();
   const { makeApiCall, loading: apiLoading, error: apiError } = useApi();
   
   const [puzzle, setPuzzle] = useState(null);
@@ -291,7 +291,7 @@ const CrosswordPage = () => {
     }
   }, [currentUser, puzzle, currentGrid.length, makeApiCall]);
 
-  if (authLoading || apiLoading) {
+  if (loading || apiLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-white text-xl">Loading puzzle...</div>

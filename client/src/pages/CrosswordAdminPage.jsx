@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import BackgroundEffects from "../components/BackgroundEffects";
 import useApi from "../hooks/useApi";
+import PuzzleBuilder from "../components/PuzzleBuilder";
 
 class CrosswordAdminErrorBoundary extends React.Component {
   state = { hasError: false, errorMessage: "" };
@@ -44,6 +45,7 @@ const CrosswordAdminPage = () => {
   const [showPuzzleForm, setShowPuzzleForm] = useState(false);
   const [showWordForm, setShowWordForm] = useState(false);
   const [showClueForm, setShowClueForm] = useState(false);
+  const [showPuzzleBuilder, setShowPuzzleBuilder] = useState(false);
   const [editingPuzzle, setEditingPuzzle] = useState(null);
   
   const [puzzleForm, setPuzzleForm] = useState({
@@ -170,6 +172,69 @@ const CrosswordAdminPage = () => {
       console.error("Error deleting puzzle:", err);
       toast.error(err.message);
     }
+  };
+
+  // Open puzzle builder for new puzzle
+  const openPuzzleBuilder = async () => {
+    if (!puzzleForm.title) {
+      toast.error("Puzzle title is required");
+      return;
+    }
+    
+    try {
+      // First create the basic puzzle record
+      const data = await makeApiCall('/crossword/admin/puzzles', 'POST', puzzleForm);
+      if (data.status !== "success") {
+        throw new Error(data.message || "Failed to create puzzle");
+      }
+      
+      // Set the puzzle for editing in builder
+      setEditingPuzzle(data.data);
+      setPuzzles([data.data, ...puzzles]);
+      setShowPuzzleForm(false);
+      setShowPuzzleBuilder(true);
+      
+      toast.success('Puzzle created! Now design your crossword grid.');
+    } catch (err) {
+      console.error("Error creating puzzle:", err);
+      toast.error(err.message);
+    }
+  };
+
+  // Open puzzle builder for existing puzzle
+  const editPuzzleGrid = (puzzle) => {
+    setEditingPuzzle(puzzle);
+    setShowPuzzleBuilder(true);
+  };
+
+  // Save puzzle from builder
+  const savePuzzleFromBuilder = async (puzzleData) => {
+    try {
+      const updateData = {
+        ...puzzleData,
+        title: editingPuzzle.title,
+        difficulty: editingPuzzle.difficulty
+      };
+      
+      const data = await makeApiCall(`/crossword/admin/puzzles/${editingPuzzle.puzzleId}`, 'PUT', updateData);
+      if (data.status !== "success") {
+        throw new Error(data.message || "Failed to save puzzle");
+      }
+      
+      setPuzzles(puzzles.map(p => p.puzzleId === editingPuzzle.puzzleId ? data.data : p));
+      setShowPuzzleBuilder(false);
+      setEditingPuzzle(null);
+      toast.success('Puzzle grid saved successfully!');
+    } catch (err) {
+      console.error("Error saving puzzle:", err);
+      toast.error(err.message);
+    }
+  };
+
+  // Close puzzle builder
+  const closePuzzleBuilder = () => {
+    setShowPuzzleBuilder(false);
+    setEditingPuzzle(null);
   };
 
   // Create word
@@ -357,27 +422,40 @@ const CrosswordAdminPage = () => {
                           <p>Created: {formatDate(puzzle.createdAt)}</p>
                         </div>
 
-                        <div className="flex gap-2">
+                        <div className="space-y-2">
+                          {/* Edit Grid Button */}
                           <button
-                            onClick={() => updatePuzzle(puzzle.puzzleId, { isPublished: !puzzle.isPublished })}
-                            className={`flex-1 px-3 py-2 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
-                              puzzle.isPublished
-                                ? 'bg-gray-600 hover:bg-gray-700 text-white'
-                                : 'bg-green-600 hover:bg-green-700 text-white'
-                            }`}
-                            aria-label={puzzle.isPublished ? 'Unpublish puzzle' : 'Publish puzzle'}
+                            onClick={() => editPuzzleGrid(puzzle)}
+                            className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2"
+                            aria-label="Edit puzzle grid"
                           >
-                            {puzzle.isPublished ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            {puzzle.isPublished ? 'Unpublish' : 'Publish'}
+                            <Edit2 className="w-4 h-4" />
+                            Edit Grid
                           </button>
-                          <button
-                            onClick={() => deletePuzzle(puzzle.puzzleId)}
-                            className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300"
-                            disabled={!hasRole("admin", "super_admin")}
-                            aria-label="Delete puzzle"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          
+                          {/* Publish/Unpublish and Delete Row */}
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => updatePuzzle(puzzle.puzzleId, { isPublished: !puzzle.isPublished })}
+                              className={`flex-1 px-3 py-2 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
+                                puzzle.isPublished
+                                  ? 'bg-gray-600 hover:bg-gray-700 text-white'
+                                  : 'bg-green-600 hover:bg-green-700 text-white'
+                              }`}
+                              aria-label={puzzle.isPublished ? 'Unpublish puzzle' : 'Publish puzzle'}
+                            >
+                              {puzzle.isPublished ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              {puzzle.isPublished ? 'Unpublish' : 'Publish'}
+                            </button>
+                            <button
+                              onClick={() => deletePuzzle(puzzle.puzzleId)}
+                              className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300"
+                              disabled={!hasRole("admin", "super_admin")}
+                              aria-label="Delete puzzle"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       </motion.div>
                     ))}
@@ -581,11 +659,11 @@ const CrosswordAdminPage = () => {
                         Cancel
                       </button>
                       <button
-                        onClick={createPuzzle}
+                        onClick={openPuzzleBuilder}
                         className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all duration-300"
-                        aria-label="Create puzzle"
+                        aria-label="Create puzzle and open grid builder"
                       >
-                        Create
+                        Create & Design Grid
                       </button>
                     </div>
                   </motion.div>
@@ -801,6 +879,17 @@ const CrosswordAdminPage = () => {
             </AnimatePresence>
           </div>
         </div>
+
+        {/* PuzzleBuilder Modal */}
+        {showPuzzleBuilder && (
+          <PuzzleBuilder
+            puzzle={editingPuzzle}
+            words={words}
+            clues={clues}
+            onSave={savePuzzleFromBuilder}
+            onClose={closePuzzleBuilder}
+          />
+        )}
       </div>
     </CrosswordAdminErrorBoundary>
   );
