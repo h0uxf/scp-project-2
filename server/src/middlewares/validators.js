@@ -10,7 +10,6 @@ const validate = (req, res, next) => {
     next();
 };
 
-
 // User registration validators
 const userValidationRules = () => {
     return [
@@ -71,44 +70,42 @@ const activityValidationRules = () => {
 };
 
 const rewardValidationRules = () => {
-  return [
-    body('qrToken').optional().isString().notEmpty().withMessage('QR token must be a non-empty string'),
-    query('qrToken').optional().isString().notEmpty().withMessage('QR token must be a non-empty string'),
-  ];
+    return [
+        body('qrToken').optional().isString().notEmpty().withMessage('QR token must be a non-empty string'),
+        query('qrToken').optional().isString().notEmpty().withMessage('QR token must be a non-empty string'),
+    ];
 };
 
 const getAllUsersValidationRules = () => {
-  return [
-    query("search")
-      .optional()
-      .isString().withMessage("Search term must be a string")
-      .trim()
-      .escape()
-      .isLength({ max: 100 }).withMessage("Search term cannot exceed 100 characters"),
-    query("page")
-      .optional()
-      .isInt({ min: 1 }).withMessage("Page must be a positive integer"),
-    query("limit")
-      .optional()
-      .isInt({ min: 1, max: 100 }).withMessage("Limit must be an integer between 1 and 100"),
-    query("sortBy")
-      .optional()
-      .isIn(["userId", "username", "email", "role"]).withMessage("SortBy must be one of: userId, username, email, role"),
-    query("sortOrder")
-      .optional()
-      .isIn(["asc", "desc"]).withMessage("SortOrder must be 'asc' or 'desc'"),
-    query("role")
-      .optional()
-      .isString().withMessage("Role must be a string")
-      .trim()
-      .escape()
-      .isLength({ max: 50 }).withMessage("Role cannot exceed 50 characters"),
-  ];
+    return [
+        query("search")
+            .optional()
+            .isString().withMessage("Search term must be a string")
+            .trim()
+            .escape()
+            .isLength({ max: 100 }).withMessage("Search term cannot exceed 100 characters"),
+        query("page")
+            .optional()
+            .isInt({ min: 1 }).withMessage("Page must be a positive integer"),
+        query("limit")
+            .optional()
+            .isInt({ min: 1, max: 100 }).withMessage("Limit must be an integer between 1 and 100"),
+        query("sortBy")
+            .optional()
+            .isIn(["userId", "username", "email", "role"]).withMessage("SortBy must be one of: userId, username, email, role"),
+        query("sortOrder")
+            .optional()
+            .isIn(["asc", "desc"]).withMessage("SortOrder must be 'asc' or 'desc'"),
+        query("role")
+            .optional()
+            .isString().withMessage("Role must be a string")
+            .trim()
+            .escape()
+            .isLength({ max: 50 }).withMessage("Role cannot exceed 50 characters"),
+    ];
 };
 
-module.exports = { rewardValidationRules };
-
-
+// Single module.exports with all functions
 module.exports = {
     validate,
     userValidationRules,

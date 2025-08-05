@@ -31,7 +31,7 @@ router.get(
     jwtMiddleware.verifyAccessToken,
     roleMiddleware(["admin", "super_admin"]),
     getAllUsersValidationRules(),
-    validate(),
+    validate,
     adminController.getAllUsers
 );
 
@@ -69,7 +69,6 @@ router.get(
     roleMiddleware(["admin", "super_admin"]),
     adminController.getUserStatistics
 );
-
 
 //////////////////////////////////////////////////////
 // EXPORT ROUTER

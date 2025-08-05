@@ -15,7 +15,7 @@ const ManageUsersPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchStr, setSearchStr] = useState("");
   const [usersPerPage] = useState(10);
   const [isInitialMount, setIsInitialMount] = useState(true);
   const [sortField, setSortField] = useState("userId");
@@ -88,7 +88,7 @@ const ManageUsersPage = () => {
       const queryParams = new URLSearchParams({
         page: page.toString(),
         limit: usersPerPage.toString(),
-        ...(search && { search }),
+        ...(search && { searchStr: search }),
         ...(sort && { sortBy: sort }),
         ...(direction && { sortOrder: direction }),
         ...(role && { role }),
@@ -171,7 +171,7 @@ const ManageUsersPage = () => {
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
-      fetchUsers(newPage, searchTerm, sortField, sortDirection, roleFilter);
+      fetchUsers(newPage, searchStr, sortField, sortDirection, roleFilter);
     }
   };
 
@@ -180,7 +180,7 @@ const ManageUsersPage = () => {
     setSortField(field);
     setSortDirection(newDirection);
     setCurrentPage(1);
-    fetchUsers(1, searchTerm, field, newDirection, roleFilter);
+    fetchUsers(1, searchStr, field, newDirection, roleFilter);
   };
 
   const getSortIcon = (field) => {
@@ -191,7 +191,7 @@ const ManageUsersPage = () => {
   const handleRoleFilter = (role) => {
     setRoleFilter(role);
     setCurrentPage(1);
-    fetchUsers(1, searchTerm, sortField, sortDirection, role);
+    fetchUsers(1, searchStr, sortField, sortDirection, role);
   };
 
   useEffect(() => {
@@ -202,16 +202,16 @@ const ManageUsersPage = () => {
 
     const delayedSearch = setTimeout(() => {
       setCurrentPage(1);
-      fetchUsers(1, searchTerm, sortField, sortDirection, roleFilter);
+      fetchUsers(1, searchStr, sortField, sortDirection, roleFilter);
     }, 50);
 
     return () => clearTimeout(delayedSearch);
-  }, [searchTerm, isInitialMount]);
+  }, [searchStr, isInitialMount]);
 
   useEffect(() => {
     if (!isInitialMount && currentUser && hasRole("admin", "super_admin")) {
       setCurrentPage(1);
-      fetchUsers(1, searchTerm, sortField, sortDirection, roleFilter);
+      fetchUsers(1, searchStr, sortField, sortDirection, roleFilter);
     }
   }, [sortField, sortDirection, roleFilter, currentUser, hasRole, isInitialMount]);
 
@@ -267,7 +267,7 @@ const ManageUsersPage = () => {
           >
             <p className="text-red-300">{apiError}</p>
             <button
-              onClick={() => fetchUsers(currentPage, searchTerm, sortField, sortDirection, roleFilter)}
+              onClick={() => fetchUsers(currentPage, searchStr, sortField, sortDirection, roleFilter)}
               className="mt-4 bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-full transition-all duration-300"
               aria-label="Retry loading users"
             >
@@ -322,7 +322,7 @@ const ManageUsersPage = () => {
                 setRoleFilter("");
                 setSortField("userId");
                 setSortDirection("asc");
-                setSearchTerm("");
+                setSearchStr("");
                 setCurrentPage(1);
                 fetchUsers(1, "", "userId", "asc", "");
               }}
@@ -346,8 +346,8 @@ const ManageUsersPage = () => {
             <input
               type="text"
               placeholder="Search by username"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={searchStr}
+              onChange={(e) => setSearchStr(e.target.value)}
               className="w-full bg-white/10 text-white placeholder-gray-400 border border-white/20 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               aria-label="Search users by username"
             />
@@ -359,7 +359,7 @@ const ManageUsersPage = () => {
           </div>
           <div className="text-sm text-gray-300">
             Showing {users.length} of {totalUsers} users
-            {searchTerm && ` (filtered by "${searchTerm}")`}
+            {searchStr && ` (filtered by "${searchStr}")`}
             {roleFilter && ` (role: ${getRoleInfo(roleFilter).displayName})`}
             {sortField && ` (sorted by ${sortField} ${sortDirection})`}
           </div>
@@ -424,18 +424,18 @@ const ManageUsersPage = () => {
                           <User className="w-16 h-16 text-gray-500" />
                           <div>
                             <p className="text-lg text-gray-400 mb-2">
-                              {searchTerm || roleFilter ? "No users found matching your criteria" : "No users found"}
+                              {searchStr || roleFilter ? "No users found matching your criteria" : "No users found"}
                             </p>
                             <p className="text-sm text-gray-500">
-                              {searchTerm && !roleFilter && `Try searching for a different username`}
-                              {!searchTerm && roleFilter && `No users with the "${getRoleInfo(roleFilter).displayName}" role`}
-                              {searchTerm && roleFilter && `No users with username "${searchTerm}" and role "${getRoleInfo(roleFilter).displayName}"`}
-                              {!searchTerm && !roleFilter && "Users will appear here once they are registered"}
+                              {searchStr && !roleFilter && `Try searching for a different username`}
+                              {!searchStr && roleFilter && `No users with the "${getRoleInfo(roleFilter).displayName}" role`}
+                              {searchStr && roleFilter && `No users with username "${searchStr}" and role "${getRoleInfo(roleFilter).displayName}"`}
+                              {!searchStr && !roleFilter && "Users will appear here once they are registered"}
                             </p>
-                            {(searchTerm || roleFilter) && (
+                            {(searchStr || roleFilter) && (
                               <button
                                 onClick={() => {
-                                  setSearchTerm("");
+                                  setSearchStr("");
                                   setRoleFilter("");
                                   setCurrentPage(1);
                                   fetchUsers(1, "", "userId", "asc", "");
