@@ -39,7 +39,7 @@ class QuizErrorBoundary extends React.Component {
 }
 
 const QuizPage = () => {
-  const { currentUser, hasRole, authLoading } = useAuth();
+  const { currentUser, hasRole, loading } = useAuth();
   const { makeApiCall, loading: apiLoading, error: apiError } = useApi();
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -57,10 +57,10 @@ const QuizPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!authLoading && !currentUser && window.location.pathname !== '/login') {
+    if (!loading && !currentUser && window.location.pathname !== '/login') {
       navigate('/login');
     }
-  }, [currentUser, authLoading, navigate]);
+  }, [currentUser, loading, navigate]);
 
   const normalizeOptions = (options) => {
     if (!Array.isArray(options)) {
@@ -433,7 +433,7 @@ const QuizPage = () => {
     });
   };
 
-  if (authLoading || apiLoading) {
+  if (loading || apiLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4 sm:px-6 text-white text-center">
         <h1 className="text-2xl sm:text-4xl font-bold mb-4">
