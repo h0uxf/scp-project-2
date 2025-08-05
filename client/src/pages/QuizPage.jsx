@@ -11,7 +11,7 @@ class QuizErrorBoundary extends React.Component {
   state = { hasError: false, errorMessage: "" };
 
   static getDerivedStateFromError(error) {
-    return { hasError: true, errorMessage: error.message };
+    return { hasError: true, errorMessage: error.message || "An unexpected error occurred" };
   }
 
   render() {
@@ -51,14 +51,25 @@ const QuizPage = () => {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [newQuestion, setNewQuestion] = useState({
     questionText: "",
-    options: [{ optionText: "" }, { optionText: "" }, { optionText: "" }],
+    options: [
+      { optionText: "", personalityId: null },
+      { optionText: "", personalityId: null },
+      { optionText: "", personalityId: null },
+    ],
   });
   const [editingQuestionId, setEditingQuestionId] = useState(null);
   const navigate = useNavigate();
 
+  const personalityOptions = [
+    { id: null, name: "Select Personality" },
+    { id: 1, name: "Diploma in Applied AI and Analytics" },
+    { id: 2, name: "Diploma in Computer Science" },
+    { id: 3, name: "Diploma in Cybersecurity and Digital Forensics" },
+  ];
+
   useEffect(() => {
-    if (!loading && !currentUser && window.location.pathname !== '/login') {
-      navigate('/login');
+    if (!loading && !currentUser && window.location.pathname !== "/login") {
+      navigate("/login");
     }
   }, [currentUser, loading, navigate]);
 
@@ -74,7 +85,7 @@ const QuizPage = () => {
       .map((opt) => ({
         optionId: opt.optionId ? parseInt(opt.optionId, 10) : null,
         optionText: opt.optionText || "",
-        personalityId: opt.personalityId || null,
+        personalityId: opt.personalityId ? parseInt(opt.personalityId, 10) : null,
       }))
       .filter((opt, index, self) => 
         opt.optionText && 
@@ -96,7 +107,7 @@ const QuizPage = () => {
 
     const fetchQuestions = async () => {
       try {
-        const data = await makeApiCall('/quiz', 'GET');
+        const data = await makeApiCall("/quiz", "GET");
         if (data.status !== "success") {
           throw new Error(data.message || "Failed to fetch questions");
         }
@@ -135,6 +146,10 @@ const QuizPage = () => {
   }, [selectedOption]);
 
   const handleOptionClick = (option) => {
+    if (!option?.optionId) {
+      toast.error("Invalid option selected");
+      return;
+    }
     setSelectedOption(option);
     setAnswers((prev) => [
       ...prev,
@@ -159,13 +174,13 @@ const QuizPage = () => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
       setAnswers((prev) => prev.slice(0, -1));
+      setSelectedOption(null);
     }
   };
 
   const calculatePersonality = async () => {
     try {
-      console.log("Calculating personality with answers:", answers);
-      const data = await makeApiCall('/quiz/submit', 'POST', { answers });
+      const data = await makeApiCall("/quiz/submit", "POST", { answers });
       if (data.status !== "success") {
         throw new Error(data.message || "Failed to calculate personality");
       }
@@ -175,6 +190,7 @@ const QuizPage = () => {
     } catch (err) {
       console.error("Error calculating personality:", err);
       toast.error(`Error calculating personality: ${err.message}`);
+      setError(err.message);
     }
   };
 
@@ -187,12 +203,10 @@ const QuizPage = () => {
       setQuizCompleted(false);
       setPersonalityResult(null);
       setIsPreviewMode(false);
-      window.location.reload();
     }
   };
 
   const handleShareResult = async () => {
-    console.log("Attempting to share result:", personalityResult);
     if (!personalityResult || !Array.isArray(personalityResult) || personalityResult.length === 0) {
       toast.error("No valid result available to share. Please complete the quiz first.", {
         style: { fontSize: "14px", padding: "8px 16px" },
@@ -234,28 +248,30 @@ const QuizPage = () => {
       toast.error("Sharing not supported on this device. Please copy the result manually.", {
         style: { fontSize: "14px", padding: "8px 16px" },
       });
-      console.warn("Neither Web Share nor Clipboard API is available.");
     }
   };
 
   const handleCreateQuestion = async () => {
-    if (!newQuestion.questionText || newQuestion.options.some((opt) => !opt.optionText)) {
-      toast.error("Please fill in all fields");
+    if (!newQuestion.questionText || newQuestion.options.some((opt) => !opt.optionText || !opt.personalityId)) {
+      toast.error("Please fill in all fields including personality selection for each option");
       return;
     }
     try {
-      const data = await makeApiCall('/quiz', 'POST', newQuestion);
+      const data = await makeApiCall("/quiz", "POST", newQuestion);
       if (data.status !== "success") {
         throw new Error(data.message || "Failed to create question");
       }
-      console.log("Created question:", data.data);
       setQuestions([
         ...questions,
         { ...data.data, options: normalizeOptions(data.data.options) },
       ]);
       setNewQuestion({
         questionText: "",
-        options: [{ optionText: "" }, { optionText: "" }, { optionText: "" }],
+        options: [
+          { optionText: "", personalityId: null },
+          { optionText: "", personalityId: null },
+          { optionText: "", personalityId: null },
+        ],
       });
       toast.success("Question created successfully!");
       setIsPreviewMode(true);
@@ -266,19 +282,18 @@ const QuizPage = () => {
   };
 
   const handleUpdateQuestion = async (questionId) => {
-    if (!newQuestion.questionText || newQuestion.options.some((opt) => !opt.optionText)) {
-      toast.error("Please fill in all fields");
+    if (!newQuestion.questionText || newQuestion.options.some((opt) => !opt.optionText || !opt.personalityId)) {
+      toast.error("Please fill in all fields including personality selection for each option");
       return;
     }
     try {
-      const data = await makeApiCall(`/quiz/${questionId}`, 'PUT', {
+      const data = await makeApiCall(`/quiz/${questionId}`, "PUT", {
         ...newQuestion,
         options: newQuestion.options.slice(0, 3),
       });
       if (data.status !== "success") {
         throw new Error(data.message || "Failed to update question");
       }
-      console.log("Updated question:", data.data);
       setQuestions(
         questions.map((q) =>
           q.questionId === questionId
@@ -288,7 +303,11 @@ const QuizPage = () => {
       );
       setNewQuestion({
         questionText: "",
-        options: [{ optionText: "" }, { optionText: "" }, { optionText: "" }],
+        options: [
+          { optionText: "", personalityId: null },
+          { optionText: "", personalityId: null },
+          { optionText: "", personalityId: null },
+        ],
       });
       setEditingQuestionId(null);
       toast.success("Question updated successfully!");
@@ -302,7 +321,7 @@ const QuizPage = () => {
   const handleDeleteQuestion = async (questionId) => {
     if (!window.confirm("Are you sure you want to delete this question?")) return;
     try {
-      const data = await makeApiCall(`/quiz/${questionId}`, 'DELETE');
+      const data = await makeApiCall(`/quiz/${questionId}`, "DELETE");
       if (data.status !== "success") {
         throw new Error(data.message || "Failed to delete question");
       }
@@ -326,18 +345,15 @@ const QuizPage = () => {
 
     const questionIds = newQuestions.map((q) => q.questionId);
     if (questionIds.some((id) => !id || isNaN(parseInt(id, 10)))) {
-      console.error("Invalid question IDs:", questionIds);
       toast.error("Cannot reorder questions: Invalid question IDs");
       return;
     }
 
     try {
-      console.log("Sending questionIds to reorder:", questionIds);
-      const data = await makeApiCall('/quiz/reorder', 'PUT', { questionIds });
+      const data = await makeApiCall("/quiz/reorder", "PUT", { questionIds });
       if (data.status !== "success") {
         throw new Error(data.message || "Failed to reorder questions");
       }
-      console.log("Reorder response:", data.data);
       setQuestions(
         data.data.map((question) => ({
           ...question,
@@ -385,14 +401,12 @@ const QuizPage = () => {
 
     const optionIds = options.map((opt) => opt.optionId);
     if (optionIds.some((id) => !id || isNaN(parseInt(id, 10)))) {
-      console.error("Invalid option IDs:", optionIds);
       toast.error("Cannot reorder options: Invalid option IDs");
       return;
     }
 
     try {
-      console.log("Sending optionIds to reorder:", optionIds);
-      const data = await makeApiCall(`/quiz/${questionId}/options/reorder`, 'PUT', { optionIds });
+      const data = await makeApiCall(`/quiz/${questionId}/options/reorder`, "PUT", { optionIds });
       if (data.status !== "success") {
         throw new Error(data.message || "Failed to reorder options");
       }
@@ -421,6 +435,17 @@ const QuizPage = () => {
     setNewQuestion({ ...newQuestion, options: updatedOptions });
   };
 
+  const handlePersonalityChange = (index, personalityId) => {
+    const updatedOptions = [...newQuestion.options];
+    updatedOptions[index] = { ...updatedOptions[index], personalityId: personalityId ? parseInt(personalityId, 10) : null };
+    setNewQuestion({ ...newQuestion, options: updatedOptions });
+  };
+
+  const getPersonalityName = (personalityId) => {
+    const personality = personalityOptions.find((p) => p.id === personalityId);
+    return personality ? personality.name : "Unknown";
+  };
+
   const startEditingQuestion = (question) => {
     if (!Array.isArray(question.options)) {
       toast.error("Cannot edit question: Invalid options");
@@ -431,6 +456,91 @@ const QuizPage = () => {
       questionText: question.questionText || "",
       options: normalizeOptions(question.options),
     });
+  };
+
+  // Consolidated quiz rendering component
+  const renderQuizInterface = () => {
+    const currentQuestion = questions[currentIndex];
+    if (!currentQuestion) {
+      return (
+        <p className="text-sm sm:text-base text-gray-200">
+          No question available
+        </p>
+      );
+    }
+
+    return (
+      <div className="max-w-4xl mx-auto bg-white/5 border border-white/20 rounded-2xl p-4 sm:p-6 md:p-8 shadow-xl">
+        {hasRole("content_manager", "moderator", "admin", "super_admin") && isPreviewMode && (
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={() => setIsPreviewMode(false)}
+              className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-full transition-all duration-300 flex items-center gap-2 text-sm sm:text-base"
+              aria-label="Edit quiz questions"
+            >
+              <Edit size={16} /> Edit Questions
+            </button>
+          </div>
+        )}
+        <div className="mb-4 sm:mb-7">
+          <div className="text-xs sm:text-sm text-gray-300">{`Question ${currentIndex + 1} of ${questions.length}`}</div>
+          <div className="w-full bg-white/20 h-2 rounded-full mt-2">
+            <div
+              className="h-2 bg-purple-500 rounded-full transition-all duration-100"
+              style={{
+                width: `${((currentIndex + 1) / questions.length) * 100}%`,
+              }}
+            ></div>
+          </div>
+        </div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentIndex}
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            transition={{ duration: 0.5 }}
+          >
+            <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 flex justify-center items-center gap-2">
+              <HelpCircle className="text-yellow-400" size={20} />
+              {currentQuestion.questionText || "Question not available"}
+            </h2>
+            <div className="grid gap-3 sm:gap-4">
+              {currentQuestion.options?.filter(opt => opt.optionText).map((opt, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleOptionClick(opt)}
+                  className={`px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-base sm:text-lg font-medium transition-all duration-300 shadow-md ${
+                    selectedOption?.optionId === opt.optionId
+                      ? "bg-purple-700/80 scale-105"
+                      : "bg-gradient-to-r from-purple-600 to-pink-600 hover:scale-105"
+                  }`}
+                  disabled={selectedOption !== null}
+                  aria-label={`Select option ${i + 1}: ${opt.optionText}`}
+                >
+                  {opt.optionText}
+                </button>
+              )) || (
+                <p className="text-sm sm:text-base">
+                  No options available
+                </p>
+              )}
+            </div>
+            <div className="mt-6 sm:mt-8 flex justify-center gap-2 sm:gap-4 flex-wrap">
+              {currentIndex > 0 && (
+                <button
+                  onClick={handlePreviousQuestion}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 text-sm sm:text-base"
+                  aria-label="Go to previous question"
+                >
+                  Previous Question
+                </button>
+              )}
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    );
   };
 
   if (loading || apiLoading) {
@@ -452,7 +562,10 @@ const QuizPage = () => {
         </h1>
         <p className="text-lg sm:text-xl text-red-300">{error || apiError}</p>
         <button
-          onClick={() => window.location.reload()}
+          onClick={() => {
+            setError(null);
+            window.location.reload();
+          }}
           className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 text-sm sm:text-base"
           aria-label="Retry the quiz"
         >
@@ -464,90 +577,88 @@ const QuizPage = () => {
 
   if (quizCompleted && personalityResult) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4 sm:px-6 text-white text-center">
-        <h2 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-6">
-          Your Recommended Diploma Course
-        </h2>
-        <div className="max-w-2xl mx-auto bg-white/5 border border-white/20 rounded-2xl p-4 sm:p-6 md:p-8 shadow-xl">
-          {personalityResult.length > 0 ? (
-            <>
-              <h3 className="text-xl sm:text-2xl font-semibold mb-2 text-purple-300">
-                {personalityResult[0].name}
-                {personalityResult.length > 1 && " (Tied Result)"}
-              </h3>
-              <p className="text-sm sm:text-lg text-gray-200">
-                Based on your answers, the {personalityResult[0].name} diploma
-                course is best suited for you.{" "}
-                {personalityResult[0].description}
-              </p>
-              {personalityResult.length > 1 && (
-                <div className="mt-4">
-                  <p className="text-sm sm:text-lg font-medium text-yellow-400">
-                    Other Recommended Diploma Courses:
+      <div className="font-sans bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen scroll-smooth relative overflow-hidden">
+        <BackgroundEffects />
+        <QuizErrorBoundary>
+          <div className="py-8 px-4 sm:px-6 text-white text-center">
+            <Toaster position="top-right" />
+            <h1 className="text-2xl sm:text-4xl font-bold mb-6 sm:mb-8">
+              Discover Your Ideal Diploma Course!
+            </h1>
+            <div className="max-w-2xl mx-auto bg-white/5 border border-white/20 rounded-2xl p-4 sm:p-6 md:p-8 shadow-xl">
+              <h2 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-6">
+                Your Recommended Diploma Course
+              </h2>
+              {personalityResult.length > 0 ? (
+                <>
+                  <h3 className="text-xl sm:text-2xl font-semibold mb-2 text-purple-300">
+                    {personalityResult[0].name}
+                    {personalityResult.length > 1 && " (Tied Result)"}
+                  </h3>
+                  <p className="text-sm sm:text-lg text-gray-200">
+                    Based on your answers, the {personalityResult[0].name} diploma
+                    course is best suited for you.{" "}
+                    {personalityResult[0].description}
                   </p>
-                  {personalityResult.slice(1).map((result, index) => (
-                    <div key={index} className="mt-2">
-                      <h4 className="text-base sm:text-lg font-semibold text-purple-300">
-                        {result.name}
-                      </h4>
-                      <p className="text-sm sm:text-base text-gray-200">
-                        The {result.name} diploma course may also suit you.{" "}
-                        {result.description}
+                  {personalityResult.length > 1 && (
+                    <div className="mt-4">
+                      <p className="text-sm sm:text-lg font-medium text-yellow-400">
+                        Other Recommended Diploma Courses:
                       </p>
+                      {personalityResult.slice(1).map((result, index) => (
+                        <div key={index} className="mt-2">
+                          <h4 className="text-base sm:text-lg font-semibold text-purple-300">
+                            {result.name}
+                          </h4>
+                          <p className="text-sm sm:text-base text-gray-200">
+                            The {result.name} diploma course may also suit you.{" "}
+                            {result.description}
+                          </p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm sm:text-lg text-gray-200">
+                  No diploma course recommendation could be determined based on your answers.
+                </p>
               )}
-            </>
-          ) : (
-            <p className="text-sm sm:text-lg text-gray-200">
-              No diploma course recommendation could be determined based on your
-              answers.
-            </p>
-          )}
-          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row justify-center gap-2 sm:gap-4 flex-wrap">
-            <button
-              onClick={handleRetakeQuiz}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 text-sm sm:text-base"
-              aria-label="Retake the quiz"
-            >
-              Retake Quiz
-            </button>
-            <button
-              onClick={() =>
-                window.open(
-                  "https://www.sp.edu.sg/courses/schools/soc#section-2",
-                  "_blank"
-                )
-              }
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 text-sm sm:text-base"
-              aria-label="Explore all diploma courses"
-            >
-              Explore All Diploma Courses
-            </button>
-            <button
-              onClick={handleShareResult}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base"
-              aria-label="Share quiz result"
-            >
-              <Share2 size={16} /> Share Result
-            </button>
+              <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row justify-center gap-2 sm:gap-4 flex-wrap">
+                <button
+                  onClick={handleRetakeQuiz}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 text-sm sm:text-base"
+                  aria-label="Retake the quiz"
+                >
+                  Retake Quiz
+                </button>
+                <button
+                  onClick={() =>
+                    window.open(
+                      "https://www.sp.edu.sg/courses/schools/soc#section-2",
+                      "_blank"
+                    )
+                  }
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 text-sm sm:text-base"
+                  aria-label="Explore all diploma courses"
+                >
+                  Explore All Diploma Courses
+                </button>
+                <button
+                  onClick={handleShareResult}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base"
+                  aria-label="Share quiz result"
+                >
+                  <Share2 size={16} /> Share Result
+                </button>
+              </div>
+            </div>
+            {(!hasRole("content_manager", "moderator", "admin", "super_admin") || isPreviewMode) && renderQuizInterface()}
           </div>
-          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row justify-center gap-2 sm:gap-4 flex-wrap">
-            <button
-              onClick={handleShareResult}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 flex items-center justify-center gap-2 text-sm sm:text-base"
-              aria-label="Continue to next activity"
-            >
-              Continue to next activity
-            </button>
-          </div>
-        </div>
+        </QuizErrorBoundary>
       </div>
     );
   }
-
-  const currentQuestion = questions[currentIndex];
 
   return (
     <div className="font-sans bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen scroll-smooth relative overflow-hidden">
@@ -558,7 +669,6 @@ const QuizPage = () => {
           <h1 className="text-2xl sm:text-4xl font-bold mb-6 sm:mb-8">
             Discover Your Ideal Diploma Course!
           </h1>
-
           {hasRole("content_manager", "moderator", "admin", "super_admin") && !isPreviewMode && (
             <div className="max-w-4xl mx-auto bg-white/5 border border-white/20 rounded-2xl p-4 sm:p-6 md:p-8 shadow-xl mb-6 sm:mb-8">
               <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 gap-2">
@@ -579,22 +689,40 @@ const QuizPage = () => {
                   value={newQuestion.questionText}
                   onChange={handleQuestionInputChange}
                   placeholder="Enter question text"
-                  className="w-full bg-white/10 text-white p-3 rounded-lg mb-4 text-sm sm:text-base"
+                  className="w-full bg-white/10 text-white p-3 rounded-lg mb-4 text-sm sm:text-base placeholder-gray-400"
                   aria-label="Question text"
                 />
                 {newQuestion.options.map((option, index) => (
                   <div
                     key={index}
-                    className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-2"
+                    className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-4"
                   >
-                    <input
-                      type="text"
-                      value={option.optionText}
-                      onChange={(e) => handleOptionInputChange(index, e.target.value)}
-                      placeholder={`Option ${index + 1}`}
-                      className="w-full bg-white/10 text-white p-3 rounded-lg text-sm sm:text-base"
-                      aria-label={`Option ${index + 1}`}
-                    />
+                    <div className="flex-1 w-full">
+                      <input
+                        type="text"
+                        value={option.optionText}
+                        onChange={(e) => handleOptionInputChange(index, e.target.value)}
+                        placeholder={`Option ${index + 1}`}
+                        className="w-full bg-white/10 text-white p-3 rounded-lg text-sm sm:text-base placeholder-gray-400 mb-2"
+                        aria-label={`Option ${index + 1}`}
+                      />
+                      <select
+                        value={option.personalityId || ""}
+                        onChange={(e) => handlePersonalityChange(index, e.target.value)}
+                        className="w-full bg-white/10 text-white p-3 rounded-lg text-sm sm:text-base border border-white/20"
+                        aria-label={`Personality for option ${index + 1}`}
+                      >
+                        {personalityOptions.map((personality) => (
+                          <option
+                            key={personality.id}
+                            value={personality.id || ""}
+                            className="bg-slate-800 text-white"
+                          >
+                            {personality.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     <div className="flex gap-2 mt-2 sm:mt-0">
                       <button
                         onClick={() => handleMoveOption(editingQuestionId || "new", index, "up")}
@@ -618,7 +746,7 @@ const QuizPage = () => {
                 <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4 mt-4">
                   <button
                     onClick={handleSaveAndPreview}
-                    disabled={!newQuestion.questionText || newQuestion.options.some((opt) => !opt.optionText)}
+                    disabled={!newQuestion.questionText || newQuestion.options.some((opt) => !opt.optionText || !opt.personalityId)}
                     className="bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                     aria-label={editingQuestionId ? "Update question" : "Create question"}
                   >
@@ -629,7 +757,11 @@ const QuizPage = () => {
                       onClick={() => {
                         setNewQuestion({
                           questionText: "",
-                          options: [{ optionText: "" }, { optionText: "" }, { optionText: "" }],
+                          options: [
+                            { optionText: "", personalityId: null },
+                            { optionText: "", personalityId: null },
+                            { optionText: "", personalityId: null },
+                          ],
                         });
                         setEditingQuestionId(null);
                       }}
@@ -648,126 +780,63 @@ const QuizPage = () => {
                 {questions.map((question, index) => (
                   <div
                     key={question.questionId}
-                    className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white/10 p-4 rounded-lg mb-2"
+                    className="bg-white/10 p-4 rounded-lg mb-4"
                   >
-                    <span className="text-sm sm:text-base mb-2 sm:mb-0">
-                      {question.questionText}
-                    </span>
-                    <div className="flex gap-2 flex-wrap">
-                      <button
-                        onClick={() => handleMoveQuestion(index, "up")}
-                        disabled={index === 0}
-                        className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-full disabled:opacity-50 min-w-[40px]"
-                        aria-label={`Move question ${index + 1} up`}
-                      >
-                        <ArrowUp size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleMoveQuestion(index, "down")}
-                        disabled={index === questions.length - 1}
-                        className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-full disabled:opacity-50 min-w-[40px]"
-                        aria-label={`Move question ${index + 1} down`}
-                      >
-                        <ArrowDown size={16} />
-                      </button>
-                      <button
-                        onClick={() => startEditingQuestion(question)}
-                        disabled={!Array.isArray(question.options)}
-                        className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 sm:px-4 py-2 rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base min-w-[80px]"
-                        aria-label={`Edit question ${index + 1}`}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteQuestion(question.questionId)}
-                        className="bg-red-600 hover:bg-red-700 text-white px-3 sm:px-4 py-2 rounded-full transition-all duration-300 text-sm sm:text-base min-w-[80px]"
-                        aria-label={`Delete question ${index + 1}`}
-                      >
-                        Delete
-                      </button>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2">
+                      <span className="text-sm sm:text-base mb-2 sm:mb-0 font-medium">
+                        {question.questionText}
+                      </span>
+                      <div className="flex gap-2 flex-wrap">
+                        <button
+                          onClick={() => handleMoveQuestion(index, "up")}
+                          disabled={index === 0}
+                          className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-full disabled:opacity-50 min-w-[40px]"
+                          aria-label={`Move question ${index + 1} up`}
+                        >
+                          <ArrowUp size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleMoveQuestion(index, "down")}
+                          disabled={index === questions.length - 1}
+                          className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-full disabled:opacity-50 min-w-[40px]"
+                          aria-label={`Move question ${index + 1} down`}
+                        >
+                          <ArrowDown size={16} />
+                        </button>
+                        <button
+                          onClick={() => startEditingQuestion(question)}
+                          disabled={!Array.isArray(question.options)}
+                          className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 sm:px-4 py-2 rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base min-w-[80px]"
+                          aria-label={`Edit question ${index + 1}`}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteQuestion(question.questionId)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-3 sm:px-4 py-2 rounded-full transition-all duration-300 text-sm sm:text-base min-w-[80px]"
+                          aria-label={`Delete question ${index + 1}`}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid gap-2 mt-3">
+                      <p className="text-xs sm:text-sm text-gray-300 mb-2">Options:</p>
+                      {question.options?.filter(opt => opt.optionText).map((option, optIndex) => (
+                        <div key={optIndex} className="flex justify-between items-center bg-white/5 p-2 rounded text-xs sm:text-sm">
+                          <span>{option.optionText}</span>
+                          <span className="text-purple-300 font-medium">
+                            → {getPersonalityName(option.personalityId)}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}
               </div>
             </div>
           )}
-
-          {(!hasRole("content_manager", "moderator", "admin", "super_admin") || isPreviewMode) && (
-            <div className="max-w-4xl mx-auto bg-white/5 border border-white/20 rounded-2xl p-4 sm:p-6 md:p-8 shadow-xl">
-              {hasRole("content_manager", "moderator", "admin", "super_admin") && isPreviewMode && (
-                <div className="flex justify-end mb-4">
-                  <button
-                    onClick={() => setIsPreviewMode(false)}
-                    className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-full transition-all duration-300 flex items-center gap-2 text-sm sm:text-base"
-                    aria-label="Edit quiz questions"
-                  >
-                    <Edit size={16} /> Edit Questions
-                  </button>
-                </div>
-              )}
-              <div className="mb-4 sm:mb-7">
-                <div className="text-xs sm:text-sm text-gray-300">{`Question ${
-                  currentIndex + 1
-                } of ${questions.length}`}</div>
-                <div className="w-full bg-white/20 h-2 rounded-full mt-2">
-                  <div
-                    className="h-2 bg-purple-500 rounded-full transition-all duration-100"
-                    style={{
-                      width: `${
-                        ((currentIndex + 1) / questions.length) * 100
-                      }%`,
-                    }}
-                  ></div>
-                </div>
-              </div>
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentIndex}
-                  initial={{ opacity: 0, y: 50 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -50 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 flex justify-center items-center gap-2">
-                    <HelpCircle className="text-yellow-400" size={20} />
-                    {currentQuestion?.questionText || "Question not available"}
-                  </h2>
-                  <div className="grid gap-3 sm:gap-4">
-                    {currentQuestion?.options?.map((opt, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handleOptionClick(opt)}
-                        className={`px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-base sm:text-lg font-medium transition-all duration-300 shadow-md ${
-                          selectedOption?.optionId === opt.optionId
-                            ? "bg-purple-700/80 scale-105"
-                            : "bg-gradient-to-r from-purple-600 to-pink-600 hover:scale-105"
-                        }`}
-                        disabled={selectedOption !== null}
-                        aria-label={`Select option ${i + 1}: ${opt.optionText}`}
-                      >
-                        {opt.optionText}
-                      </button>
-                    )) || (
-                      <p className="text-sm sm:text-base">
-                        No options available
-                      </p>
-                    )}
-                  </div>
-                  <div className="mt-6 sm:mt-8 flex justify-center gap-2 sm:gap-4 flex-wrap">
-                    {currentIndex > 0 && (
-                      <button
-                        onClick={handlePreviousQuestion}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 text-sm sm:text-base"
-                        aria-label="Go to previous question"
-                      >
-                        Previous Question
-                      </button>
-                    )}
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-            </div>
-          )}
+          {(!hasRole("content_manager", "moderator", "admin", "super_admin") || isPreviewMode) && renderQuizInterface()}
         </div>
       </QuizErrorBoundary>
     </div>
