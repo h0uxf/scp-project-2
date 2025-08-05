@@ -8,30 +8,35 @@ const rateLimit = require("express-rate-limit");
 const cookieParser = require("cookie-parser");
 const csrf = require("csurf");
 const { sanitizeResponse } = require("./middlewares/sanitizers");
+require("dotenv").config(); // Load environment variables
 
 const app = express();
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 
 //////////////////////////////////////////////////////
 // CORS CONFIGURATION
 //////////////////////////////////////////////////////
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://kh24.8thwall.app",
-  "https://kahhian24-default-kh24.dev.8thwall.app"
-];
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(",")
+  : [
+      "http://localhost:5173",
+      "https://kh24.8thwall.app",
+      "https://kahhian24-default-kh24.dev.8thwall.app",
+    ];
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      logger.warn("CORS blocked for invalid origin", { origin });
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        logger.warn("CORS blocked for invalid origin", { origin });
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -41,81 +46,87 @@ app.use(cookieParser());
 // SECURITY MIDDLEWARE
 //////////////////////////////////////////////////////
 app.use(helmet());
-app.use(helmet.contentSecurityPolicy({
-  directives: {
-    defaultSrc: ["'self'"],
-    scriptSrc: ["'self'"],
-    styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles for frontend compatibility
-    imgSrc: ["'self'", "data:"], // Allow data URLs for images
-    connectSrc: ["'self'", ...allowedOrigins], // Allow frontend origins for API calls
-    fontSrc: ["'self'"],
-    objectSrc: ["'none'"],
-    mediaSrc: ["'self'"],
-    frameSrc: ["'none'"],
-  },
-}));
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:"],
+      connectSrc: ["'self'", ...allowedOrigins],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  })
+);
 
 // CSRF Protection Setup
 const csrfProtection = csrf({
   cookie: {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
   },
 });
 
-// Apply CSRF middleware to the token endpoint specifically
-app.use('/api/csrf-token', csrfProtection);
-
-// CSRF Token Endpoint - Now middleware has run and req.csrfToken() is available
-app.get('/api/csrf-token', (req, res) => {
+// CSRF Token Endpoint (No CSRF protection for this endpoint)
+app.get("/api/csrf-token", (req, res) => {
   try {
     const token = req.csrfToken();
     res.json({ csrfToken: token });
   } catch (error) {
-    logger.error("Failed to generate CSRF token", error);
-    return res.status(500).json({ 
-      status: "error", 
-      message: "Failed to generate CSRF token" 
+    logger.error("Failed to generate CSRF token", { error: error.message });
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to generate CSRF token",
     });
   }
 });
 
 // Selective CSRF Protection for other API routes
-app.use('/api', (req, res, next) => {
+app.use("/api", (req, res, next) => {
   // Skip CSRF for safe methods
-  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+  if (["GET", "HEAD", "OPTIONS"].includes(req.method)) {
     return next();
   }
-  
-  // Skip CSRF for login/register (first-time visitors won't have token)
-  if ((req.path === '/login' || req.path === '/register' || req.path === '/images/upload') && req.method === 'POST') {
+
+  // Skip CSRF for login/register and image upload
+  if (
+    (req.path === "/login" ||
+      req.path === "/register" ||
+      req.path === "/images/upload") &&
+    req.method === "POST"
+  ) {
     return next();
   }
-  
+
   // Apply CSRF protection to other POST/PUT/DELETE requests
   csrfProtection(req, res, (err) => {
     if (err) {
-      logger.error("CSRF validation failed", { 
-        path: req.originalUrl, 
+      logger.error("CSRF validation failed", {
+        path: req.originalUrl,
         method: req.method,
-        error: err.message 
+        error: err.message,
       });
-      return res.status(403).json({ 
-        status: "error", 
-        message: "Invalid CSRF token" 
+      return res.status(403).json({
+        status: "error",
+        message: "Invalid CSRF token",
       });
     }
     next();
   });
 });
 
-// Rate Limiting
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+//////////////////////////////////////////////////////
+// RATE LIMITING MIDDLEWARE
+//////////////////////////////////////////////////////
+const adminLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
   max: 100,
   handler: (req, res, next) => {
-    const error = new Error("Too many requests from this IP, please try again after 15 minutes");
+    const error = new Error("Too many requests from this IP for admin roles, please try again after 1 minute");
     error.statusCode = 429;
     next(error);
   },
@@ -123,12 +134,11 @@ const generalLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Endpoint-specific rate limiter for high-traffic GET endpoints
-const leaderboardLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 200, // Higher limit for leaderboard
+const advancedLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 80,
   handler: (req, res, next) => {
-    const error = new Error("Too many leaderboard requests, please try again later");
+    const error = new Error("Too many requests from this IP, please try again after 1 minute");
     error.statusCode = 429;
     next(error);
   },
@@ -136,8 +146,39 @@ const leaderboardLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-app.use('/api/leaderboard', leaderboardLimiter);
-app.use(generalLimiter);
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 50,
+  handler: (req, res, next) => {
+    const error = new Error("Too many requests from this IP, please try again after 1 minute");
+    error.statusCode = 429;
+    next(error);
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limiting based on user role
+app.use((req, res, next) => {
+  const userRole = res.locals?.role_id || "user"; 
+
+  switch (userRole) {
+    case "super_admin":
+    case "admin":
+      adminLimiter(req, res, next);
+      break;
+    case "content_manager":
+    case "moderator":
+      advancedLimiter(req, res, next);
+      break;
+    case "user":
+      generalLimiter(req, res, next);
+      break;
+    default:
+      generalLimiter(req, res, next); 
+      break;
+  }
+});
 
 //////////////////////////////////////////////////////
 // LOGGING MIDDLEWARE
@@ -168,8 +209,8 @@ app.use("/api", mainRoutes);
 // STATIC FILES
 //////////////////////////////////////////////////////
 app.use("/", express.static("public"));
-const path = require('path');
-app.use('/uploads', express.static(path.join(__dirname, 'Uploads')));
+const path = require("path");
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 //////////////////////////////////////////////////////
 // RESPONSE SANITIZATION & ERROR HANDLING
