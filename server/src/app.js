@@ -89,7 +89,7 @@ app.use('/api', (req, res, next) => {
   }
   
   // Skip CSRF for login/register (first-time visitors won't have token)
-  if ((req.path === '/login' || req.path === '/register') && req.method === 'POST') {
+  if ((req.path === '/login' || req.path === '/register' || req.path === '/images/upload') && req.method === 'POST') {
     return next();
   }
   

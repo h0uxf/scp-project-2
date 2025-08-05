@@ -12,7 +12,9 @@ const FaceFilterPage = () => {
       const formDate = new FormData();
       formDate.append("image", blob, "photo.jpg");
 
-      const uploadRes = await axios.post(`${API_BASE_URL}/api/images/upload`, formDate, {
+      const uploadRes = await 
+      
+      axios.post(`${API_BASE_URL}/api/images/upload`, formDate, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
