@@ -16,6 +16,7 @@ import CrosswordAdminPage from "./pages/CrosswordAdminPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import NavBar from "./components/NavBar";
 import LearnMoreRedirect from "./components/LearnMoreRedirect";
+import ScanPage from "./pages/ScanPage"; 
 import Footer from "./components/Footer";
 
 function App() {
@@ -34,7 +35,7 @@ function App() {
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/learn-more" element={<LearnMoreRedirect />} />
-              {/* <Route path="/scan" element={<ScanPage />} /> */}
+              <Route path="/scan" element={<ScanPage />} />
               <Route path="/quiz" element={<QuizPage />} />
               <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path='/login' element={<LoginPage />} />
