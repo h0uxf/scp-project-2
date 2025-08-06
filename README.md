@@ -1,12 +1,6 @@
 # Introduction / Description
 This repository is utilised in fulfilment of the requirements of Secure Coding (Project) module, Project 2.
-In today’s digital age, schools are increasingly leveraging technology to engage with prospective
-students, parents, and the broader community. To enhance the school’s visibility and create an
-immersive experience for users, we propose the development of an interactive gamified application that
-utilizes web Augmented Reality (AR). This project is to design and develop an interactive augmented
-reality (AR) game application that promotes School of Computing (SoC) by showcasing its facilities,
-culture, and values. The application will provide users with an engaging, gamified experience, allowing
-them to explore the school environment virtually and interactively.
+In today’s digital age, schools are increasingly leveraging technology to engage with prospective students, parents, and the broader community. To enhance the school’s visibility and create an immersive experience for users, we propose the development of an interactive gamified application that utilizes web Augmented Reality (AR). This project is to design and develop an interactive augmented reality (AR) game application that promotes School of Computing (SoC) by showcasing its facilities, culture, and values. The application will provide users with an engaging, gamified experience, allowing them to explore the school environment virtually and interactively.
 
 ## Prerequisites
 Before running the tests, ensure that the following dependencies are installed:
@@ -139,7 +133,18 @@ SC-PROJECT-2
 ## Instructions
 1. Adjust the user and password settings in the .env file to match PostgreSQL workbench configurations.         
     - Template: 
-        
+        DB_HOST=
+        DB_USER=
+        DB_PASSWORD=
+        DB_DATABASE=
+        DATABASE_URL=
+        JWT_SECRET_KEY=
+        JWT_REFRESH_SECRET_KEY=
+        JWT_EXPIRES_IN=
+        JWT_REFRESH_EXPIRES_IN=
+        JWT_ALGORITHM=
+        ADMIN_PASSWORD=
+
 2. Navigate to back-end folder 
     - Execute 'npx prisma generate' to generate the Prisma client
     - Execute 'npx prisma migrate reset' to remove all data from the database

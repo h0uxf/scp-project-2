@@ -180,12 +180,15 @@ const QuizPage = () => {
 
   const calculatePersonality = async () => {
     try {
+      // CSRF-protected POST request
       const data = await makeApiCall("/quiz/submit", "POST", { answers });
       if (data.status !== "success") {
         throw new Error(data.message || "Failed to calculate personality");
       }
       setPersonalityResult(data.data || []);
       localStorage.setItem("personalityResult", JSON.stringify(data.data || []));
+      setCurrentIndex(0); // Reset currentIndex to prevent showing last question
+      setSelectedOption(null); // Reset selected option
       toast.success("Quiz completed successfully!");
     } catch (err) {
       console.error("Error calculating personality:", err);
@@ -257,6 +260,7 @@ const QuizPage = () => {
       return;
     }
     try {
+      // CSRF-protected POST request
       const data = await makeApiCall("/quiz", "POST", newQuestion);
       if (data.status !== "success") {
         throw new Error(data.message || "Failed to create question");
@@ -287,6 +291,7 @@ const QuizPage = () => {
       return;
     }
     try {
+      // CSRF-protected PUT request
       const data = await makeApiCall(`/quiz/${questionId}`, "PUT", {
         ...newQuestion,
         options: newQuestion.options.slice(0, 3),
@@ -321,6 +326,7 @@ const QuizPage = () => {
   const handleDeleteQuestion = async (questionId) => {
     if (!window.confirm("Are you sure you want to delete this question?")) return;
     try {
+      // CSRF-protected DELETE request
       const data = await makeApiCall(`/quiz/${questionId}`, "DELETE");
       if (data.status !== "success") {
         throw new Error(data.message || "Failed to delete question");
@@ -350,6 +356,7 @@ const QuizPage = () => {
     }
 
     try {
+      // CSRF-protected PUT request
       const data = await makeApiCall("/quiz/reorder", "PUT", { questionIds });
       if (data.status !== "success") {
         throw new Error(data.message || "Failed to reorder questions");
@@ -406,6 +413,7 @@ const QuizPage = () => {
     }
 
     try {
+      // CSRF-protected PUT request
       const data = await makeApiCall(`/quiz/${questionId}/options/reorder`, "PUT", { optionIds });
       if (data.status !== "success") {
         throw new Error(data.message || "Failed to reorder options");
@@ -463,7 +471,7 @@ const QuizPage = () => {
     const currentQuestion = questions[currentIndex];
     if (!currentQuestion) {
       return (
-        <p className="text-sm sm:text-base text-gray-200">
+        <p className="text-sm sm:text-base text-gray-200" aria-live="polite">
           No question available
         </p>
       );
@@ -500,6 +508,7 @@ const QuizPage = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}
             transition={{ duration: 0.5 }}
+            aria-live="polite"
           >
             <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 flex justify-center items-center gap-2">
               <HelpCircle className="text-yellow-400" size={20} />
@@ -521,7 +530,7 @@ const QuizPage = () => {
                   {opt.optionText}
                 </button>
               )) || (
-                <p className="text-sm sm:text-base">
+                <p className="text-sm sm:text-base" aria-live="polite">
                   No options available
                 </p>
               )}
@@ -549,7 +558,7 @@ const QuizPage = () => {
         <h1 className="text-2xl sm:text-4xl font-bold mb-4">
           Diploma Course Finder
         </h1>
-        <p className="text-lg sm:text-xl text-gray-300">Loading...</p>
+        <p className="text-lg sm:text-xl text-gray-300" aria-live="polite">Loading...</p>
       </div>
     );
   }
@@ -560,7 +569,7 @@ const QuizPage = () => {
         <h1 className="text-2xl sm:text-4xl font-bold mb-4">
           Diploma Course Finder
         </h1>
-        <p className="text-lg sm:text-xl text-red-300">{error || apiError}</p>
+        <p className="text-lg sm:text-xl text-red-300" aria-live="polite">{error || apiError}</p>
         <button
           onClick={() => {
             setError(null);
@@ -591,7 +600,7 @@ const QuizPage = () => {
               </h2>
               {personalityResult.length > 0 ? (
                 <>
-                  <h3 className="text-xl sm:text-2xl font-semibold mb-2 text-purple-300">
+                  <h3 className="text-xl sm:text-2xl font-semibold mb-2 text-purple-300" aria-live="polite">
                     {personalityResult[0].name}
                     {personalityResult.length > 1 && " (Tied Result)"}
                   </h3>
@@ -620,7 +629,7 @@ const QuizPage = () => {
                   )}
                 </>
               ) : (
-                <p className="text-sm sm:text-lg text-gray-200">
+                <p className="text-sm sm:text-lg text-gray-200" aria-live="polite">
                   No diploma course recommendation could be determined based on your answers.
                 </p>
               )}
@@ -653,7 +662,8 @@ const QuizPage = () => {
                 </button>
               </div>
             </div>
-            {(!hasRole("content_manager", "moderator", "admin", "super_admin") || isPreviewMode) && renderQuizInterface()}
+            {/* Only show quiz interface for admins in preview mode */}
+            {hasRole("content_manager", "moderator", "admin", "super_admin") && isPreviewMode && renderQuizInterface()}
           </div>
         </QuizErrorBoundary>
       </div>
