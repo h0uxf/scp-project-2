@@ -17,6 +17,7 @@ app.set('trust proxy', 1);
 //////////////////////////////////////////////////////
 const allowedOrigins = [
   "http://localhost:5173",
+  "https://h0uxf.8thwall.app/soc-face-filter/",
   "https://kh24.8thwall.app",
   "https://kahhian24-default-kh24.dev.8thwall.app"
 ];
@@ -32,6 +33,8 @@ app.use(cors({
   },
   credentials: true,
 }));
+
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -89,9 +92,16 @@ app.use('/api', (req, res, next) => {
   }
   
   // Skip CSRF for login/register (first-time visitors won't have token)
-  if ((req.path === '/login' || req.path === '/register' || req.path === '/images/upload') && req.method === 'POST') {
+ if ((req.path === '/login' || req.path === '/register' || req.path === '/images/upload') 
+    && req.method === 'POST'
+  ) {
+return next();
+}
+
+if (req.path === '/images' && req.method === 'GET') {
     return next();
   }
+
   
   // Apply CSRF protection to other POST/PUT/DELETE requests
   csrfProtection(req, res, (err) => {
@@ -169,7 +179,14 @@ app.use("/api", mainRoutes);
 //////////////////////////////////////////////////////
 app.use("/", express.static("public"));
 const path = require('path');
-app.use('/uploads', express.static(path.join(__dirname, 'Uploads')));
+app.use('/uploads', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  next();
+});
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 
 //////////////////////////////////////////////////////
 // RESPONSE SANITIZATION & ERROR HANDLING

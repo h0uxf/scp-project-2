@@ -6,7 +6,7 @@ const ARViewer = () => (
     width="100%"
     height="100%"
     style={{ border: "none", minHeight: "100vh" }}
-    allow="camera; microphone; fullscreen; xr-spatial-tracking;"
+    allow="camera; microphone; fullscreen; xr-spatial-tracking; accelerometer; gyroscope"
     title="8th Wall AR Face Filter for SoC Tour"
   />
 );
