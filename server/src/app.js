@@ -1,13 +1,14 @@
-const express = require("express");
-const cors = require("cors");
-const logger = require("./logger");
-const notFound = require("./middlewares/notFound");
-const errorHandler = require("./middlewares/errorHandler");
-const helmet = require("helmet");
-const rateLimit = require("express-rate-limit");
-const cookieParser = require("cookie-parser");
-const csrf = require("csurf");
-const { sanitizeResponse } = require("./middlewares/sanitizers");
+const express = require('express');
+const cors = require('cors');
+const logger = require('./logger');
+const notFound = require('./middlewares/notFound');
+const errorHandler = require('./middlewares/errorHandler');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
+const csrf = require('csurf');
+const { sanitizeResponse } = require('./middlewares/sanitizers');
+require('dotenv').config();
 
 const app = express();
 app.set('trust proxy', 1);
@@ -44,49 +45,62 @@ app.use(cookieParser());
 // SECURITY MIDDLEWARE
 //////////////////////////////////////////////////////
 app.use(helmet());
-app.use(helmet.contentSecurityPolicy({
-  directives: {
-    defaultSrc: ["'self'"],
-    scriptSrc: ["'self'"],
-    styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles for frontend compatibility
-    imgSrc: ["'self'", "data:"], // Allow data URLs for images
-    connectSrc: ["'self'", ...allowedOrigins], // Allow frontend origins for API calls
-    fontSrc: ["'self'"],
-    objectSrc: ["'none'"],
-    mediaSrc: ["'self'"],
-    frameSrc: ["'none'"],
-  },
-}));
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:'],
+      connectSrc: ["'self'", ...allowedOrigins],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  })
+);
 
 // CSRF Protection Setup
 const csrfProtection = csrf({
   cookie: {
+    key: '_csrf',
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
   },
 });
 
-// Apply CSRF middleware to the token endpoint specifically
-app.use('/api/csrf-token', csrfProtection);
+// Rate limit for CSRF token endpoint
+const csrfTokenLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // 10 requests per minute
+  handler: (req, res, next) => {
+    const error = new Error('Too many CSRF token requests, please try again later');
+    error.statusCode = 429;
+    next(error);
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
-// CSRF Token Endpoint - Now middleware has run and req.csrfToken() is available
-app.get('/api/csrf-token', (req, res) => {
+// CSRF Token Endpoint
+app.get('/api/csrf-token', csrfTokenLimiter, csrfProtection, (req, res) => {
   try {
     const token = req.csrfToken();
     res.json({ csrfToken: token });
   } catch (error) {
-    logger.error("Failed to generate CSRF token", error);
-    return res.status(500).json({ 
-      status: "error", 
-      message: "Failed to generate CSRF token" 
+    logger.error('Failed to generate CSRF token', { error: error.message, stack: error.stack });
+    return res.status(500).json({
+      status: 'error',
+      message: 'Failed to generate CSRF token',
     });
   }
 });
 
 // Selective CSRF Protection for other API routes
 app.use('/api', (req, res, next) => {
-  // Skip CSRF for safe methods
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
     return next();
   }
@@ -106,26 +120,26 @@ if (req.path === '/images' && req.method === 'GET') {
   // Apply CSRF protection to other POST/PUT/DELETE requests
   csrfProtection(req, res, (err) => {
     if (err) {
-      logger.error("CSRF validation failed", { 
-        path: req.originalUrl, 
+      logger.error('CSRF validation failed', {
+        path: req.originalUrl,
         method: req.method,
-        error: err.message 
+        error: err.message,
+        stack: err.stack,
       });
-      return res.status(403).json({ 
-        status: "error", 
-        message: "Invalid CSRF token" 
+      return res.status(403).json({
+        status: 'error',
+        message: 'Invalid CSRF token',
       });
     }
     next();
   });
 });
 
-// Rate Limiting
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+const adminLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
   max: 100,
   handler: (req, res, next) => {
-    const error = new Error("Too many requests from this IP, please try again after 15 minutes");
+    const error = new Error("Too many requests from this IP for admin roles, please try again after 1 minute");
     error.statusCode = 429;
     next(error);
   },
@@ -133,12 +147,11 @@ const generalLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Endpoint-specific rate limiter for high-traffic GET endpoints
-const leaderboardLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 200, // Higher limit for leaderboard
+const advancedLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 80,
   handler: (req, res, next) => {
-    const error = new Error("Too many leaderboard requests, please try again later");
+    const error = new Error("Too many requests from this IP, please try again after 1 minute");
     error.statusCode = 429;
     next(error);
   },
@@ -146,23 +159,48 @@ const leaderboardLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-app.use('/api/leaderboard', leaderboardLimiter);
-app.use(generalLimiter);
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 50,
+  handler: (req, res, next) => {
+    const error = new Error("Too many requests from this IP, please try again after 1 minute");
+    error.statusCode = 429;
+    next(error);
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use((req, res, next) => {
+  const userRole = res.locals?.role_id || 'user';
+  switch (userRole) {
+    case 'super_admin':
+    case 'admin':
+      adminLimiter(req, res, next);
+      break;
+    case 'content_manager':
+    case 'moderator':
+      advancedLimiter(req, res, next);
+      break;
+    default:
+      generalLimiter(req, res, next);
+  }
+});
 
 //////////////////////////////////////////////////////
 // LOGGING MIDDLEWARE
 //////////////////////////////////////////////////////
 app.use((req, res, next) => {
   const start = Date.now();
-  res.on("finish", () => {
+  res.on('finish', () => {
     const responseTime = Date.now() - start;
-    logger.info("Request processed", {
+    logger.info('Request processed', {
       method: req.method,
       path: req.originalUrl,
       statusCode: res.statusCode,
       responseTime: `${responseTime}ms`,
       ip: req.ip,
-      user: req.user?.username || "anonymous",
+      user: req.user?.username || 'anonymous',
     });
   });
   next();
@@ -171,22 +209,15 @@ app.use((req, res, next) => {
 //////////////////////////////////////////////////////
 // API ROUTES
 //////////////////////////////////////////////////////
-const mainRoutes = require("./routes/mainRoutes");
-app.use("/api", mainRoutes);
+const mainRoutes = require('./routes/mainRoutes');
+app.use('/api', mainRoutes);
 
 //////////////////////////////////////////////////////
 // STATIC FILES
 //////////////////////////////////////////////////////
-app.use("/", express.static("public"));
+app.use('/', express.static('public'));
 const path = require('path');
-app.use('/uploads', (req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  next();
-});
-
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
+app.use('/uploads', express.static(path.join(__dirname, 'Uploads')));
 
 //////////////////////////////////////////////////////
 // RESPONSE SANITIZATION & ERROR HANDLING

@@ -28,7 +28,6 @@ router.use(sanitizeRequest);
 router.get(
     '/check-completion', 
     jwtMiddleware.verifyAccessToken,
-    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     activityController.checkCompletion
 );
 
