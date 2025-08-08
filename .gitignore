@@ -134,3 +134,6 @@ dist
 [object Promise]
 
 uploads/
+
+# Snyk cache
+.dccache
