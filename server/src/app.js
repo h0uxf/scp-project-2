@@ -16,25 +16,26 @@ app.set('trust proxy', 1);
 //////////////////////////////////////////////////////
 // CORS CONFIGURATION
 //////////////////////////////////////////////////////
-const allowedOrigins = (process.env.CORS_ORIGINS?.split(',') || [
-  'http://localhost:5173',
-  'https://kh24.8thwall.app',
-  'https://kahhian24-default-kh24.dev.8thwall.app',
-]).map(origin => origin.trim());
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://h0uxf.8thwall.app/soc-face-filter/",
+  "https://kh24.8thwall.app",
+  "https://kahhian24-default-kh24.dev.8thwall.app"
+];
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        logger.warn('CORS blocked for invalid origin', { origin });
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      logger.warn("CORS blocked for invalid origin", { origin });
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+}));
+
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -103,14 +104,20 @@ app.use('/api', (req, res, next) => {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
     return next();
   }
-  if (
-    (req.path === '/login' ||
-      req.path === '/register' ||
-      req.path === '/images/upload') &&
-    req.method === 'POST'
+  
+  // Skip CSRF for login/register (first-time visitors won't have token)
+ if ((req.path === '/login' || req.path === '/register' || req.path === '/images/upload') 
+    && req.method === 'POST'
   ) {
+return next();
+}
+
+if (req.path === '/images' && req.method === 'GET') {
     return next();
   }
+
+  
+  // Apply CSRF protection to other POST/PUT/DELETE requests
   csrfProtection(req, res, (err) => {
     if (err) {
       logger.error('CSRF validation failed', {
@@ -210,7 +217,7 @@ app.use('/api', mainRoutes);
 //////////////////////////////////////////////////////
 app.use('/', express.static('public'));
 const path = require('path');
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'Uploads')));
 
 //////////////////////////////////////////////////////
 // RESPONSE SANITIZATION & ERROR HANDLING

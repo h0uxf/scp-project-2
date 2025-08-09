@@ -132,3 +132,8 @@ dist
 
 # This was inserted by `prisma init`:
 [object Promise]
+
+uploads/
+
+# Snyk cache
+.dccache

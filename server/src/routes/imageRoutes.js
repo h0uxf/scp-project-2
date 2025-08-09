@@ -27,18 +27,48 @@ const fileFilter = (req, file, cb) => {
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error("Unsupported file format. Only PNG, JPEG, JPG allowed."), false);
+    cb(
+      new Error("Unsupported file format. Only PNG, JPEG, JPG allowed."),
+      false
+    );
   }
 };
 
 const upload = multer({ storage, fileFilter });
 
+// GET /api/images
+router.get("/", (req, res) => {
+const uploadsDir = path.join(__dirname, "..", "uploads", "images");
+
+  console.log("Reading uploads from:", uploadsDir);
+
+  fs.readdir(uploadsDir, (err, files) => {
+    if (err) {
+      console.error("Error reading directory:", err);
+      return res.status(500).json({ error: "Failed to read directory" });
+    }
+
+    console.log("Files found:", files); 
+
+    const imageFiles = files.filter((file) =>
+      /\.(jpg|jpeg|png|gif)$/i.test(file)
+    );
+    console.log("Filtered image files:", imageFiles);
+
+    const imagePaths = imageFiles.map((file) => `/uploads/images/${file}`);
+
+    res.json(imagePaths);
+  });
+});
+
 // POST /api/images/upload
 router.post("/upload", upload.single("image"), (req, res) => {
   if (!req.file) {
-    return res.status(400).json({ status: "error", message: "No image file uploaded." });
+    return res
+      .status(400)
+      .json({ status: "error", message: "No image file uploaded." });
   }
-  
+
   // Return the path or URL where the image is stored
   const imageUrl = `/uploads/images/${req.file.filename}`;
 
