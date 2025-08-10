@@ -28,7 +28,7 @@
     "express-validator": "^7.2.1",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
-    "morgan": "^1.10.0",
+    "morgan": "^1.10.1",
     "pg": "^8.15.6",
     "xss": "^1.0.15"
   },
