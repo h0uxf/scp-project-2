@@ -13,9 +13,7 @@ require('dotenv').config();
 const app = express();
 app.set('trust proxy', 1);
 
-//////////////////////////////////////////////////////
 // CORS CONFIGURATION
-//////////////////////////////////////////////////////
 const allowedOrigins = [
   "http://localhost:5173",
   "https://h0uxf.8thwall.app/soc-face-filter/",
@@ -35,15 +33,11 @@ app.use(cors({
   credentials: true,
 }));
 
-
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-//////////////////////////////////////////////////////
 // SECURITY MIDDLEWARE
-//////////////////////////////////////////////////////
 app.use(helmet());
 app.use(
   helmet.contentSecurityPolicy({
@@ -83,6 +77,7 @@ const csrfTokenLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  store: new rateLimit.MemoryStore(), // Unique MemoryStore for csrfTokenLimiter
 });
 
 // CSRF Token Endpoint
@@ -104,20 +99,13 @@ app.use('/api', (req, res, next) => {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
     return next();
   }
-  
-  // Skip CSRF for login/register (first-time visitors won't have token)
- if ((req.path === '/login' || req.path === '/register' || req.path === '/images/upload') 
-    && req.method === 'POST'
-  ) {
-return next();
-}
-
-if (req.path === '/images' && req.method === 'GET') {
+  if ((req.path === '/login' || req.path === '/register' || req.path === '/images/upload') 
+      && req.method === 'POST') {
     return next();
   }
-
-  
-  // Apply CSRF protection to other POST/PUT/DELETE requests
+  if (req.path === '/images' && req.method === 'GET') {
+    return next();
+  }
   csrfProtection(req, res, (err) => {
     if (err) {
       logger.error('CSRF validation failed', {
@@ -135,41 +123,37 @@ if (req.path === '/images' && req.method === 'GET') {
   });
 });
 
-const adminLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 100,
-  handler: (req, res, next) => {
-    const error = new Error("Too many requests from this IP for admin roles, please try again after 1 minute");
-    error.statusCode = 429;
-    next(error);
+// ADVANCED RATE LIMITING
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Only 5 failed attempts per 15 minutes
+  skipSuccessfulRequests: true,
+  message: {
+    status: 'error',
+    message: 'Too many login attempts, please try again later',
   },
-  standardHeaders: true,
-  legacyHeaders: false,
+  store: new rateLimit.MemoryStore(), 
+  keyGenerator: (req) => `login_${req.ip}_${req.body?.username || 'unknown'}`,
 });
 
-const advancedLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 80,
-  handler: (req, res, next) => {
-    const error = new Error("Too many requests from this IP, please try again after 1 minute");
-    error.statusCode = 429;
-    next(error);
+app.use('/api/login', loginLimiter);
+
+const createRoleRateLimiter = (windowMs, max, keyPrefix) => rateLimit({
+  windowMs,
+  max,
+  message: {
+    status: 'error',
+    message: `Too many requests, please try again later`,
   },
   standardHeaders: true,
   legacyHeaders: false,
+  store: new rateLimit.MemoryStore(), 
+  keyGenerator: (req) => `${keyPrefix}_${req.ip}`,
 });
 
-const generalLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 50,
-  handler: (req, res, next) => {
-    const error = new Error("Too many requests from this IP, please try again after 1 minute");
-    error.statusCode = 429;
-    next(error);
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+const adminLimiter = createRoleRateLimiter(60 * 1000, 100, 'admin');
+const advancedLimiter = createRoleRateLimiter(60 * 1000, 80, 'advanced');
+const generalLimiter = createRoleRateLimiter(60 * 1000, 50, 'general');
 
 app.use((req, res, next) => {
   const userRole = res.locals?.role_id || 'user';
@@ -187,9 +171,7 @@ app.use((req, res, next) => {
   }
 });
 
-//////////////////////////////////////////////////////
 // LOGGING MIDDLEWARE
-//////////////////////////////////////////////////////
 app.use((req, res, next) => {
   const start = Date.now();
   res.on('finish', () => {
@@ -206,22 +188,16 @@ app.use((req, res, next) => {
   next();
 });
 
-//////////////////////////////////////////////////////
 // API ROUTES
-//////////////////////////////////////////////////////
 const mainRoutes = require('./routes/mainRoutes');
 app.use('/api', mainRoutes);
 
-//////////////////////////////////////////////////////
 // STATIC FILES
-//////////////////////////////////////////////////////
 app.use('/', express.static('public'));
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'Uploads')));
 
-//////////////////////////////////////////////////////
 // RESPONSE SANITIZATION & ERROR HANDLING
-//////////////////////////////////////////////////////
 app.use(sanitizeResponse);
 app.use(notFound);
 app.use(errorHandler);

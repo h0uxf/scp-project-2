@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Html5QrcodeScanner } from "html5-qrcode";
 import jsQR from "jsqr";
-import { Camera, CheckCircle, XCircle, Users, Gift, AlertCircle, Scan, RefreshCw, X } from "lucide-react";
+import { Camera, CheckCircle, XCircle, Users, Gift, AlertCircle, Scan, RefreshCw, X, Upload } from "lucide-react";
 import { useAuth } from "../components/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
@@ -16,10 +17,9 @@ const AdminQRScanner = () => {
   const [success, setSuccess] = useState("");
   const [stats, setStats] = useState({ total: 0, redeemed: 0, notRedeemed: 0 });
   const [refreshing, setRefreshing] = useState(false);
-  const videoRef = useRef(null);
+  const scannerRef = useRef(null);
   const canvasRef = useRef(null);
-  const streamRef = useRef(null);
-  const animationFrameRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const clearMessage = () => {
     setError("");
@@ -101,89 +101,98 @@ const AdminQRScanner = () => {
     }
   };
 
-  const startCamera = async () => {
+  const startCamera = () => {
     clearMessage();
     setIsScanning(true);
 
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      toast.error(
-        "Camera access is not supported on this device or browser. Please use a device with a camera and a compatible browser.",
-        { style: { fontSize: "14px", padding: "8px 16px" } }
-      );
-      setIsScanning(false);
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" }, // Prefer rear camera for scanning
+    if (!scannerRef.current) {
+      scannerRef.current = new Html5QrcodeScanner("reader", {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        disableFlip: true, // Prevent mirroring for rear camera
       });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play().catch((err) => {
-          console.error("Video play error:", err);
-          toast.error("Failed to start video stream. Please try again.", {
-            style: { fontSize: "14px", padding: "8px 16px" },
-          });
-          setIsScanning(false);
-        });
-      }
-      scanForQRCode();
-    } catch (err) {
-      console.error("Camera access error:", err);
-      let errorMessage = "Unable to access camera. Please allow camera permissions in your browser settings and try again.";
-      if (err.name === "NotAllowedError") {
-        errorMessage = "Camera access denied. Please enable camera permissions in your browser or device settings and try again.";
-      } else if (err.name === "NotFoundError") {
-        errorMessage = "No camera found on this device. Please use a device with a camera.";
-      } else if (!window.location.protocol.includes("https") && window.location.hostname !== "localhost") {
-        errorMessage = "Camera access requires a secure connection (HTTPS). Please access this page over HTTPS.";
-      }
-      toast.error(errorMessage, { style: { fontSize: "14px", padding: "8px 16px" } });
-      setIsScanning(false);
+
+      scannerRef.current.render(
+        (decodedText) => {
+          handleManualInput(decodedText);
+        },
+        (error) => {
+          console.log("QR scan error:", error);
+          // Suppress toast for continuous scanning errors
+        }
+      );
     }
   };
 
   const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
+    if (scannerRef.current) {
+      scannerRef.current.clear().catch((err) => {
+        console.error("Failed to clear scanner:", err);
+      });
+      scannerRef.current = null;
     }
     setIsScanning(false);
   };
 
-  const scanForQRCode = useCallback(() => {
-    if (!isScanning || !videoRef.current || !canvasRef.current) return;
-
-    const canvas = canvasRef.current;
-    const video = videoRef.current;
-    const context = canvas.getContext("2d");
-
-    if (!video.videoWidth || !video.videoHeight) {
-      animationFrameRef.current = requestAnimationFrame(scanForQRCode);
+  const handleImageUpload = async (event) => {
+    clearMessage();
+    const file = event.target.files[0];
+    if (!file) {
+      toast.error("No file selected. Please choose an image.", {
+        style: { fontSize: "14px", padding: "8px 16px" },
+      });
       return;
     }
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-    const code = jsQR(imageData.data, imageData.width, imageData.height, {
-      inversionAttempts: "dontInvert",
-    });
-
-    if (code) {
-      handleManualInput(code.data);
-    } else {
-      animationFrameRef.current = requestAnimationFrame(scanForQRCode);
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload a valid image file (PNG, JPEG, etc.).", {
+        style: { fontSize: "14px", padding: "8px 16px" },
+      });
+      return;
     }
-  }, [isScanning]);
+
+    try {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        context.drawImage(img, 0, 0, img.width, img.height);
+        const imageData = context.getImageData(0, 0, img.width, img.height);
+        const code = jsQR(imageData.data, img.width, img.height, {
+          inversionAttempts: "dontInvert",
+        });
+
+        URL.revokeObjectURL(url);
+
+        if (code) {
+          handleManualInput(code.data);
+        } else {
+          toast.error("No QR code found in the image. Please upload a valid QR code image.", {
+            style: { fontSize: "14px", padding: "8px 16px" },
+          });
+        }
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        toast.error("Failed to load image. Please try another image.", {
+          style: { fontSize: "14px", padding: "8px 16px" },
+        });
+      };
+
+      img.src = url;
+    } catch (err) {
+      console.error("Error processing image:", err);
+      toast.error("Failed to process image. Please try again.", {
+        style: { fontSize: "14px", padding: "8px 16px" },
+      });
+    }
+
+    event.target.value = null;
+  };
 
   const handleManualInput = async (qrTokenOrUrl) => {
     clearMessage();
@@ -197,7 +206,6 @@ const AdminQRScanner = () => {
         throw new Error("Invalid QR code: No token found");
       }
 
-      // CSRF-protected POST request
       const response = await makeApiCall("/rewards/redeem", "POST", { qrToken });
       if (response.status !== "success") {
         throw new Error(response.message || "Failed to redeem reward");
@@ -397,41 +405,44 @@ const AdminQRScanner = () => {
             </button>
 
             <div className="pt-4 sm:pt-6 border-t border-white/20">
-              <p className="text-gray-300 text-sm mb-4">For testing purposes:</p>
-              <button
-                onClick={simulateQRScan}
-                disabled={apiLoading}
-                className={`bg-gray-600 hover:bg-gray-700 text-white px-4 sm:px-6 py-2 rounded-full transition-all duration-300 text-sm sm:text-base ${
-                  apiLoading ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-                aria-label="Simulate QR code scan"
-              >
-                Simulate QR Code Scan
-              </button>
+              <p className="text-gray-300 text-sm mb-4">Alternative options:</p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                  onClick={simulateQRScan}
+                  disabled={apiLoading}
+                  className={`bg-gray-600 hover:bg-gray-700 text-white px-4 sm:px-6 py-2 rounded-full transition-all duration-300 text-sm sm:text-base ${
+                    apiLoading ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                  aria-label="Simulate QR code scan"
+                >
+                  Simulate QR Code Scan
+                </button>
+                <button
+                  onClick={() => fileInputRef.current.click()}
+                  disabled={apiLoading}
+                  className={`bg-purple-600 hover:bg-purple-700 text-white px-4 sm:px-6 py-2 rounded-full transition-all duration-300 text-sm sm:text-base ${
+                    apiLoading ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                  aria-label="Upload QR code image"
+                >
+                  <Upload size={16} className="inline-block mr-2" />
+                  Upload QR Code Image
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                  accept="image/*"
+                  className="hidden"
+                  aria-label="Upload QR code image file"
+                />
+              </div>
             </div>
           </div>
         ) : (
           <div className="relative">
-            <div className="relative rounded-lg overflow-hidden mb-4">
-              <video ref={videoRef} className="w-full rounded-lg" autoPlay playsInline muted />
-              <canvas ref={canvasRef} className="hidden" />
-
-              <div className="absolute inset-0 border-2 border-blue-400 rounded-lg pointer-events-none">
-                <div className="absolute top-4 left-4 w-6 sm:w-8 h-6 sm:h-8 border-l-4 border-t-4 border-blue-400"></div>
-                <div className="absolute top-4 right-4 w-6 sm:w-8 h-6 sm:h-8 border-r-4 border-t-4 border-blue-400"></div>
-                <div className="absolute bottom-4 left-4 w-6 sm:w-8 h-6 sm:h-8 border-l-4 border-b-4 border-blue-400"></div>
-                <div className="absolute bottom-4 right-4 w-6 sm:w-8 h-6 sm:h-8 border-r-4 border-b-4 border-blue-400"></div>
-                <div className="absolute inset-x-0 top-1/2 h-0.5 bg-blue-400 opacity-75"></div>
-              </div>
-
-              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  Scanning...
-                </div>
-              </div>
-            </div>
-
+            <div id="reader" className="w-full max-w-md mx-auto rounded-lg overflow-hidden mb-4"></div>
+            <canvas ref={canvasRef} className="hidden" />
             <button
               onClick={stopCamera}
               className="bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 font-semibold text-sm sm:text-base"
