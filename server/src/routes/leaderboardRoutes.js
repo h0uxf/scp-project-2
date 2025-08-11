@@ -20,6 +20,7 @@ const router = express.Router();
 // DEFINE ROUTES FOR LEADERBOARD
 //////////////////////////////////////////////////////
 router.get("/", leaderboardController.get100Players);
+
 router.get(
   "/userRanking",
   jwtMiddleware.verifyAccessToken,

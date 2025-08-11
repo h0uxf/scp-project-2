@@ -2,6 +2,7 @@
 // REQUIRE BCRYPT MODULE
 //////////////////////////////////////////////////////
 const bcrypt = require("bcrypt");
+const logger = require("../logger.js");
 
 //////////////////////////////////////////////////////
 // SET SALT ROUNDS
@@ -13,14 +14,21 @@ const saltRounds = 10;
 //////////////////////////////////////////////////////
 module.exports = {
     comparePassword : (req, res, next) => {
-        const callback = (err, isMatch) => {
+        const callback = async (err, isMatch) => {
             if(err) {
                 console.error(`Error Bcrypt: ${err}`);
                 res.status(500).json(err);
             } else {
                 if(isMatch) { // if the password matches
+                    logger.debug(`Password verification successful for user: ${res.locals.username}`);
                     next();
                 } else {
+                    try {
+                        logger.warn(`Failed login attempt for user: ${res.locals.username} - invalid password`);
+                    } catch(auditError) {
+                        console.error('Error creating audit log for failed login:', auditError);
+                    }
+                    
                     res.status(401).json({
                         message : 'Incorrect password, please try again.'
                     });

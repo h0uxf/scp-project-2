@@ -22,13 +22,12 @@ const userValidationRules = () => {
         body('password')
             .isLength({ min: 8 })
             .withMessage('Password must be at least 8 characters long')
-            .matches(/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/)
+            .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/)
             .withMessage('Password must contain at least one letter, one number, and one special character'),
     ];
 };
 
 // Quiz Feature Validators
-
 // Validators for creating/updating a Question
 const questionValidationRules = () => {
     return [
@@ -78,7 +77,7 @@ const rewardValidationRules = () => {
 
 const getAllUsersValidationRules = () => {
     return [
-        query("search")
+        query("searchStr")
             .optional()
             .isString().withMessage("Search term must be a string")
             .trim()

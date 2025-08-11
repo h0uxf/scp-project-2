@@ -223,17 +223,26 @@ const QuizPage = () => {
       try {
         await navigator.share({
           title: "My Diploma Course Recommendation",
-          text: shareText,
-          url: window.location.href,
+          text: shareText, // This includes both message and URL
+          // Remove the separate url parameter to avoid conflicts
         });
         toast.success("Result shared successfully!", {
           style: { fontSize: "14px", padding: "8px 16px" },
         });
       } catch (error) {
         console.error("Web Share API failed:", error);
-        toast.error("Failed to share result. Try copying to clipboard.", {
-          style: { fontSize: "14px", padding: "8px 16px" },
-        });
+        // Fallback to clipboard
+        try {
+          await navigator.clipboard.writeText(shareText);
+          toast.success("Result copied to clipboard!", {
+            style: { fontSize: "14px", padding: "8px 16px" },
+          });
+        } catch (clipboardError) {
+          console.error("Clipboard API also failed:", clipboardError);
+          toast.error("Failed to share result. Please try copying manually.", {
+            style: { fontSize: "14px", padding: "8px 16px" },
+          });
+        }
       }
     } else if (navigator.clipboard) {
       try {
@@ -248,12 +257,37 @@ const QuizPage = () => {
         });
       }
     } else {
-      toast.error("Sharing not supported on this device. Please copy the result manually.", {
-        style: { fontSize: "14px", padding: "8px 16px" },
-      });
+      // Fallback for browsers that don't support clipboard API
+      try {
+        // Create a temporary textarea element
+        const textArea = document.createElement("textarea");
+        textArea.value = shareText;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        if (successful) {
+          toast.success("Result copied to clipboard!", {
+            style: { fontSize: "14px", padding: "8px 16px" },
+          });
+        } else {
+          throw new Error("Copy command failed");
+        }
+      } catch (error) {
+        console.error("Manual copy failed:", error);
+        toast.error("Sharing not supported on this device. Please copy the result manually.", {
+          style: { fontSize: "14px", padding: "8px 16px" },
+        });
+      }
     }
   };
-
+  
   const handleCreateQuestion = async () => {
     if (!newQuestion.questionText || newQuestion.options.some((opt) => !opt.optionText || !opt.personalityId)) {
       toast.error("Please fill in all fields including personality selection for each option");
