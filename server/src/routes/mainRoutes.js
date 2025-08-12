@@ -119,7 +119,7 @@ router.use('/images', imageRoutes);
 
 // routes for activities
 const activityRoutes = require('../routes/activityRoutes.js');
-router.use('/activities', jwtMiddleware.verifyAccessToken, roleMiddleware(["content_manager", "moderator", "admin", "super_admin"]), activityRoutes);  
+router.use('/activities', jwtMiddleware.verifyAccessToken, activityRoutes);  
 
 // routes for crossword puzzles
 const crosswordRoutes = require('../routes/crosswordRoutes.js');

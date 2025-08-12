@@ -77,7 +77,6 @@ const RewardsPage = () => {
       if (rewardResponse.status === "success") {
         const { qrToken, isRedeemed, qrCodeUrl, hasRewardAssigned } = rewardResponse.data;
         
-        // UPDATED LOGIC: Check if user has ever redeemed
         if (isRedeemed) {
           setHasRedeemed(true);
           setLocalError("You have already redeemed your reward!");
@@ -102,7 +101,12 @@ const RewardsPage = () => {
       }
     } catch (err) {
       console.error("Error fetching status:", err);
-      toast.error(err.message || "Unable to check activity or reward status. Please try again.");
+      if (err.response?.status === 403) {
+        setLocalError("You are logged in but not eligible to claim a reward. Please complete all required activities.");
+        toast.error("You are not eligible to claim a reward.");
+      } else {
+        toast.error(err.message || "Unable to check activity or reward status. Please try again.");
+      }
     }
   };
 

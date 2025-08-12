@@ -1029,38 +1029,46 @@ async function initializeCrosswordData() {
   }
 }
 
-// Initialize user activities
-async function initializeUserActivities() {
+async function initializeUserActivities(username) {
   try {
-    console.log("Populating UserActivities for userId: 1...");
-    const user = await prisma.user.findUnique({ where: { userId: 1 } });
+    console.log(`Populating UserActivities for username: ${username}...`);
+    const user = await prisma.user.findUnique({ where: { username } });
     if (!user) {
-      console.error("User with userId: 1 does not exist. Cannot populate UserActivities.");
+      console.error(`User with username: ${username} does not exist. Cannot populate UserActivities.`);
       return;
     }
 
     const activities = await prisma.activity.findMany();
     for (const activity of activities) {
       const existing = await prisma.userActivities.findFirst({
-        where: { userId: 1, activityId: activity.activityId },
+        where: { userId: user.userId, activityId: activity.activityId },
       });
 
       if (!existing) {
         await prisma.userActivities.create({
           data: {
-            userId: 1,
+            userId: user.userId,
             activityId: activity.activityId,
             points: 0,
           },
         });
-        console.log(`UserActivities entry created for activity: ${activity.name}`);
+        console.log(`UserActivities entry created for username: ${username}, activity: ${activity.name}`);
       } else {
-        console.log(`UserActivities entry for activity: ${activity.name} already exists, skipping.`);
+        console.log(`UserActivities entry for username: ${username}, activity: ${activity.name} already exists, skipping.`);
       }
     }
+    console.log(`UserActivities initialization completed for username: ${username}`);
   } catch (error) {
-    console.error("Error initializing user activities:", error);
+    console.error(`Error initializing user activities for username: ${username}:`, error);
     throw error;
+  }
+}
+
+// Function to initialize UserActivities for multiple users
+async function initializeMultipleUsers() {
+  const usernames = ["admin", "alice"];
+  for (const username of usernames) {
+    await initializeUserActivities(username);
   }
 }
 
@@ -1076,7 +1084,7 @@ async function initializeData() {
     await initializeQuizQuestions(personalityTypes);
     await initializeLocations();
     await initializeCrosswordData();
-    await initializeUserActivities();
+    await initializeMultipleUsers();
     console.log("Data initialization complete.");
   } catch (error) {
     console.error("Error during data initialization:", error);

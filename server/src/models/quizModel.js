@@ -156,7 +156,7 @@ module.exports = {
         // Find activity for completing the personality quiz
         let activity = await prisma.activity.findFirst({
           where: {
-            activityId: 4,
+            activityId: 2,
           },
         });
 
