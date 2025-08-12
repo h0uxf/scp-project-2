@@ -75,7 +75,11 @@ module.exports = {
       });
     } catch (error) {
       logger.error(`Error generating reward for user ID ${userId}: ${error.message}`);
-      if(error.message.includes("User already has a reward assigned. Cannot generate new QR token")){
+      
+      if (error.message.includes("User has already redeemed a reward")) {
+        return next(new AppError("You have already redeemed a reward and cannot generate another one.", 403));
+      }
+      if (error.message.includes("User already has a reward assigned. Cannot generate new QR token")) {
         return next(new AppError(`${error.message}`, 409));
       }
       if (error.message.includes("No activities found")) {
@@ -135,9 +139,10 @@ module.exports = {
         logger.debug(`Fetching status for reward with QR token ${qrToken}`);
       } else {
         status = await rewardModel.getRewardStatusByUserId(userId);
+
         if (!status) {
-          logger.warn(`No reward found for user ${userId}.`);
-          return next(new AppError("No reward found for user.", 404));
+          logger.warn(`Error fetching reward status for user ${userId}.`);
+          return next(new AppError("Failed to fetch reward status.", 500));
         }
         logger.debug(`Fetching status for reward for user ${userId}`);
       }

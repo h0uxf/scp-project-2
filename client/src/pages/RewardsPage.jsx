@@ -81,20 +81,28 @@ const RewardsPage = () => {
           // Call /rewards/status WITHOUT qrToken query param
           const rewardResponse = await makeApiCall("/rewards/status", "GET");
 
-          if (rewardResponse.status === "success" && rewardResponse.data?.hasRewardAssigned) {
-            const { qrToken, isRedeemed, qrCodeUrl } = rewardResponse.data;
-            setHasRedeemed(isRedeemed || false);
-
+          if (rewardResponse.status === "success") {
+            const { qrToken, isRedeemed, qrCodeUrl, hasRewardAssigned } = rewardResponse.data;
+            
+            // UPDATED LOGIC: Check if user has ever redeemed
             if (isRedeemed) {
+              setHasRedeemed(true);
               setLocalError("You have already redeemed your reward!");
               setQrCodeImage("");
               setQrToken("");
-            } else if (qrToken && qrCodeUrl) {
+            } else if (hasRewardAssigned && qrToken && qrCodeUrl) {
+              // User has an active unredeemed reward
               setQrToken(qrToken);
               setQrCodeImage(qrCodeUrl);
+              setHasRedeemed(false);
+            } else {
+              // No reward assigned yet
+              setQrToken("");
+              setQrCodeImage("");
+              setHasRedeemed(false);
             }
           } else {
-            // Clear if no reward assigned
+            // Clear if no reward data
             setQrToken("");
             setQrCodeImage("");
             setHasRedeemed(false);
@@ -124,6 +132,7 @@ const RewardsPage = () => {
           setQrCodeImage("");
           setQrToken("");
           setHasRedeemed(true);
+          setLocalError("You have already redeemed your reward!");
           toast.error("Reward has been redeemed!");
           clearInterval(interval);
         }
@@ -149,8 +158,18 @@ const RewardsPage = () => {
       toast.success("Reward QR code generated successfully!");
     } catch (err) {
       console.error("Error generating reward:", err);
+      
+      // UPDATED ERROR HANDLING: Handle both 403 cases properly
       if (err.response?.status === 403) {
-        toast.error("All activities must be completed to generate a reward.");
+        if (err.response?.data?.message?.includes("already redeemed")) {
+          // User has already redeemed a reward
+          setHasRedeemed(true);
+          setLocalError("You have already redeemed a reward and cannot generate another one.");
+          toast.error("You have already redeemed a reward!");
+        } else {
+          // Activities not completed
+          toast.error("All activities must be completed to generate a reward.");
+        }
       } else {
         toast.error(err.message || "Failed to generate reward. Please try again.");
       }

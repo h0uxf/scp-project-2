@@ -79,6 +79,17 @@ module.exports = {
     }
 
     try {
+      const hasEverRedeemed = await prisma.reward.findFirst({
+        where: {
+          userId: numericUserId,
+          isRedeemed: true,
+        },
+      });
+
+      if (hasEverRedeemed) {
+        throw new Error('User has already redeemed a reward and cannot generate another one.');
+      }
+
       // Find the latest activity to link the new reward to it.
       const activities = await prisma.activity.findMany({
         select: { activityId: true },
@@ -148,6 +159,25 @@ module.exports = {
     const now = new Date();
 
     try {
+      const hasEverRedeemed = await prisma.reward.findFirst({
+        where: {
+          userId: numericUserId,
+          isRedeemed: true,
+        },
+      });
+
+      if (hasEverRedeemed) {
+        return {
+          hasRewardAssigned: false,
+          isRedeemed: true,
+          redeemedAt: hasEverRedeemed.redeemedAt,
+          isExpired: false,
+          qrToken: null,
+          qrCodeUrl: null,
+        };
+      }
+
+      // Check for active unredeemed rewards
       const reward = await prisma.reward.findFirst({
         where: {
           userId: numericUserId,
@@ -163,12 +193,29 @@ module.exports = {
         },
       });
 
+      if (reward) {
+        // Generate QR code URL for active reward
+        const qrCodeUrl = await QRCode.toDataURL(
+          `http://localhost:5173/redeem?qrToken=${reward.qrToken}`
+        );
+        
+        return {
+          hasRewardAssigned: true,
+          isRedeemed: false,
+          redeemedAt: null,
+          isExpired: false,
+          qrToken: reward.qrToken,
+          qrCodeUrl: qrCodeUrl,
+        };
+      }
+
       return {
-        hasRewardAssigned: !!reward,
-        isRedeemed: reward ? reward.isRedeemed : false,
-        redeemedAt: reward ? reward.redeemedAt : null,
-        isExpired: reward ? reward.expiresAt < now : false,
-        qrToken: reward ? reward.qrToken : null,
+        hasRewardAssigned: false,
+        isRedeemed: false,
+        redeemedAt: null,
+        isExpired: false,
+        qrToken: null,
+        qrCodeUrl: null,
       };
     } catch (error) {
       throw new Error(`Failed to fetch reward status by user ID: ${error.message}`);
