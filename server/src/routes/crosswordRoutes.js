@@ -26,10 +26,10 @@ router.use(sanitizeRequest);
 // DEFINE ROUTES FOR CROSSWORD PUZZLES (PLAYER)
 //////////////////////////////////////////////////////
 // [GET] Get all published puzzles
-router.get('/', crosswordController.getAllPuzzles);
+router.get('/', jwtMiddleware.verifyAccessToken, crosswordController.getAllPuzzles);
 
 // [GET] Get puzzle by ID with clues and words
-router.get('/:puzzleId', crosswordController.getPuzzleById);
+router.get('/:puzzleId', jwtMiddleware.verifyAccessToken, crosswordController.getPuzzleById);
 
 // [GET] Get user's puzzle progress
 router.get(

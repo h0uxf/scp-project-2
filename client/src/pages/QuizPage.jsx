@@ -98,6 +98,10 @@ const QuizPage = () => {
   };
 
   useEffect(() => {
+    if (loading || !currentUser) {
+      return;
+    }
+    
     const savedResult = localStorage.getItem("personalityResult");
     if (savedResult) {
       setPersonalityResult(JSON.parse(savedResult));

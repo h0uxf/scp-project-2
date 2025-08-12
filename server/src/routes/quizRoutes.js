@@ -30,9 +30,9 @@ router.use(sanitizeRequest);
 //////////////////////////////////////////////////////
 // DEFINE ROUTES FOR QUIZ (PLAYER)
 //////////////////////////////////////////////////////
-router.get('/', quizController.getAllQuizQuestions);
+router.get('/', jwtMiddleware.verifyAccessToken, quizController.getAllQuizQuestions);
 
-router.get('/:questionId', quizController.getQuizQuestionById);
+router.get('/:questionId', jwtMiddleware.verifyAccessToken, quizController.getQuizQuestionById);
 
 // [POST] Submit quiz answers and calculate personality for logged-in user
 router.post(
