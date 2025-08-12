@@ -1,8 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useAuth } from '../components/AuthProvider';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 const useApi = () => {
   const { getHeaders } = useAuth();
   const [loading, setLoading] = useState(false);
