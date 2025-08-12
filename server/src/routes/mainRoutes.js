@@ -9,6 +9,7 @@ const express = require('express');
 const bcryptMiddleware = require('../middlewares/bcryptMiddleware.js');
 const jwtMiddleware = require('../middlewares/jwtMiddleware.js');
 const userController = require('../controllers/userController.js');
+const roleMiddleware = require('../middlewares/roleMiddleware.js');
 
 //////////////////////////////////////////////////////
 // IMPORT MIDDLEWARES FOR INPUT VALIDATION
@@ -32,8 +33,6 @@ router.use(sanitizeRequest);
 // [POST] User login 
 router.post(
   "/login",
-  userValidationRules(), // Apply validation rules for user-related fields
-  validate, // Check validation results
   userController.login,
   bcryptMiddleware.comparePassword,
   jwtMiddleware.generateTokens,
@@ -112,7 +111,7 @@ router.use('/leaderboard', leaderboardRoutes);
 
 // routes for admin to manage user
 const adminRoutes = require('../routes/adminRoutes.js');
-router.use('/admin', adminRoutes);
+router.use('/admin', jwtMiddleware.verifyAccessToken, roleMiddleware(["admin", "super_admin"]), adminRoutes);
 
 // routes for users to upload images from face filter 
 const imageRoutes = require('../routes/imageRoutes.js');
@@ -120,7 +119,7 @@ router.use('/images', imageRoutes);
 
 // routes for activities
 const activityRoutes = require('../routes/activityRoutes.js');
-router.use('/activities', activityRoutes);  
+router.use('/activities', jwtMiddleware.verifyAccessToken, roleMiddleware(["content_manager", "moderator", "admin", "super_admin"]), activityRoutes);  
 
 // routes for crossword puzzles
 const crosswordRoutes = require('../routes/crosswordRoutes.js');

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Crown, Play, GraduationCap, Star, Trophy, Medal } from "lucide-react";
+import { Crown, Play, GraduationCap, Camera, Star, Trophy, Medal } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
@@ -38,11 +38,15 @@ const LandingPage = () => {
     navigate("/learn-more?from=landing&section=hero&user_type=visitor");
   };
 
+  const handlePhotoboothClick = () => {
+    navigate("/face-filter");
+  } 
+
   return (
     <div className="font-sans bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen scroll-smooth relative overflow-hidden">
       <BackgroundEffects />
       <Toaster position="top-right" />
-      
+
       {/* Hero Section */}
       <section id="home" className="py-20 px-4 sm:px-8 text-center relative">
         <div className="max-w-4xl mx-auto">
@@ -87,6 +91,17 @@ const LandingPage = () => {
               <span className="flex items-center gap-2 font-semibold">
                 <GraduationCap className="group-hover:rotate-12 transition-transform" />
                 Learn More
+              </span>
+            </button>
+
+            <button
+              onClick={handlePhotoboothClick}
+              className="group bg-gradient-to-r from-pink-600 to-red-500 text-white px-8 py-4 rounded-full shadow-2xl hover:shadow-pink-500/25 transition-all duration-300 hover:scale-105"
+              aria-label="Go to Photobooth"
+            >
+              <span className="flex items-center gap-2 font-semibold">
+                <Camera className="group-hover:rotate-12 transition-transform" />
+                Photobooth
               </span>
             </button>
           </motion.div>
@@ -235,7 +250,8 @@ const LandingPage = () => {
                 Crossword Puzzles
               </h3>
               <p className="text-gray-300 mb-6">
-                Challenge your knowledge with themed crossword puzzles. Test your vocabulary and problem-solving skills!
+                Challenge your knowledge with themed crossword puzzles. Test
+                your vocabulary and problem-solving skills!
               </p>
               <button
                 onClick={() => navigate("/crossword")}
@@ -260,7 +276,8 @@ const LandingPage = () => {
                 Personality Quiz
               </h3>
               <p className="text-gray-300 mb-6">
-                Discover your ideal computing course path with our interactive personality assessment quiz.
+                Discover your ideal computing course path with our interactive
+                personality assessment quiz.
               </p>
               <button
                 onClick={() => navigate("/quiz")}
@@ -285,7 +302,8 @@ const LandingPage = () => {
                 AR Exploration
               </h3>
               <p className="text-gray-300 mb-6">
-                Scan QR codes and markers around campus to unlock hidden content and earn rewards.
+                Scan QR codes and markers around campus to unlock hidden content
+                and earn rewards.
               </p>
               <button
                 onClick={handleButtonClick}
@@ -300,7 +318,10 @@ const LandingPage = () => {
       </section>
 
       {/* Leaderboard Section */}
-      <section id="leaderboard" className="py-10 px-4 sm:px-8 text-center relative">
+      <section
+        id="leaderboard"
+        className="py-10 px-4 sm:px-8 text-center relative"
+      >
         <div className="max-w-4xl mx-auto">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
@@ -385,7 +406,9 @@ const LandingPage = () => {
                           <span className="text-white font-bold text-xl">
                             #{index + 1}
                           </span>
-                          <p className="text-gray-300 font-medium">{user.username}</p>
+                          <p className="text-gray-300 font-medium">
+                            {user.username}
+                          </p>
                         </div>
                       </div>
                       <div className="text-right">

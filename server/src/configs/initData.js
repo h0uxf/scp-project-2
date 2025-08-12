@@ -225,11 +225,8 @@ async function initializeUsers(roles) {
 // Initialize activities
 async function initializeActivities() {
   const activitiesToCreate = [
-    { name: "NPC Interaction (Introduction)", description: "Learn more about the game and how to play.", route: "/learn-more" },
-    { name: "Computing Crash Course", description: "A quick introduction to computing concepts." },
     { name: "Crossword Puzzle", description: "Solve a crossword puzzle to test your knowledge of computing terms.", route: "/admin/crossword" },
-    { name: "SoC Personality Quiz", description: "Take a quiz to discover your most suitable SoC diploma based on your personality.", route: "/quiz" },
-    { name: "AR Selfie Challenge", description: "Take a selfie with an AR filter and share it on social media.", route: "/face-filter" },
+    { name: "SoC Personality Quiz", description: "Take a quiz to discover your most suitable SoC diploma based on your personality.", route: "/quiz" }
   ];
 
   try {

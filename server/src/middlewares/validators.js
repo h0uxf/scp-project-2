@@ -28,7 +28,6 @@ const userValidationRules = () => {
 };
 
 // Quiz Feature Validators
-
 // Validators for creating/updating a Question
 const questionValidationRules = () => {
     return [
@@ -78,7 +77,7 @@ const rewardValidationRules = () => {
 
 const getAllUsersValidationRules = () => {
     return [
-        query("search")
+        query("searchStr")
             .optional()
             .isString().withMessage("Search term must be a string")
             .trim()

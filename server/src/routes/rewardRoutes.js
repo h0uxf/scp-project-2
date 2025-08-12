@@ -32,14 +32,14 @@ router.use(sanitizeRequest);
 //////////////////////////////////////////////////////
 router.get('/', rewardController.getAllRewards);
 
-// [GET] Check reward status (no auth required for frontend polling)
+// [GET] Check reward status for a specific QR token (e.g., for real-time polling)
 router.get(
     '/status',
+    jwtMiddleware.verifyAccessToken,
     rewardValidationRules(),
     validate,
     rewardController.getRewardStatus
 );
-
 
 // [GET] View reward statistics
 router.get(

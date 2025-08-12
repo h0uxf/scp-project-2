@@ -41,18 +41,18 @@ module.exports = {
     }
 
     try {
-        const completionStatus = await activityModel.checkCompletion(userId);
-        logger.debug(`Completion check successful for user ID ${userId}`);
-        next();
+      const completionStatus = await activityModel.checkCompletion(userId);
+      logger.debug(`Completion check successful for user ID ${userId}`);
+      next();
     } catch (error) {
-        logger.error(`Error checking completion for user ID ${userId}: ${error.message}`);
-        if (error.message.includes("No activities found")) {
-            return next(new AppError("No activities found in the system", 404));
-        }
-        if (error.message.includes("Invalid user ID")) {
-            return next(new AppError("Invalid user ID", 400));
-        }
-        return next(new AppError(`Failed to check completion: ${error.message}`, 500));
+      logger.error(`Error checking completion for user ID ${userId}: ${error.message}`);
+      if (error.message.includes("No activities found")) {
+          return next(new AppError("No activities found in the system", 404));
+      }
+      if (error.message.includes("Invalid user ID")) {
+          return next(new AppError("Invalid user ID", 400));
+      }
+      return next(new AppError(`Failed to check completion: ${error.message}`, 500));
     }
   }),
 
@@ -75,7 +75,11 @@ module.exports = {
       });
     } catch (error) {
       logger.error(`Error generating reward for user ID ${userId}: ${error.message}`);
-      if(error.message.includes("User already has a reward assigned. Cannot generate new QR token")){
+      
+      if (error.message.includes("User has already redeemed a reward")) {
+        return next(new AppError("You have already redeemed a reward and cannot generate another one.", 403));
+      }
+      if (error.message.includes("User already has a reward assigned. Cannot generate new QR token")) {
         return next(new AppError(`${error.message}`, 409));
       }
       if (error.message.includes("No activities found")) {
@@ -117,24 +121,39 @@ module.exports = {
   // Check reward status
   getRewardStatus: catchAsync(async (req, res, next) => {
     const { qrToken } = req.query;
+    const userId = res.locals.user_id;
 
-    if (!qrToken || typeof qrToken !== "string") {
-      logger.warn("Fetch reward status failed: Missing or invalid QR token");
-      return next(new AppError("QR token is required and must be a string", 400));
+    if (!qrToken && !userId) {
+      logger.warn("Error fetching reward status: Invalid QR token or user ID. One must be provided.");
+      return next(new AppError("Invalid QR token or user ID. One must be provided.", 400));
     }
 
     try {
-      const status = await rewardModel.getRewardStatus(qrToken);
-      logger.debug(`Fetching status for reward with QR token ${qrToken}`);
+      let status;
+      if (qrToken) {
+        status = await rewardModel.getRewardStatusByToken(qrToken);
+        if (!status) {
+          logger.warn(`No reward found for QR token ${qrToken}.`);
+          return next(new AppError("Invalid QR token.", 404));
+        }
+        logger.debug(`Fetching status for reward with QR token ${qrToken}`);
+      } else {
+        status = await rewardModel.getRewardStatusByUserId(userId);
+
+        if (!status) {
+          logger.warn(`Error fetching reward status for user ${userId}.`);
+          return next(new AppError("Failed to fetch reward status.", 500));
+        }
+        logger.debug(`Fetching status for reward for user ${userId}`);
+      }
+
       res.status(200).json({
         status: "success",
         data: status,
       });
+
     } catch (error) {
-      logger.error(`Error fetching reward status for QR token ${qrToken}: ${error.message}`);
-      if (error.message.includes("Reward not found")) {
-        return next(new AppError("Invalid QR token", 404));
-      }
+      logger.error(`Error fetching reward status: ${error.message}`);
       return next(new AppError(`Failed to fetch reward status: ${error.message}`, 500));
     }
   }),

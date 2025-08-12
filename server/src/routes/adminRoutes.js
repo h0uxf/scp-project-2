@@ -7,14 +7,12 @@ const express = require('express');
 // IMPORT CONTROLLERS
 //////////////////////////////////////////////////////
 const adminController = require('../controllers/adminController.js');
-const jwtMiddleware = require('../middlewares/jwtMiddleware.js');
-const roleMiddleware = require('../middlewares/roleMiddleware.js');
 
 //////////////////////////////////////////////////////
 // IMPORT MIDDLEWARES FOR INPUT VALIDATION
 //////////////////////////////////////////////////////
 const { sanitizeRequest, sanitizeResponse } = require('../middlewares/sanitizers.js');
-const { searchValidationRules, validate, getAllUsersValidationRules } = require('../middlewares/validators.js');
+const { validate, getAllUsersValidationRules } = require('../middlewares/validators.js');
 
 //////////////////////////////////////////////////////
 // CREATE ROUTER
@@ -28,8 +26,6 @@ router.use(sanitizeRequest);
 // [GET] Get all users
 router.get(
     '/users',
-    jwtMiddleware.verifyAccessToken,
-    roleMiddleware(["admin", "super_admin"]),
     getAllUsersValidationRules(),
     validate,
     adminController.getAllUsers
@@ -38,24 +34,18 @@ router.get(
 // [GET] Get user by ID
 router.get(
     '/users/:userId',
-    jwtMiddleware.verifyAccessToken,
-    roleMiddleware(["admin", "super_admin"]),
     adminController.getUserById
 );
 
 // [PUT] Update user role by ID
 router.put(
     '/users/:userId',
-    jwtMiddleware.verifyAccessToken,
-    roleMiddleware(["admin", "super_admin"]),
     adminController.updateUserById
 );
 
 // [DELETE] Delete user by ID
 router.delete(
     '/users/:userId',
-    jwtMiddleware.verifyAccessToken,
-    roleMiddleware(["admin", "super_admin"]),
     adminController.deleteUserById
 );
 
@@ -65,8 +55,6 @@ router.delete(
 // [GET] Get user statistics
 router.get(
     '/statistics',
-    jwtMiddleware.verifyAccessToken,
-    roleMiddleware(["admin", "super_admin"]),
     adminController.getUserStatistics
 );
 
