@@ -18,7 +18,9 @@ const allowedOrigins = [
   "http://localhost:5173",
   "https://h0uxf.8thwall.app/soc-face-filter/",
   "https://kh24.8thwall.app",
-  "https://kahhian24-default-kh24.dev.8thwall.app"
+  "https://kahhian24-default-kh24.dev.8thwall.app",
+  "https://gwddjcdx-5000.asse.devtunnels.ms",
+  "https://gwddjcdx-5173.asse.devtunnels.ms",
 ];
 
 app.use(cors({
