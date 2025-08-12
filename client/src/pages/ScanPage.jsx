@@ -17,10 +17,11 @@ const ScanPage = () => {
   return (
     <div id="8thwall-scan-container" style={{ position: "relative", width: "100%", height: "100vh" }}>
       <h1>Scan Page</h1>
-      <div id="8thwall-iframe-container" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
+      <div id="8thwall-iframe-container"  style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
         <iframe
           src="https://kh24.8thwall.app/scp-project-2-beta-2"
           style={{ width: "100%", height: "100%", border: "none" }}
+          allow="camera; fullscreen"
         />
       </div>
     </div>

@@ -22,7 +22,7 @@ const userValidationRules = () => {
         body('password')
             .isLength({ min: 8 })
             .withMessage('Password must be at least 8 characters long')
-            .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/)
+            .matches(/^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d\s])[A-Za-z\d\S]{8,}$/)
             .withMessage('Password must contain at least one letter, one number, and one special character'),
     ];
 };
