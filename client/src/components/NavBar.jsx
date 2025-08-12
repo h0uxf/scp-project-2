@@ -12,12 +12,6 @@ const NavBar = () => {
 
   const navItems = [
     {
-      icon: Home,
-      text: "Home",
-      color: "from-blue-500 to-cyan-500",
-      action: () => navigate("/"),
-    },
-    {
       icon: GraduationCap,
       text: "About",
       color: "from-purple-500 to-pink-500",
@@ -62,15 +56,17 @@ const NavBar = () => {
     <nav className="bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-lg border-b border-white/20 px-4 sm:px-6 py-4 sticky top-0 z-20 transition-all duration-300">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center">
-          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mr-3">
+        <button 
+          onClick={() => navigate("/")}
+          className="flex items-center group transition-all duration-300 hover:scale-105"
+        >
+          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mr-3 group-hover:shadow-lg transition-shadow duration-300">
             <span className="text-white font-bold text-lg">SP</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+          <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent group-hover:from-blue-300 group-hover:to-purple-300 transition-all duration-300">
             EXPLORING SP GAME
           </h1>
-          
-        </div>
+        </button>
 
         {/* Desktop Navigation Buttons */}
         <div className="hidden lg:flex items-center space-x-4">
