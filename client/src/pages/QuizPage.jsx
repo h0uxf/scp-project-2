@@ -101,7 +101,7 @@ const QuizPage = () => {
     if (loading || !currentUser) {
       return;
     }
-    
+
     const savedResult = localStorage.getItem("personalityResult");
     if (savedResult) {
       setPersonalityResult(JSON.parse(savedResult));
@@ -209,7 +209,6 @@ const QuizPage = () => {
       setAnswers([]);
       setQuizCompleted(false);
       setPersonalityResult(null);
-      setIsPreviewMode(false);
     }
   };
 
@@ -701,7 +700,7 @@ const QuizPage = () => {
               </div>
             </div>
             {/* Only show quiz interface for admins in preview mode */}
-            {hasRole("content_manager", "moderator", "admin", "super_admin") && isPreviewMode && renderQuizInterface()}
+            {hasRole("content_manager", "moderator", "admin", "super_admin") && isPreviewMode && !quizCompleted && renderQuizInterface()}
           </div>
         </QuizErrorBoundary>
       </div>
