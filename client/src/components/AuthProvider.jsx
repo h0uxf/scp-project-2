@@ -1,13 +1,63 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 const AuthContext = createContext(undefined);
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [csrfToken, setCsrfToken] = useState(null);
+
+  // Centralized logout function
+  const performLogout = () => {
+    console.log("Session expired - logging out");
+    setCurrentUser(null);
+    setCsrfToken(null);
+    window.location.href = '/login';
+  };
+
+  const makeAuthenticatedRequest = async (url, options = {}) => {
+    const headers = await getHeaders();
+    
+    const response = await fetch(url, {
+      ...options,
+      headers: { ...headers, ...options.headers },
+      credentials: "include",
+    });
+
+    // Auto-logout on authentication failure
+    if (response.status === 401 || response.status === 403) {
+      performLogout();
+      throw new Error("Session expired");
+    }
+
+    return response;
+  };
+
+  // Periodic session validation
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const validateSession = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/me`, {
+          credentials: "include",
+        });
+        
+        if (!res.ok) {
+          performLogout();
+        }
+      } catch (error) {
+        console.error("Session validation failed:", error);
+        performLogout();
+      }
+    };
+
+    // Check session every 5 minutes
+    const interval = setInterval(validateSession, 5 * 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, [currentUser]);
 
   // Fetch CSRF token
   const fetchCsrfToken = async () => {
@@ -50,7 +100,6 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     async function fetchMe() {
       try {
-        // Fetch CSRF token first
         await fetchCsrfToken();
         
         const res = await fetch(`${API_BASE_URL}/api/me`, {
@@ -131,8 +180,7 @@ export function AuthProvider({ children }) {
       credentials: "include",
     });
 
-    setCurrentUser(null);
-    setCsrfToken(null); // Clear CSRF token on logout
+    performLogout();
     window.location.reload();
   }
 
@@ -152,7 +200,8 @@ export function AuthProvider({ children }) {
         handleLogout,
         hasRole,
         fetchCsrfToken, 
-        getHeaders
+        getHeaders,
+        makeAuthenticatedRequest 
       }}
     >
       {children}
