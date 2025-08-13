@@ -161,7 +161,7 @@ module.exports = {
         });
 
         if (!activity) {
-          throw new Error(`Activity with ID 4 does not exist.`);
+          throw new Error(`Activity with ID 2 does not exist.`);
         }
 
         // Check if user already has points for this activity (user can only get points once)
@@ -176,17 +176,32 @@ module.exports = {
         });
 
         if (!existingUserActivity) {
-          // Create new UserActivities record with 5 points
-          const userActivity = await prisma.userActivities.create({
-            data: {
-              userId,
-              activityId: activity.activityId,
-              points: 5,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
+          // Use a transaction to ensure both UserActivities and User points are updated atomically
+          await prisma.$transaction(async (prisma) => {
+            // Create new UserActivities record with 10 points
+            const userActivity = await prisma.userActivities.create({
+              data: {
+                userId,
+                activityId: activity.activityId,
+                points: 10,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              },
+            });
+
+            // Update the User's total points
+            await prisma.user.update({
+              where: { userId },
+              data: {
+                points: {
+                  increment: 10,
+                },
+                updatedAt: new Date(),
+              },
+            });
+
+            console.log(`Added 10 points to user ${userId} for activity ${activity.activityId} and updated User total points`);
           });
-          console.log(`Added 5 points to user ${userId} for activity ${activity.activityId}`);
         } else {
           console.log(`User ${userId} already has ${existingUserActivity.points} points for activity ${activity.activityId}; no additional points awarded`);
         }
