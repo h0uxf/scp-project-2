@@ -64,7 +64,7 @@ const NavBar = () => {
             <span className="text-white font-bold text-lg">SP</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent group-hover:from-blue-300 group-hover:to-purple-300 transition-all duration-300">
-            EXPLORING SP GAME
+            Exploring SoC
           </h1>
         </button>
 
