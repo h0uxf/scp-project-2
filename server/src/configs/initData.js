@@ -224,13 +224,31 @@ async function initializeUsers(roles) {
 
 // Initialize activities
 async function initializeActivities() {
-  const activitiesToCreate = [
-    { name: "Crossword Puzzle", description: "Solve a crossword puzzle to test your knowledge of computing terms.", route: "/admin/crossword" },
-    { name: "SoC Personality Quiz", description: "Take a quiz to discover your most suitable SoC diploma based on your personality.", route: "/quiz" }
-  ];
-
   try {
     console.log("Creating activities...");
+    
+    // First, get the locations to find their IDs
+    const locations = await prisma.location.findMany();
+    const locationMap = locations.reduce((map, location) => {
+      map[location.name] = location.locationId;
+      return map;
+    }, {});
+
+    const activitiesToCreate = [
+      {
+        name: "Crossword Puzzle",
+        description: "Solve a crossword puzzle to test your knowledge of computing terms.",
+        route: "/crossword",
+        locationId: locationMap["Applied AI and Analytics Lab"], // Use the actual ID
+      },
+      {
+        name: "SoC Personality Quiz", 
+        description: "Take a quiz to discover your most suitable SoC diploma based on your personality.",
+        route: "/quiz",
+        locationId: locationMap["Cyber Wargame Center"], // Use the actual ID
+      },
+    ];
+
     const existingActivities = await prisma.activity.findMany();
     const existingNames = new Set(existingActivities.map(a => a.name));
     const newActivities = activitiesToCreate.filter(a => !existingNames.has(a.name));
@@ -518,12 +536,14 @@ async function initializeLocations() {
       description: "A state-of-the-art lab for AI and data analytics projects.",
       code: "T2134",
       points: 10,
+      
     },
     {
       name: "Cyber Wargame Center",
       description: "A lab for cybersecurity training and digital forensics exercises.",
       code: "T2035",
       points: 10,
+      
     },
   ];
 
@@ -1032,23 +1052,23 @@ async function initializeCrosswordData() {
 // Initialize user activities
 async function initializeUserActivities() {
   try {
-    console.log("Populating UserActivities for userId: 1...");
-    const user = await prisma.user.findUnique({ where: { userId: 1 } });
+    console.log("Populating UserActivities for user alice");
+    const user = await prisma.user.findUnique({ where: { username: "alice" } });
     if (!user) {
-      console.error("User with userId: 1 does not exist. Cannot populate UserActivities.");
+      console.error("User alice does not exist. Cannot populate UserActivities.");
       return;
     }
 
     const activities = await prisma.activity.findMany();
     for (const activity of activities) {
       const existing = await prisma.userActivities.findFirst({
-        where: { userId: 1, activityId: activity.activityId },
+        where: { userId: user.userId, activityId: activity.activityId },
       });
 
       if (!existing) {
         await prisma.userActivities.create({
           data: {
-            userId: 1,
+            userId: user.userId,
             activityId: activity.activityId,
             points: 0,
           },
@@ -1071,10 +1091,10 @@ async function initializeData() {
     const permissions = await initializePermissions();
     const roles = await initializeRoles(permissions);
     await initializeUsers(roles);
-    await initializeActivities();
+    await initializeLocations(); // Move this before activities
+    await initializeActivities(); // Now this comes after locations
     const personalityTypes = await initializePersonalityTypes();
     await initializeQuizQuestions(personalityTypes);
-    await initializeLocations();
     await initializeCrosswordData();
     await initializeUserActivities();
     console.log("Data initialization complete.");

@@ -162,7 +162,7 @@ model Activity {
   locationId     Int?             @map("location_id")
   order          Int              @default(0)
   route          String?
-  feature        Location?        @relation(fields: [locationId], references: [locationId], onDelete: Cascade)
+  location       Location?        @relation(fields: [locationId], references: [locationId], onDelete: Cascade)
   rewards        Reward[]
   userActivities UserActivities[]
 }

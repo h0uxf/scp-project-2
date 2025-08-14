@@ -21,7 +21,7 @@ module.exports = {
                             activityId: true,
                             name: true,
                             description: true,
-
+                            route: true,
                         },
 
                     }
@@ -54,6 +54,7 @@ module.exports = {
                             activityId: true,
                             name: true,
                             description: true,
+                            route: true,
                         },
                     },
                 },
