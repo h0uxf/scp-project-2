@@ -91,7 +91,7 @@ const getAllUsersValidationRules = () => {
             .isInt({ min: 1, max: 100 }).withMessage("Limit must be an integer between 1 and 100"),
         query("sortBy")
             .optional()
-            .isIn(["userId", "username", "email", "role"]).withMessage("SortBy must be one of: userId, username, email, role"),
+            .isIn(["userId", "username", "email", "role", "points", "createdAt"]).withMessage("SortBy must be one of: userId, username, email, role, points, createdAt"),
         query("sortOrder")
             .optional()
             .isIn(["asc", "desc"]).withMessage("SortOrder must be 'asc' or 'desc'"),
