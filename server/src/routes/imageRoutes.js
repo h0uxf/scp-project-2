@@ -2,7 +2,6 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const jwtMiddleware = require("../middlewares/jwtMiddleware");
 const rateLimit = require("express-rate-limit");
 const router = express.Router();
 
@@ -46,7 +45,6 @@ const upload = multer({ storage, fileFilter });
 // GET /api/images
 router.get(
   "/", 
-  jwtMiddleware.verifyAccessToken, 
   imageListLimiter,
   (req, res) => {
     const uploadsDir = path.join(__dirname, "..", "uploads", "images");
@@ -73,7 +71,7 @@ router.get(
   });
 
 // POST /api/images/upload
-router.post("/upload", jwtMiddleware.verifyAccessToken,
+router.post("/upload", 
   upload.single("image"), (req, res) => {
   if (!req.file) {
     return res

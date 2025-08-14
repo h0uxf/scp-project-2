@@ -8,7 +8,6 @@ const prisma = require('@prisma/client');
 // IMPORT CONTROLLERS
 //////////////////////////////////////////////////////
 const quizController = require('../controllers/quizController.js');
-const jwtMiddleware = require('../middlewares/jwtMiddleware.js');
 const roleMiddleware = require('../middlewares/roleMiddleware.js');
 
 //////////////////////////////////////////////////////
@@ -17,8 +16,7 @@ const roleMiddleware = require('../middlewares/roleMiddleware.js');
 const { sanitizeRequest, sanitizeResponse } = require('../middlewares/sanitizers.js');
 const {
     validate,
-    questionValidationRules,
-    optionValidationRules
+    questionValidationRules
 } = require('../middlewares/validators'); 
 
 //////////////////////////////////////////////////////
@@ -37,7 +35,6 @@ router.get('/:questionId', quizController.getQuizQuestionById);
 // [POST] Submit quiz answers and calculate personality for logged-in user
 router.post(
     '/submit',
-    jwtMiddleware.verifyAccessToken,
     quizController.submitQuizAndCalculatePersonality
 );
 
@@ -46,14 +43,12 @@ router.post(
 //////////////////////////////////////////////////////
 router.put(
     '/reorder',
-    jwtMiddleware.verifyAccessToken,
     roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     quizController.reorderQuizQuestions
 )
 
 router.post(
     '/',
-    jwtMiddleware.verifyAccessToken,
     roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     questionValidationRules(), 
     validate,                  
@@ -62,7 +57,6 @@ router.post(
 
 router.put(
     '/:questionId',
-    jwtMiddleware.verifyAccessToken,
     roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     questionValidationRules(), 
     validate,                  
@@ -71,14 +65,12 @@ router.put(
 
 router.delete(
     '/:questionId',
-    jwtMiddleware.verifyAccessToken,
     roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     quizController.deleteQuizQuestion
 );
 
 router.put(
     '/:questionId/options/reorder',
-    jwtMiddleware.verifyAccessToken,
     roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]),
     quizController.reorderQuizOptionsById
 );

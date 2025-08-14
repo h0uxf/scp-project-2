@@ -1,12 +1,15 @@
 import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import ARViewer from "../components/ARViewer";
+import { useAuth } from "../components/AuthProvider";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const FaceFilterPage = () => {
   const uploadingRef = useRef(false); // track upload status
 
+  const { currentUser, loading, hasRole } = useAuth();
   const uploadBase64Image = async (base64DataUrl) => {
     if (uploadingRef.current) {
       console.log("Upload already in progress, ignoring duplicate.");
@@ -21,11 +24,15 @@ const FaceFilterPage = () => {
       const formData = new FormData();
       formData.append("image", blob, "photo.jpg");
 
-      const uploadRes = await axios.post(`${API_BASE_URL}/api/images/upload`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const uploadRes = await axios.post(
+        `${API_BASE_URL}/api/images/upload`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
     } catch (error) {
       console.error("Error uploading image:", error);
     } finally {
@@ -34,6 +41,20 @@ const FaceFilterPage = () => {
   };
 
   useEffect(() => {
+    if (!loading) {
+      const allowedRoles = [
+        "user",
+        "content_manager",
+        "admin",
+        "super_admin",
+        "moderator",
+      ];
+      const authorized = allowedRoles.some((role) => hasRole(role));
+
+      if (!currentUser || !authorized) {
+        window.location.href = "/login";
+      }
+    }
     const handleMessage = async (event) => {
       if (event.data?.type === "imageCapture") {
         console.log("Image captured:", event.data.imageData);
@@ -43,7 +64,7 @@ const FaceFilterPage = () => {
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, []);
+  }, [loading, currentUser, hasRole]);
 
   return (
     <div style={{ width: "100%", height: "100vh", position: "relative" }}>

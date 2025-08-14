@@ -61,6 +61,55 @@ const RewardsPage = () => {
   const clearError = () => setLocalError("");
 
   // Fetch completion and reward status in parallel
+  const fetchRewardStatus = async () => {
+    try {
+      const completionResponse = await makeApiCall("/activities/check-completion", "GET");
+
+      if (completionResponse.status === "success") {
+        setCompletionStatus(completionResponse.data);
+      } else {
+        throw new Error(completionResponse.message || "Failed to fetch completion status");
+      }
+
+      // Call /rewards/status WITHOUT qrToken query param
+      const rewardResponse = await makeApiCall("/rewards/status", "GET");
+
+      if (rewardResponse.status === "success") {
+        const { qrToken, isRedeemed, qrCodeUrl, hasRewardAssigned } = rewardResponse.data;
+        
+        if (isRedeemed) {
+          setHasRedeemed(true);
+          setLocalError("You have already redeemed your reward!");
+          setQrCodeImage("");
+          setQrToken("");
+        } else if (hasRewardAssigned && qrToken && qrCodeUrl) {
+          // User has an active unredeemed reward
+          setQrToken(qrToken);
+          setQrCodeImage(qrCodeUrl);
+          setHasRedeemed(false);
+        } else {
+          // No reward assigned yet
+          setQrToken("");
+          setQrCodeImage("");
+          setHasRedeemed(false);
+        }
+      } else {
+        // Clear if no reward data
+        setQrToken("");
+        setQrCodeImage("");
+        setHasRedeemed(false);
+      }
+    } catch (err) {
+      console.error("Error fetching status:", err);
+      if (err.response?.status === 403) {
+        setLocalError("You are logged in but not eligible to claim a reward. Please complete all required activities.");
+        toast.error("You are not eligible to claim a reward.");
+      } else {
+        toast.error(err.message || "Unable to check activity or reward status. Please try again.");
+      }
+    }
+  };
+
   useEffect(() => {
     if (!loading && !currentUser) {
       navigate("/login");
@@ -68,52 +117,7 @@ const RewardsPage = () => {
     }
 
     if (!loading && currentUser) {
-      const fetchData = async () => {
-        try {
-          const completionResponse = await makeApiCall("/activities/check-completion", "GET");
-
-          if (completionResponse.status === "success") {
-            setCompletionStatus(completionResponse.data);
-          } else {
-            throw new Error(completionResponse.message || "Failed to fetch completion status");
-          }
-
-          // Call /rewards/status WITHOUT qrToken query param
-          const rewardResponse = await makeApiCall("/rewards/status", "GET");
-
-          if (rewardResponse.status === "success") {
-            const { qrToken, isRedeemed, qrCodeUrl, hasRewardAssigned } = rewardResponse.data;
-            
-            // UPDATED LOGIC: Check if user has ever redeemed
-            if (isRedeemed) {
-              setHasRedeemed(true);
-              setLocalError("You have already redeemed your reward!");
-              setQrCodeImage("");
-              setQrToken("");
-            } else if (hasRewardAssigned && qrToken && qrCodeUrl) {
-              // User has an active unredeemed reward
-              setQrToken(qrToken);
-              setQrCodeImage(qrCodeUrl);
-              setHasRedeemed(false);
-            } else {
-              // No reward assigned yet
-              setQrToken("");
-              setQrCodeImage("");
-              setHasRedeemed(false);
-            }
-          } else {
-            // Clear if no reward data
-            setQrToken("");
-            setQrCodeImage("");
-            setHasRedeemed(false);
-          }
-        } catch (err) {
-          console.error("Error fetching status:", err);
-          toast.error(err.message || "Unable to check activity or reward status. Please try again.");
-        }
-      };
-
-      fetchData();
+      fetchRewardStatus();
     }
   }, [loading, currentUser, navigate, makeApiCall]);
 
@@ -135,6 +139,8 @@ const RewardsPage = () => {
           setLocalError("You have already redeemed your reward!");
           toast.error("Reward has been redeemed!");
           clearInterval(interval);
+          // Immediately refresh reward status
+          fetchRewardStatus();
         }
       } catch (err) {
         console.error("Error checking reward status:", err);

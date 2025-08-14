@@ -1049,13 +1049,12 @@ async function initializeCrosswordData() {
   }
 }
 
-// Initialize user activities
-async function initializeUserActivities() {
+async function initializeUserActivities(username) {
   try {
-    console.log("Populating UserActivities for user alice");
-    const user = await prisma.user.findUnique({ where: { username: "alice" } });
+    console.log(`Populating UserActivities for username: ${username}...`);
+    const user = await prisma.user.findUnique({ where: { username } });
     if (!user) {
-      console.error("User alice does not exist. Cannot populate UserActivities.");
+      console.error(`User with username: ${username} does not exist. Cannot populate UserActivities.`);
       return;
     }
 
@@ -1073,14 +1072,23 @@ async function initializeUserActivities() {
             points: 0,
           },
         });
-        console.log(`UserActivities entry created for activity: ${activity.name}`);
+        console.log(`UserActivities entry created for username: ${username}, activity: ${activity.name}`);
       } else {
-        console.log(`UserActivities entry for activity: ${activity.name} already exists, skipping.`);
+        console.log(`UserActivities entry for username: ${username}, activity: ${activity.name} already exists, skipping.`);
       }
     }
+    console.log(`UserActivities initialization completed for username: ${username}`);
   } catch (error) {
-    console.error("Error initializing user activities:", error);
+    console.error(`Error initializing user activities for username: ${username}:`, error);
     throw error;
+  }
+}
+
+// Function to initialize UserActivities for multiple users
+async function initializeMultipleUsers() {
+  const usernames = ["admin", "alice"];
+  for (const username of usernames) {
+    await initializeUserActivities(username);
   }
 }
 
@@ -1096,7 +1104,7 @@ async function initializeData() {
     const personalityTypes = await initializePersonalityTypes();
     await initializeQuizQuestions(personalityTypes);
     await initializeCrosswordData();
-    await initializeUserActivities();
+    await initializeMultipleUsers();
     console.log("Data initialization complete.");
   } catch (error) {
     console.error("Error during data initialization:", error);

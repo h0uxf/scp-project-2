@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react';
 import { useAuth } from '../components/AuthProvider';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 const useApi = () => {
-  const { getHeaders } = useAuth();
+  const { makeAuthenticatedRequest } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -12,20 +12,21 @@ const useApi = () => {
     try {
       setLoading(true);
       setError(null);
-      const headers = await getHeaders();
+
       const options = {
         method,
-        credentials: 'include',
-        headers,
+        headers: {
+          'Content-Type': 'application/json',
+        },
       };
 
       if (data && ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())) {
         options.body = JSON.stringify(data);
       }
 
-      console.log(`Making ${method} request to ${endpoint}`, { headers: options.headers });
+      console.log(`Making ${method} request to ${endpoint}`);
 
-      const response = await fetch(`${API_BASE_URL}/api${endpoint}`, options);
+      const response = await makeAuthenticatedRequest(`${API_BASE_URL}/api${endpoint}`, options);
 
       console.log('Response details:', {
         status: response.status,
@@ -36,30 +37,12 @@ const useApi = () => {
       const contentType = response.headers.get('content-type');
       const isJson = contentType && contentType.includes('application/json');
 
-      if (response.status === 403 && retryCount < 1) {
-        console.log('CSRF token may be invalid, refreshing and retrying...');
-        const freshHeaders = await getHeaders();
-        const retryOptions = { ...options, headers: freshHeaders };
-        return makeApiCall(endpoint, method, data, retryCount + 1);
-      }
-
-      if (!response.ok) {
-        let errorMessage = `Request failed with status ${response.status}`;
-        if (isJson) {
-          const errorData = await response.json().catch(() => ({}));
-          errorMessage = errorData.message || errorMessage;
-        } else {
-          const text = await response.text().catch(() => '');
-          errorMessage = text || errorMessage;
-        }
-        throw new Error(errorMessage);
-      }
-
+      // Handle successful responses
       if (response.status === 204 || !response.body) {
         if (method.toUpperCase() === 'DELETE') {
           return { status: 'success', message: 'Resource deleted successfully' };
         }
-        throw new Error('Empty response received from server');
+        return { status: 'success' };
       }
 
       if (!isJson) {
@@ -70,12 +53,18 @@ const useApi = () => {
       return await response.json();
     } catch (error) {
       console.error('API call error:', error);
-      setError(error.message);
+      
+      if (error.message === 'Session expired') {
+        setError('Your session has expired. Please log in again.');
+      } else {
+        setError(error.message);
+      }
+      
       throw error;
     } finally {
       setLoading(false);
     }
-  }, [getHeaders]);
+  }, [makeAuthenticatedRequest]);
 
   return { makeApiCall, loading, error };
 };
