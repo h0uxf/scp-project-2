@@ -51,6 +51,7 @@ const CrosswordPage = () => {
   const [startTime, setStartTime] = useState(null);
   const [hintsUsed, setHintsUsed] = useState(0);
   const [showClues, setShowClues] = useState(true);
+  const [saveTimeoutRef, setSaveTimeoutRef] = useState(null);
 
   // Timer effect
   useEffect(() => {
@@ -79,7 +80,7 @@ const CrosswordPage = () => {
 
   // Fetch user progress
   const fetchProgress = async () => {
-    if (!currentUser) return;
+    if (!currentUser || progress) return; // Don't fetch if already have progress
 
     try {
       const data = await makeApiCall(`/crossword/${puzzleId}/progress`, 'GET');
@@ -89,18 +90,20 @@ const CrosswordPage = () => {
         setTimeSpent(data.data.timeSpent || 0);
         if (data.data.currentGrid && puzzle) {
           const savedGrid = JSON.parse(data.data.currentGrid);
-          const newGrid = [...currentGrid];
-          for (let row = 0; row < newGrid.length; row++) {
-            for (let col = 0; col < newGrid[row].length; col++) {
-              if (savedGrid[row] && savedGrid[row][col] && !newGrid[row][col].isBlack) {
-                newGrid[row][col] = {
-                  ...newGrid[row][col],
-                  letter: savedGrid[row][col].letter || ''
-                };
+          setCurrentGrid(prevGrid => {
+            const newGrid = [...prevGrid];
+            for (let row = 0; row < newGrid.length; row++) {
+              for (let col = 0; col < newGrid[row].length; col++) {
+                if (savedGrid[row] && savedGrid[row][col] && !newGrid[row][col].isBlack) {
+                  newGrid[row][col] = {
+                    ...newGrid[row][col],
+                    letter: savedGrid[row][col].letter || ''
+                  };
+                }
               }
             }
-          }
-          setCurrentGrid(newGrid);
+            return newGrid;
+          });
         }
       }
     } catch (err) {
@@ -229,14 +232,21 @@ const CrosswordPage = () => {
   const handleGridChange = (newGrid) => {
     setCurrentGrid(newGrid);
     
+    // Clear any pending save timeout
+    if (saveTimeoutRef) {
+      clearTimeout(saveTimeoutRef);
+    }
+    
     const isCompleted = checkCompletion(newGrid);
     if (isCompleted && !progress?.isCompleted) {
       saveProgress(newGrid, true);
     } else {
-      const saveTimer = setTimeout(() => {
+      // Set new timeout and store reference
+      const newTimeout = setTimeout(() => {
         saveProgress(newGrid, false);
+        setSaveTimeoutRef(null);
       }, 2000);
-      return () => clearTimeout(saveTimer);
+      setSaveTimeoutRef(newTimeout);
     }
   };
 
@@ -283,13 +293,22 @@ const CrosswordPage = () => {
 
   useEffect(() => {
     fetchPuzzle();
-  }, [puzzleId, makeApiCall]);
+  }, [puzzleId]);
 
   useEffect(() => {
-    if (currentUser && puzzle && currentGrid.length > 0) {
+    if (currentUser && puzzle && currentGrid.length > 0 && !progress) {
       fetchProgress();
     }
-  }, [currentUser, puzzle, currentGrid.length, makeApiCall]);
+  }, [currentUser, puzzle?.puzzleId]);
+
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef) {
+        clearTimeout(saveTimeoutRef);
+      }
+    };
+  }, [saveTimeoutRef]);
 
   if (loading || apiLoading) {
     return (
