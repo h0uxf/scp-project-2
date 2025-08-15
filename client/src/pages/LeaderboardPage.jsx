@@ -205,7 +205,7 @@ const LeaderboardPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className={`fixed bottom-10 left-1/2 transform -translate-x-1/2
+              className={`fixed bottom-10 left-0 right-0 mx-auto
                 p-0.5 rounded-2xl shadow-xl z-50
                 max-w-[90vw] sm:max-w-md md:max-w-lg lg:max-w-xl
                 w-full
