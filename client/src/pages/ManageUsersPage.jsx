@@ -2,26 +2,23 @@ import React, { useState, useEffect } from "react";
 import { Edit2, Trash2, Shield, User, Crown, Search, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Filter } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../components/AuthProvider";
-import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import useApi from "../hooks/useApi";
 
 const ManageUsersPage = () => {
   const { currentUser, hasRole, loading: authLoading } = useAuth();
   const { makeApiCall, loading: apiLoading, error: apiError } = useApi();
-  const [users, setUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const [editingUser, setEditingUser] = useState(null);
   const [newRoleId, setNewRoleId] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalUsers, setTotalUsers] = useState(0);
   const [searchStr, setSearchStr] = useState("");
   const [usersPerPage] = useState(10);
-  const [isInitialMount, setIsInitialMount] = useState(true);
   const [sortField, setSortField] = useState("userId");
   const [sortDirection, setSortDirection] = useState("asc");
   const [roleFilter, setRoleFilter] = useState("");
-  const navigate = useNavigate();
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   const roles = [
     { id: 1, name: "user", displayName: "User", icon: User, color: "text-gray-400" },
@@ -83,28 +80,96 @@ const ManageUsersPage = () => {
     return [];
   };
 
-  const fetchUsers = async (page = 1, search = "", sort = sortField, direction = sortDirection, role = roleFilter) => {
+  // Client-side filtering, searching, and sorting
+  const processUsers = (users, search, role, sort, direction) => {
+    let processed = [...users];
+
+    // Apply search filter
+    if (search) {
+      processed = processed.filter(user => 
+        user.username.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    // Apply role filter
+    if (role) {
+      processed = processed.filter(user => user.role_name === role);
+    }
+
+    // Apply sorting
+    processed.sort((a, b) => {
+      let aVal = a[sort];
+      let bVal = b[sort];
+
+      if (sort === "createdAt") {
+        aVal = new Date(aVal);
+        bVal = new Date(bVal);
+      } else if (sort === "points") {
+        aVal = aVal || 0;
+        bVal = bVal || 0;
+      } else if (sort === "userId") {
+        aVal = parseInt(aVal) || 0;
+        bVal = parseInt(bVal) || 0;
+      }
+
+      if (aVal < bVal) return direction === "asc" ? -1 : 1;
+      if (aVal > bVal) return direction === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return processed;
+  };
+
+  const getCurrentPageUsers = () => {
+    const startIndex = (currentPage - 1) * usersPerPage;
+    const endIndex = startIndex + usersPerPage;
+    return filteredUsers.slice(startIndex, endIndex);
+  };
+
+  const getTotalPages = () => {
+    return Math.ceil(filteredUsers.length / usersPerPage);
+  };
+
+  const fetchAllUsers = async () => {
     try {
-      const queryParams = new URLSearchParams({
-        page: page.toString(),
-        limit: usersPerPage.toString(),
-        ...(search && { searchStr: search }),
-        ...(sort && { sortBy: sort }),
-        ...(direction && { sortOrder: direction }),
-        ...(role && { role }),
-      });
+      // Start with a smaller limit to test, then fetch more if needed
+      let allUsersData = [];
+      let currentPage = 1;
+      let hasMoreUsers = true;
+      
+      while (hasMoreUsers) {
+        const data = await makeApiCall(`/admin/users?page=${currentPage}&limit=100&sortBy=userId&sortOrder=asc`, "GET");
+        
+        if (data.status !== "success") {
+          throw new Error(data.message || "Failed to fetch users");
+        }
+        
+        if (!Array.isArray(data.data)) {
+          throw new Error("Unexpected API response format - data is not an array");
+        }
 
-      const data = await makeApiCall(`/admin/users?${queryParams}`, "GET");
-      if (data.status !== "success" || !Array.isArray(data.data)) {
-        throw new Error(data.message || "Unexpected API response format");
+        allUsersData = [...allUsersData, ...data.data];
+        
+        // Check if there are more pages
+        if (data.pagination && data.pagination.currentPage < data.pagination.totalPages) {
+          currentPage++;
+        } else {
+          hasMoreUsers = false;
+        }
+        
+        // Safety break to avoid infinite loops
+        if (currentPage > 100) {
+          console.warn("Breaking fetch loop at page 100 to avoid infinite loop");
+          hasMoreUsers = false;
+        }
       }
 
-      setUsers(data.data);
-      if (data.pagination) {
-        setCurrentPage(data.pagination.currentPage);
-        setTotalPages(data.pagination.totalPages);
-        setTotalUsers(data.pagination.totalUsers);
-      }
+      setAllUsers(allUsersData);
+      
+      // Process users with current filters
+      const processed = processUsers(allUsersData, searchStr, roleFilter, sortField, sortDirection);
+      setFilteredUsers(processed);
+      setCurrentPage(1);
     } catch (err) {
       console.error("Failed to fetch users:", err);
       toast.error(err.message || "Failed to load users");
@@ -123,11 +188,17 @@ const ManageUsersPage = () => {
         throw new Error(data.message || "Failed to update user role");
       }
 
-      setUsers(users.map((user) =>
+      // Update the user in allUsers array
+      const updatedAllUsers = allUsers.map((user) =>
         user.userId === userId
           ? { ...user, role_name: roleName, role: data.data.role }
           : user
-      ));
+      );
+      setAllUsers(updatedAllUsers);
+
+      // Re-process filtered users
+      const processed = processUsers(updatedAllUsers, searchStr, roleFilter, sortField, sortDirection);
+      setFilteredUsers(processed);
 
       setEditingUser(null);
       setNewRoleId("");
@@ -139,7 +210,7 @@ const ManageUsersPage = () => {
   };
 
   const handleDeleteUser = async (userId) => {
-    const user = users.find((u) => u.userId === userId);
+    const user = allUsers.find((u) => u.userId === userId);
     if (!window.confirm(`Are you sure you want to delete user "${user?.username}"?`)) {
       return;
     }
@@ -150,7 +221,20 @@ const ManageUsersPage = () => {
         throw new Error(data.message || "Failed to delete user");
       }
 
-      setUsers(users.filter((user) => user.userId !== userId));
+      // Remove user from allUsers array
+      const updatedAllUsers = allUsers.filter((user) => user.userId !== userId);
+      setAllUsers(updatedAllUsers);
+
+      // Re-process filtered users
+      const processed = processUsers(updatedAllUsers, searchStr, roleFilter, sortField, sortDirection);
+      setFilteredUsers(processed);
+
+      // Adjust current page if necessary
+      const newTotalPages = Math.ceil(processed.length / usersPerPage);
+      if (currentPage > newTotalPages && newTotalPages > 0) {
+        setCurrentPage(newTotalPages);
+      }
+
       toast.success("User deleted successfully!");
     } catch (err) {
       console.error("Error deleting user:", err);
@@ -169,9 +253,9 @@ const ManageUsersPage = () => {
   };
 
   const handlePageChange = (newPage) => {
+    const totalPages = getTotalPages();
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
-      fetchUsers(newPage, searchStr, sortField, sortDirection, roleFilter);
     }
   };
 
@@ -180,7 +264,40 @@ const ManageUsersPage = () => {
     setSortField(field);
     setSortDirection(newDirection);
     setCurrentPage(1);
-    fetchUsers(1, searchStr, field, newDirection, roleFilter);
+    
+    // Re-process users with new sorting
+    const processed = processUsers(allUsers, searchStr, roleFilter, field, newDirection);
+    setFilteredUsers(processed);
+  };
+
+  const handleRoleFilter = (role) => {
+    setRoleFilter(role);
+    setCurrentPage(1);
+    
+    // Re-process users with new role filter
+    const processed = processUsers(allUsers, searchStr, role, sortField, sortDirection);
+    setFilteredUsers(processed);
+  };
+
+  const handleSearch = (search) => {
+    setSearchStr(search);
+    setCurrentPage(1);
+    
+    // Re-process users with new search
+    const processed = processUsers(allUsers, search, roleFilter, sortField, sortDirection);
+    setFilteredUsers(processed);
+  };
+
+  const handleReset = () => {
+    setRoleFilter("");
+    setSortField("userId");
+    setSortDirection("asc");
+    setSearchStr("");
+    setCurrentPage(1);
+    
+    // Re-process users with reset filters
+    const processed = processUsers(allUsers, "", "", "userId", "asc");
+    setFilteredUsers(processed);
   };
 
   const getSortIcon = (field) => {
@@ -188,46 +305,15 @@ const ManageUsersPage = () => {
     return sortDirection === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />;
   };
 
-  const handleRoleFilter = (role) => {
-    setRoleFilter(role);
-    setCurrentPage(1);
-    fetchUsers(1, searchStr, sortField, sortDirection, role);
-  };
-
+  // Initialize users on component mount
   useEffect(() => {
-    if (isInitialMount) {
-      setIsInitialMount(false);
-      return;
+    if (!hasInitialized && currentUser && hasRole("admin", "super_admin")) {
+      setHasInitialized(true);
+      fetchAllUsers();
     }
+  }, [currentUser, hasRole, hasInitialized]);
 
-    const delayedSearch = setTimeout(() => {
-      setCurrentPage(1);
-      fetchUsers(1, searchStr, sortField, sortDirection, roleFilter);
-    }, 50);
-
-    return () => clearTimeout(delayedSearch);
-  }, [searchStr, isInitialMount]);
-
-  useEffect(() => {
-    if (!isInitialMount && currentUser && hasRole("admin", "super_admin")) {
-      setCurrentPage(1);
-      fetchUsers(1, searchStr, sortField, sortDirection, roleFilter);
-    }
-  }, [sortField, sortDirection, roleFilter, currentUser, hasRole, isInitialMount]);
-
-  useEffect(() => {
-    if (!authLoading && currentUser && !hasRole("admin", "super_admin")) {
-      navigate("/");
-      toast.error("Access denied. Admin privileges required.");
-    }
-  }, [currentUser, hasRole, authLoading, navigate]);
-
-  useEffect(() => {
-    if (currentUser && hasRole("admin", "super_admin")) {
-      fetchUsers(1, "", "userId", "asc", "");
-    }
-  }, [currentUser, hasRole]);
-
+  // Check authentication without redirecting
   if (authLoading || apiLoading) {
     return (
       <div className="p-8 text-white text-center">
@@ -244,6 +330,9 @@ const ManageUsersPage = () => {
     );
   }
 
+  const currentUsers = getCurrentPageUsers();
+  const totalPages = getTotalPages();
+
   return (
     <div className="p-8 text-white">
       <Toaster position="top-right" />
@@ -252,6 +341,7 @@ const ManageUsersPage = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
+          className="mb-2"
         >
           <h2 className="text-3xl font-bold mb-2">Manage Users</h2>
           <p className="text-gray-300">
@@ -267,7 +357,7 @@ const ManageUsersPage = () => {
           >
             <p className="text-red-300">{apiError}</p>
             <button
-              onClick={() => fetchUsers(currentPage, searchStr, sortField, sortDirection, roleFilter)}
+              onClick={() => fetchAllUsers()}
               className="mt-4 bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-full transition-all duration-300"
               aria-label="Retry loading users"
             >
@@ -318,14 +408,7 @@ const ManageUsersPage = () => {
               </select>
             </div>
             <button
-              onClick={() => {
-                setRoleFilter("");
-                setSortField("userId");
-                setSortDirection("asc");
-                setSearchStr("");
-                setCurrentPage(1);
-                fetchUsers(1, "", "userId", "asc", "");
-              }}
+              onClick={handleReset}
               className="px-4 py-2 text-sm bg-white/10 border border-white/20 hover:bg-white/20 text-white rounded-xl transition-colors backdrop-blur-sm"
               aria-label="Reset filters"
             >
@@ -347,18 +430,13 @@ const ManageUsersPage = () => {
               type="text"
               placeholder="Search by username"
               value={searchStr}
-              onChange={(e) => setSearchStr(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
               className="w-full bg-white/10 text-white placeholder-gray-400 border border-white/20 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               aria-label="Search users by username"
             />
-            {apiLoading && (
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              </div>
-            )}
           </div>
           <div className="text-sm text-gray-300">
-            Showing {users.length} of {totalUsers} users
+            Showing {currentUsers.length} of {filteredUsers.length} users
             {searchStr && ` (filtered by "${searchStr}")`}
             {roleFilter && ` (role: ${getRoleInfo(roleFilter).displayName})`}
             {sortField && ` (sorted by ${sortField} ${sortDirection})`}
@@ -413,7 +491,7 @@ const ManageUsersPage = () => {
               </thead>
               <tbody className="divide-y divide-white/10">
                 <AnimatePresence>
-                  {users.length === 0 ? (
+                  {currentUsers.length === 0 ? (
                     <tr>
                       <td colSpan="5" className="px-6 py-12 text-center">
                         <motion.div
@@ -424,22 +502,17 @@ const ManageUsersPage = () => {
                           <User className="w-16 h-16 text-gray-500" />
                           <div>
                             <p className="text-lg text-gray-400 mb-2">
-                              {searchStr || roleFilter ? "No users found matching your criteria" : "No users found"}
+                              {searchStr || roleFilter ? "No users found matching your criteria" : (apiLoading ? "Loading users..." : "No users found")}
                             </p>
                             <p className="text-sm text-gray-500">
                               {searchStr && !roleFilter && `Try searching for a different username`}
                               {!searchStr && roleFilter && `No users with the "${getRoleInfo(roleFilter).displayName}" role`}
                               {searchStr && roleFilter && `No users with username "${searchStr}" and role "${getRoleInfo(roleFilter).displayName}"`}
-                              {!searchStr && !roleFilter && "Users will appear here once they are registered"}
+                              {!searchStr && !roleFilter && !apiLoading && "Users will appear here once they are registered"}
                             </p>
                             {(searchStr || roleFilter) && (
                               <button
-                                onClick={() => {
-                                  setSearchStr("");
-                                  setRoleFilter("");
-                                  setCurrentPage(1);
-                                  fetchUsers(1, "", "userId", "asc", "");
-                                }}
+                                onClick={handleReset}
                                 className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
                                 aria-label="Clear filters"
                               >
@@ -451,7 +524,7 @@ const ManageUsersPage = () => {
                       </td>
                     </tr>
                   ) : (
-                    users.map((user) => {
+                    currentUsers.map((user) => {
                       const roleInfo = getRoleInfo(user.role_name);
                       const RoleIcon = roleInfo.icon;
                       const isEditing = editingUser?.userId === user.userId;
