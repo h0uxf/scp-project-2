@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { HelpCircle, Share2, ArrowUp, ArrowDown, Edit } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../components/AuthProvider";
@@ -59,6 +59,9 @@ const QuizPage = () => {
   });
   const [editingQuestionId, setEditingQuestionId] = useState(null);
   const navigate = useNavigate();
+  
+  // Add ref for the form section
+  const formRef = useRef(null);
 
   const personalityOptions = [
     { id: null, name: "Select Personality" },
@@ -95,6 +98,39 @@ const QuizPage = () => {
       normalized.push({ optionText: "", optionId: null, personalityId: null });
     }
     return normalized.slice(0, 3);
+  };
+
+  // Validation function to check for duplicate personalities
+  const validatePersonalities = (options) => {
+    const selectedPersonalities = options
+      .map(opt => opt.personalityId)
+      .filter(id => id !== null && id !== undefined);
+    
+    const uniquePersonalities = [...new Set(selectedPersonalities)];
+    return selectedPersonalities.length === uniquePersonalities.length;
+  };
+
+  // Function to get duplicate personality names for error message
+  const getDuplicatePersonalities = (options) => {
+    const personalityCount = {};
+    const duplicates = [];
+    
+    options.forEach(opt => {
+      if (opt.personalityId) {
+        personalityCount[opt.personalityId] = (personalityCount[opt.personalityId] || 0) + 1;
+      }
+    });
+    
+    Object.entries(personalityCount).forEach(([personalityId, count]) => {
+      if (count > 1) {
+        const personality = personalityOptions.find(p => p.id === parseInt(personalityId));
+        if (personality) {
+          duplicates.push(personality.name);
+        }
+      }
+    });
+    
+    return duplicates;
   };
 
   useEffect(() => {
@@ -296,6 +332,14 @@ const QuizPage = () => {
       toast.error("Please fill in all fields including personality selection for each option");
       return;
     }
+
+    // Validate no duplicate personalities
+    if (!validatePersonalities(newQuestion.options)) {
+      const duplicates = getDuplicatePersonalities(newQuestion.options);
+      toast.error(`Each option must have a different personality. Duplicate found: ${duplicates.join(", ")}`);
+      return;
+    }
+
     try {
       // CSRF-protected POST request
       const data = await makeApiCall("/quiz", "POST", newQuestion);
@@ -327,6 +371,14 @@ const QuizPage = () => {
       toast.error("Please fill in all fields including personality selection for each option");
       return;
     }
+
+    // Validate no duplicate personalities
+    if (!validatePersonalities(newQuestion.options)) {
+      const duplicates = getDuplicatePersonalities(newQuestion.options);
+      toast.error(`Each option must have a different personality. Duplicate found: ${duplicates.join(", ")}`);
+      return;
+    }
+
     try {
       // CSRF-protected PUT request
       const data = await makeApiCall(`/quiz/${questionId}`, "PUT", {
@@ -501,6 +553,17 @@ const QuizPage = () => {
       questionText: question.questionText || "",
       options: normalizeOptions(question.options),
     });
+    
+    // Auto-scroll to the form
+    setTimeout(() => {
+      if (formRef.current) {
+        formRef.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start',
+          inline: 'nearest'
+        });
+      }
+    }, 100);
   };
 
   // Consolidated quiz rendering component
@@ -717,7 +780,7 @@ const QuizPage = () => {
             Discover Your Ideal Diploma Course!
           </h1>
           {hasRole("content_manager", "moderator", "admin", "super_admin") && !isPreviewMode && (
-            <div className="max-w-4xl mx-auto bg-white/5 border border-white/20 rounded-2xl p-4 sm:p-6 md:p-8 shadow-xl mb-6 sm:mb-8">
+            <div ref={formRef} className="max-w-4xl mx-auto bg-white/5 border border-white/20 rounded-2xl p-4 sm:p-6 md:p-8 shadow-xl mb-6 sm:mb-8">
               <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 gap-2">
                 <h2 className="text-xl sm:text-2xl font-semibold">
                   Manage Quiz Questions
@@ -756,7 +819,12 @@ const QuizPage = () => {
                       <select
                         value={option.personalityId || ""}
                         onChange={(e) => handlePersonalityChange(index, e.target.value)}
-                        className="w-full bg-white/10 text-white p-3 rounded-lg text-sm sm:text-base border border-white/20"
+                        className={`w-full bg-white/10 text-white p-3 rounded-lg text-sm sm:text-base border ${
+                          !validatePersonalities(newQuestion.options) && option.personalityId && 
+                          newQuestion.options.filter(opt => opt.personalityId === option.personalityId).length > 1
+                            ? 'border-red-500' 
+                            : 'border-white/20'
+                        }`}
                         aria-label={`Personality for option ${index + 1}`}
                       >
                         {personalityOptions.map((personality) => (
@@ -790,10 +858,25 @@ const QuizPage = () => {
                     </div>
                   </div>
                 ))}
+                
+                {/* Validation warning for duplicate personalities */}
+                {!validatePersonalities(newQuestion.options) && (
+                  <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
+                    <p className="text-red-300 text-sm">
+                      ⚠️ Duplicate personalities detected: {getDuplicatePersonalities(newQuestion.options).join(", ")}
+                      <br />Each option must have a different personality selected.
+                    </p>
+                  </div>
+                )}
+                
                 <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4 mt-4">
                   <button
                     onClick={handleSaveAndPreview}
-                    disabled={!newQuestion.questionText || newQuestion.options.some((opt) => !opt.optionText || !opt.personalityId)}
+                    disabled={
+                      !newQuestion.questionText || 
+                      newQuestion.options.some((opt) => !opt.optionText || !opt.personalityId) ||
+                      !validatePersonalities(newQuestion.options)
+                    }
                     className="bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                     aria-label={editingQuestionId ? "Update question" : "Create question"}
                   >

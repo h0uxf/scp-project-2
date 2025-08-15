@@ -39,6 +39,7 @@ const questionValidationRules = () => {
             .withMessage('Question text must be a string.')
             .isLength({ max: 100 }) 
             .withMessage('Question text cannot exceed 100 characters.'),
+        body('optionText')
     ];
 };
 
