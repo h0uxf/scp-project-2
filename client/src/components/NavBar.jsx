@@ -17,7 +17,12 @@ const NavBar = () => {
       color: "from-purple-500 to-pink-500",
       action: () =>  navigate('/learn-more'),
     },
-
+    {
+      icon: Puzzle,
+      text: "Crossword",
+      color: "from-indigo-500 to-blue-500",
+      action: () => navigate("/crossword"),
+    },
     {
       icon: Play,
       text: "Scan",

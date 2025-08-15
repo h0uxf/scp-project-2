@@ -220,6 +220,55 @@ module.exports = {
         }
     },
 
+    readPuzzleByIdAdmin: async (puzzleId) => {
+        const id = parseInt(puzzleId, 10);
+        if (isNaN(id)) {
+            throw new Error('Invalid puzzle ID. It must be a number.');
+        }
+
+        try {
+            const puzzle = await prisma.crosswordPuzzle.findUnique({
+                where: { puzzleId: id },
+                select: {
+                    puzzleId: true,
+                    title: true,
+                    difficulty: true,
+                    gridSize: true,
+                    isPublished: true,
+                    createdAt: true,
+                    puzzleWords: {
+                        select: {
+                            startRow: true,
+                            startCol: true,
+                            direction: true,
+                            clueNumber: true,
+                            wordId: true,
+                            clueId: true,
+                            word: {
+                                select: {
+                                    wordId: true,
+                                    wordText: true,
+                                    wordLength: true,
+                                },
+                            },
+                            clue: {
+                                select: {
+                                    clueId: true,
+                                    clueText: true,
+                                    clueType: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+
+            return puzzle;
+        } catch (error) {
+            throw error;
+        }
+    },
+
     createPuzzle: async (puzzleData) => {
         try {
             const { title, difficulty, gridSize, createdBy } = puzzleData;

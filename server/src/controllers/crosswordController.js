@@ -117,6 +117,24 @@ module.exports = {
         res.status(200).json({ status: "success", data: puzzles });
     }),
 
+    getPuzzleByIdAdmin: catchAsync(async (req, res, next) => {
+        const { puzzleId } = req.params;
+        
+        if (!puzzleId) {
+            logger.warn("Get puzzle by ID failed: Missing puzzle ID");
+            return next(new AppError("Puzzle ID is required", 400));
+        }
+
+        const puzzle = await crosswordModel.readPuzzleByIdAdmin(puzzleId);
+        if (!puzzle) {
+            logger.warn(`Get puzzle by ID failed: Puzzle ${puzzleId} not found`);
+            return next(new AppError("Puzzle not found", 404));
+        }
+
+        logger.debug(`Admin fetching puzzle ${puzzleId}`);
+        res.status(200).json({ status: "success", data: puzzle });
+    }),
+
     createPuzzle: catchAsync(async (req, res, next) => {
         const { title, difficulty, gridSize } = req.body;
         const createdBy = res.locals.user_id;

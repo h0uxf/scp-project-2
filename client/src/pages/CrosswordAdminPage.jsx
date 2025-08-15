@@ -226,6 +226,36 @@ const CrosswordAdminPage = () => {
         throw new Error(data.message || "Failed to create puzzle");
       }
       
+      // Ensure we have words and clues data for the dropdowns
+      const fetchPromises = [];
+      
+      // Fetch words if not already loaded
+      if (words.length === 0) {
+        fetchPromises.push(
+          makeApiCall('/crossword/admin/words?page=1&limit=1000', 'GET')
+            .then(data => {
+              if (data.status === "success") {
+                setWords(data.data || []);
+              }
+            })
+        );
+      }
+      
+      // Fetch clues if not already loaded
+      if (clues.length === 0) {
+        fetchPromises.push(
+          makeApiCall('/crossword/admin/clues?page=1&limit=1000', 'GET')
+            .then(data => {
+              if (data.status === "success") {
+                setClues(data.data || []);
+              }
+            })
+        );
+      }
+      
+      // Wait for all fetch operations to complete
+      await Promise.all(fetchPromises);
+      
       // Set the puzzle for editing in builder
       setEditingPuzzle(data.data);
       setPuzzles([data.data, ...puzzles]);
@@ -240,9 +270,50 @@ const CrosswordAdminPage = () => {
   };
 
   // Open puzzle builder for existing puzzle
-  const editPuzzleGrid = (puzzle) => {
-    setEditingPuzzle(puzzle);
-    setShowPuzzleBuilder(true);
+  const editPuzzleGrid = async (puzzle) => {
+    try {
+      // Fetch detailed puzzle data including word placements
+      const puzzleData = await makeApiCall(`/crossword/admin/puzzles/${puzzle.puzzleId}`, 'GET');
+      if (puzzleData.status !== "success") {
+        throw new Error(puzzleData.message || "Failed to fetch puzzle details");
+      }
+      
+      // Ensure we have words and clues data for the dropdowns
+      const fetchPromises = [];
+      
+      // Fetch words if not already loaded
+      if (words.length === 0) {
+        fetchPromises.push(
+          makeApiCall('/crossword/admin/words?page=1&limit=1000', 'GET')
+            .then(data => {
+              if (data.status === "success") {
+                setWords(data.data || []);
+              }
+            })
+        );
+      }
+      
+      // Fetch clues if not already loaded
+      if (clues.length === 0) {
+        fetchPromises.push(
+          makeApiCall('/crossword/admin/clues?page=1&limit=1000', 'GET')
+            .then(data => {
+              if (data.status === "success") {
+                setClues(data.data || []);
+              }
+            })
+        );
+      }
+      
+      // Wait for all fetch operations to complete
+      await Promise.all(fetchPromises);
+      
+      setEditingPuzzle(puzzleData.data);
+      setShowPuzzleBuilder(true);
+    } catch (err) {
+      console.error('Failed to fetch puzzle details:', err);
+      toast.error(err.message);
+    }
   };
 
   // Save puzzle from builder

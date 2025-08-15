@@ -65,6 +65,14 @@ router.get(
     crosswordController.getAllPuzzlesAdmin
 );
 
+// [GET] Get single puzzle by ID for admin (with word placements)
+router.get(
+    '/admin/puzzles/:puzzleId',
+    jwtMiddleware.verifyAccessToken,
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]), 
+    crosswordController.getPuzzleByIdAdmin
+);
+
 // [POST] Create new puzzle
 router.post(
     '/admin/puzzles',

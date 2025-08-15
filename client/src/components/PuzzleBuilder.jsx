@@ -24,50 +24,149 @@ const PuzzleBuilder = ({
   // Initialize grid
   useEffect(() => {
     const newGrid = Array(gridSize).fill(null).map(() => 
-      Array(gridSize).fill({ isBlack: true, clueNumber: null, letters: [] })
+      Array(gridSize).fill({ isBlack: false, clueNumber: null, letters: [] })
     );
     setGrid(newGrid);
   }, [gridSize]);
 
+  // Load existing puzzle data when editing
+  useEffect(() => {
+    if (puzzle && puzzle.puzzleWords && puzzle.puzzleWords.length > 0) {
+      // Initialize grid with existing words
+      const newGrid = Array(gridSize).fill(null).map(() => 
+        Array(gridSize).fill({ isBlack: false, clueNumber: null, letters: [] })
+      );
+
+      const existingPuzzleWords = [];
+
+      puzzle.puzzleWords.forEach(puzzleWord => {
+        const { startRow, startCol, direction, clueNumber, word, clue } = puzzleWord;
+        const wordText = word.wordText.toUpperCase();
+
+        // Place word on grid
+        for (let i = 0; i < wordText.length; i++) {
+          const row = direction === 'DOWN' ? startRow + i : startRow;
+          const col = direction === 'ACROSS' ? startCol + i : startCol;
+          
+          newGrid[row][col] = {
+            isBlack: false,
+            clueNumber: i === 0 ? clueNumber : newGrid[row][col].clueNumber,
+            letters: [...(newGrid[row][col].letters || []), {
+              letter: wordText[i],
+              wordId: word.wordId,
+              direction
+            }]
+          };
+        }
+
+        // Add to puzzle words list
+        existingPuzzleWords.push({
+          ...puzzleWord,
+          word,
+          clue
+        });
+      });
+
+      setGrid(newGrid);
+      setPuzzleWords(existingPuzzleWords);
+    }
+  }, [puzzle, gridSize]);
+
   // Handle cell click
   const handleCellClick = (row, col) => {
     if (selectedWord) {
+      // Only allow placement if word is selected
       setWordClueForm(prev => ({
         ...prev,
         startRow: row,
         startCol: col
       }));
-    } else {
-      // Toggle black/white cell
-      const newGrid = [...grid];
-      newGrid[row][col] = {
-        ...newGrid[row][col],
-        isBlack: !newGrid[row][col].isBlack
-      };
-      setGrid(newGrid);
     }
+    // If no word is selected, clicking does nothing
+  };
+
+  // Check if a word can be placed at the given position
+  const canPlaceWord = (word, startRow, startCol, direction) => {
+    if (!word || startRow < 0 || startCol < 0) return false;
+    
+    const wordText = word.wordText.toUpperCase();
+    const endRow = direction === 'down' ? startRow + wordText.length - 1 : startRow;
+    const endCol = direction === 'across' ? startCol + wordText.length - 1 : startCol;
+    
+    // Check if word fits in grid
+    if (endRow >= gridSize || endCol >= gridSize) {
+      return false;
+    }
+
+    // Check for collisions
+    for (let i = 0; i < wordText.length; i++) {
+      const row = direction === 'down' ? startRow + i : startRow;
+      const col = direction === 'across' ? startCol + i : startCol;
+      const cell = grid[row][col];
+      
+      // If cell is black, word can't be placed
+      if (cell.isBlack) {
+        return false;
+      }
+      
+      // If cell has letters, check for collision
+      if (cell.letters && cell.letters.length > 0) {
+        const existingLetter = cell.letters[0].letter;
+        if (existingLetter !== wordText[i]) {
+          return false; // Letters don't match
+        }
+      }
+    }
+    
+    return true;
+  };
+
+  // Get word placement preview
+  const getWordPreview = () => {
+    if (!selectedWord || wordClueForm.startRow < 0 || wordClueForm.startCol < 0) {
+      return [];
+    }
+    
+    const wordText = selectedWord.wordText.toUpperCase();
+    const { startRow, startCol, direction } = wordClueForm;
+    const preview = [];
+    
+    for (let i = 0; i < wordText.length; i++) {
+      const row = direction === 'down' ? startRow + i : startRow;
+      const col = direction === 'across' ? startCol + i : startCol;
+      
+      if (row >= 0 && row < gridSize && col >= 0 && col < gridSize) {
+        preview.push({ row, col, letter: wordText[i] });
+      }
+    }
+    
+    return preview;
   };
 
   // Add word to puzzle
   const addWordToGrid = () => {
-    if (!wordClueForm.wordId || !wordClueForm.clueId) return;
+    if (!wordClueForm.wordId || !wordClueForm.clueId) {
+      alert('Please select both a word and a clue!');
+      return;
+    }
 
     const word = words.find(w => w.wordId === parseInt(wordClueForm.wordId));
     const clue = clues.find(c => c.clueId === parseInt(wordClueForm.clueId));
     
-    if (!word || !clue) return;
-
-    const { startRow, startCol, direction, clueNumber } = wordClueForm;
-    const wordText = word.wordText.toUpperCase();
-
-    // Check if word fits in grid
-    const endRow = direction === 'down' ? startRow + wordText.length - 1 : startRow;
-    const endCol = direction === 'across' ? startCol + wordText.length - 1 : startCol;
-    
-    if (endRow >= gridSize || endCol >= gridSize) {
-      alert('Word does not fit in grid!');
+    if (!word || !clue) {
+      alert('Selected word or clue not found!');
       return;
     }
+
+    const { startRow, startCol, direction, clueNumber } = wordClueForm;
+    
+    // Validate placement
+    if (!canPlaceWord(word, startRow, startCol, direction)) {
+      alert('Cannot place word here! Check for collisions or grid boundaries.');
+      return;
+    }
+
+    const wordText = word.wordText.toUpperCase();
 
     // Update grid
     const newGrid = [...grid];
@@ -191,38 +290,64 @@ const PuzzleBuilder = ({
                     aspectRatio: '1'
                   }}
                 >
-                  {grid.map((row, rowIndex) =>
-                    row.map((cell, colIndex) => (
-                      <div
-                        key={`${rowIndex}-${colIndex}`}
-                        className={`
-                          relative aspect-square border border-gray-400 cursor-pointer
-                          text-center font-bold text-xs transition-all duration-200
-                          ${cell.isBlack 
-                            ? 'bg-black' 
-                            : selectedWord && wordClueForm.startRow === rowIndex && wordClueForm.startCol === colIndex
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-white text-black hover:bg-blue-100'
-                          }
-                        `}
-                        onClick={() => handleCellClick(rowIndex, colIndex)}
-                        style={{ minHeight: '25px', minWidth: '25px' }}
-                      >
-                        {!cell.isBlack && cell.clueNumber && (
-                          <div className="absolute top-0 left-0 text-xs font-bold leading-none p-0.5">
-                            {cell.clueNumber}
-                          </div>
-                        )}
-                        {!cell.isBlack && cell.letters.length > 0 && (
-                          <div className="flex items-center justify-center h-full">
-                            <span className="text-sm font-bold">
-                              {cell.letters[0]?.letter}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    ))
-                  )}
+                  {grid.map((row, rowIndex) => {
+                    const wordPreview = getWordPreview();
+                    return row.map((cell, colIndex) => {
+                      const isStartPosition = selectedWord && 
+                        wordClueForm.startRow === rowIndex && 
+                        wordClueForm.startCol === colIndex;
+                      
+                      const isPreviewCell = wordPreview.find(p => p.row === rowIndex && p.col === colIndex);
+                      const canPlace = selectedWord ? canPlaceWord(
+                        selectedWord, 
+                        wordClueForm.startRow, 
+                        wordClueForm.startCol, 
+                        wordClueForm.direction
+                      ) : false;
+                      
+                      return (
+                        <div
+                          key={`${rowIndex}-${colIndex}`}
+                          className={`
+                            relative aspect-square border border-gray-400 cursor-pointer
+                            text-center font-bold text-xs transition-all duration-200
+                            ${cell.isBlack 
+                              ? 'bg-black' 
+                              : isStartPosition
+                                ? canPlace 
+                                  ? 'bg-green-500 text-white'
+                                  : 'bg-red-500 text-white'
+                                : isPreviewCell
+                                  ? canPlace
+                                    ? 'bg-green-200 text-black'
+                                    : 'bg-red-200 text-black'
+                                  : 'bg-white text-black hover:bg-blue-100'
+                            }
+                          `}
+                          onClick={() => handleCellClick(rowIndex, colIndex)}
+                          style={{ minHeight: '25px', minWidth: '25px' }}
+                        >
+                          {!cell.isBlack && cell.clueNumber && (
+                            <div className="absolute top-0 left-0 text-xs font-bold leading-none p-0.5">
+                              {cell.clueNumber}
+                            </div>
+                          )}
+                          {!cell.isBlack && (
+                            <div className="flex items-center justify-center h-full">
+                              <span className="text-sm font-bold">
+                                {isPreviewCell && !cell.letters.length 
+                                  ? isPreviewCell.letter
+                                  : cell.letters.length > 0 
+                                    ? cell.letters[0]?.letter || '?'
+                                    : ''
+                                }
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    });
+                  })}
                 </div>
               </div>
             </div>
