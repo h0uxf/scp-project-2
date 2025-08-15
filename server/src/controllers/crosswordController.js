@@ -157,19 +157,19 @@ module.exports = {
 
     updatePuzzle: catchAsync(async (req, res, next) => {
         const { puzzleId } = req.params;
-        const { title, difficulty, gridSize, isPublished } = req.body;
+        const { title, difficulty, gridSize, isPublished, puzzleWords } = req.body;
 
         if (!puzzleId) {
             logger.warn("Update puzzle failed: Missing puzzle ID");
             return next(new AppError("Puzzle ID is required", 400));
         }
 
-        if (!title && !difficulty && !gridSize && isPublished === undefined) {
+        if (!title && !difficulty && !gridSize && isPublished === undefined && !puzzleWords) {
             logger.warn("Update puzzle failed: No fields to update");
             return next(new AppError("At least one field is required for update", 400));
         }
 
-        const puzzleData = { title, difficulty, gridSize, isPublished };
+        const puzzleData = { title, difficulty, gridSize, isPublished, puzzleWords };
         const puzzle = await crosswordModel.updatePuzzle(puzzleId, puzzleData);
         
         logger.info(`Updated puzzle ${puzzleId}`);

@@ -303,8 +303,9 @@ module.exports = {
         }
 
         try {
-            const { title, difficulty, gridSize, isPublished } = puzzleData;
+            const { title, difficulty, gridSize, isPublished, puzzleWords } = puzzleData;
             
+            // Build update data for basic properties
             const updateData = {};
             if (title !== undefined) updateData.title = title;
             if (difficulty !== undefined) updateData.difficulty = difficulty;
@@ -312,17 +313,73 @@ module.exports = {
             if (isPublished !== undefined) updateData.isPublished = isPublished;
             updateData.updatedAt = new Date();
 
-            const puzzle = await prisma.crosswordPuzzle.update({
-                where: { puzzleId: id },
-                data: updateData,
-                select: {
-                    puzzleId: true,
-                    title: true,
-                    difficulty: true,
-                    gridSize: true,
-                    isPublished: true,
-                    updatedAt: true,
-                },
+            // Use transaction to handle both puzzle update and words
+            const puzzle = await prisma.$transaction(async (prisma) => {
+                // Update basic puzzle properties
+                const updatedPuzzle = await prisma.crosswordPuzzle.update({
+                    where: { puzzleId: id },
+                    data: updateData,
+                });
+
+                // Handle puzzle words if provided
+                if (puzzleWords && Array.isArray(puzzleWords)) {
+                    // Delete existing puzzle words
+                    await prisma.puzzleWord.deleteMany({
+                        where: { puzzleId: id }
+                    });
+
+                    // Insert new puzzle words
+                    if (puzzleWords.length > 0) {
+                        const puzzleWordData = puzzleWords.map(pw => ({
+                            puzzleId: id,
+                            wordId: parseInt(pw.wordId),
+                            clueId: parseInt(pw.clueId),
+                            startRow: parseInt(pw.startRow),
+                            startCol: parseInt(pw.startCol),
+                            direction: pw.direction.toUpperCase(),
+                            clueNumber: parseInt(pw.clueNumber)
+                        }));
+
+                        await prisma.puzzleWord.createMany({
+                            data: puzzleWordData
+                        });
+                    }
+                }
+
+                // Return updated puzzle with words
+                return await prisma.crosswordPuzzle.findUnique({
+                    where: { puzzleId: id },
+                    select: {
+                        puzzleId: true,
+                        title: true,
+                        difficulty: true,
+                        gridSize: true,
+                        isPublished: true,
+                        updatedAt: true,
+                        puzzleWords: {
+                            select: {
+                                wordId: true,
+                                clueId: true,
+                                startRow: true,
+                                startCol: true,
+                                direction: true,
+                                clueNumber: true,
+                                word: {
+                                    select: {
+                                        wordText: true,
+                                        wordLength: true
+                                    }
+                                },
+                                clue: {
+                                    select: {
+                                        clueText: true,
+                                        clueType: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
             });
 
             return puzzle;
