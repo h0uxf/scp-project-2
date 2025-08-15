@@ -796,144 +796,165 @@ async function initializeCrosswordData() {
     // Create sample crossword puzzles
     const puzzlesData = [
       {
-        title: "Programming Basics",
+        title: "Easy Puzzle Example",
         difficulty: "Easy",
         gridSize: 10,
         isPublished: true,
       },
       {
-        title: "Computer Hardware",
+        title: "Medium Puzzle Example",
         difficulty: "Medium",
-        gridSize: 12,
+        gridSize: 10,
         isPublished: true,
       },
       {
-        title: "Advanced Computing",
+        title: "Hard Puzzle Example",
         difficulty: "Hard",
         gridSize: 15,
         isPublished: true,
       },
-      {
-        title: "Web Development Fundamentals",
-        difficulty: "Medium",
-        gridSize: 12,
-        isPublished: false, // Draft puzzle
-      },
     ];
 
     const puzzleWordsData = [
-      // Programming Basics puzzle (Easy words)
+      // Easy Puzzle - "Easy Puzzle Example"
       {
         puzzleIndex: 0,
-        wordIndex: 0,
+        wordIndex: 0,  // CODE
         clueIndex: 0,
-        startRow: 1,
-        startCol: 1,
+        startRow: 4,
+        startCol: 4,
         direction: "ACROSS",
         clueNumber: 1,
       },
       {
         puzzleIndex: 0,
-        wordIndex: 1,
-        clueIndex: 1,
-        startRow: 3,
-        startCol: 2,
-        direction: "DOWN",
-        clueNumber: 2,
-      },
-      {
-        puzzleIndex: 0,
-        wordIndex: 2,
-        clueIndex: 2,
-        startRow: 5,
-        startCol: 1,
-        direction: "ACROSS",
-        clueNumber: 3,
-      },
-      {
-        puzzleIndex: 0,
-        wordIndex: 3,
+        wordIndex: 3,  // DATA
         clueIndex: 3,
-        startRow: 2,
+        startRow: 4,
         startCol: 6,
         direction: "DOWN",
-        clueNumber: 4,
+        clueNumber: 1,
       },
       {
         puzzleIndex: 0,
-        wordIndex: 4,
-        clueIndex: 4,
-        startRow: 7,
-        startCol: 3,
-        direction: "ACROSS",
-        clueNumber: 5,
+        wordIndex: 1,  // BYTE
+        clueIndex: 1,
+        startRow: 1,
+        startCol: 7,
+        direction: "DOWN",
+        clueNumber: 2,
+      },
+      {
+        puzzleIndex: 0,
+        wordIndex: 2,  // LOOP
+        clueIndex: 2,
+        startRow: 3,
+        startCol: 5,
+        direction: "DOWN",
+        clueNumber: 2,
       },
 
-      // Computer Hardware puzzle (Medium words)
+      // Medium Puzzle - "Medium Puzzle Example"
       {
         puzzleIndex: 1,
-        wordIndex: 11,
-        clueIndex: 11,
-        startRow: 1,
-        startCol: 1,
+        wordIndex: 10, // PYTHON
+        clueIndex: 10,
+        startRow: 2,
+        startCol: 3,
         direction: "ACROSS",
         clueNumber: 1,
       },
       {
         puzzleIndex: 1,
-        wordIndex: 12,
-        clueIndex: 12,
-        startRow: 3,
-        startCol: 2,
+        wordIndex: 16, // COMPILER
+        clueIndex: 16,
+        startRow: 1,
+        startCol: 7,
         direction: "DOWN",
+        clueNumber: 1,
+      },
+      {
+        puzzleIndex: 1,
+        wordIndex: 11, // MEMORY
+        clueIndex: 11,
+        startRow: 8,
+        startCol: 3,
+        direction: "ACROSS",
         clueNumber: 2,
       },
       {
         puzzleIndex: 1,
-        wordIndex: 13,
+        wordIndex: 13, // FUNCTION
         clueIndex: 13,
         startRow: 5,
-        startCol: 1,
+        startCol: 2,
         direction: "ACROSS",
         clueNumber: 3,
       },
-      {
-        puzzleIndex: 1,
-        wordIndex: 8,
-        clueIndex: 8,
-        startRow: 2,
-        startCol: 8,
-        direction: "DOWN",
-        clueNumber: 4,
-      },
 
-      // Advanced Computing puzzle (Hard words)
+      // Hard Puzzle - "Hard Puzzle Example"
       {
         puzzleIndex: 2,
-        wordIndex: 20,
-        clueIndex: 20,
-        startRow: 1,
+        wordIndex: 25, // RECURSION
+        clueIndex: 25,
+        startRow: 4,
         startCol: 1,
         direction: "ACROSS",
         clueNumber: 1,
       },
       {
         puzzleIndex: 2,
-        wordIndex: 21,
-        clueIndex: 21,
-        startRow: 3,
-        startCol: 3,
+        wordIndex: 23, // FRAMEWORK
+        clueIndex: 23,
+        startRow: 5,
+        startCol: 7,
+        direction: "ACROSS",
+        clueNumber: 2,
+      },
+      {
+        puzzleIndex: 2,
+        wordIndex: 27, // INTERFACE
+        clueIndex: 27,
+        startRow: 13,
+        startCol: 1,
+        direction: "ACROSS",
+        clueNumber: 3,
+      },
+      {
+        puzzleIndex: 2,
+        wordIndex: 22, // ENCRYPTION
+        clueIndex: 22,
+        startRow: 4,
+        startCol: 2,
+        direction: "DOWN",
+        clueNumber: 1,
+      },
+      {
+        puzzleIndex: 2,
+        wordIndex: 24, // DEBUGGING
+        clueIndex: 24,
+        startRow: 1,
+        startCol: 4,
         direction: "DOWN",
         clueNumber: 2,
       },
       {
         puzzleIndex: 2,
-        wordIndex: 22,
-        clueIndex: 22,
-        startRow: 8,
-        startCol: 1,
-        direction: "ACROSS",
+        wordIndex: 20, // ALGORITHM
+        clueIndex: 20,
+        startRow: 1,
+        startCol: 8,
+        direction: "DOWN",
         clueNumber: 3,
+      },
+      {
+        puzzleIndex: 2,
+        wordIndex: 26, // PROCESSOR
+        clueIndex: 26,
+        startRow: 1,
+        startCol: 11,
+        direction: "DOWN",
+        clueNumber: 4,
       },
     ];
 
