@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Menu, X, Crown, Play, GraduationCap, Home, Puzzle, Settings } from "lucide-react";
+import { Menu, X, Crown, Play, GraduationCap, Home, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../components/AuthProvider";
 
@@ -16,12 +16,6 @@ const NavBar = () => {
       text: "About",
       color: "from-purple-500 to-pink-500",
       action: () =>  navigate('/learn-more'),
-    },
-    {
-      icon: Puzzle,
-      text: "Crossword",
-      color: "from-indigo-500 to-blue-500",
-      action: () => navigate("/crossword"),
     },
     {
       icon: Play,
