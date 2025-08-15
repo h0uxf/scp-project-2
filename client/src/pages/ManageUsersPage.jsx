@@ -821,7 +821,7 @@ const ManageUsersPage = () => {
                           )}
                           <div className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
-                            <span>Completed on {new Date(userActivity.createdAt).toLocaleDateString()}</span>
+                            <span>Last updated at {new Date(userActivity.updatedAt).toLocaleString()}</span>
                           </div>
                         </div>
                       </motion.div>

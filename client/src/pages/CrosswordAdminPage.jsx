@@ -47,6 +47,8 @@ const CrosswordAdminPage = () => {
   const [showClueForm, setShowClueForm] = useState(false);
   const [showPuzzleBuilder, setShowPuzzleBuilder] = useState(false);
   const [editingPuzzle, setEditingPuzzle] = useState(null);
+  const [editingWord, setEditingWord] = useState(null);
+  const [editingClue, setEditingClue] = useState(null);
   
   // Pagination states
   const [wordsPage, setWordsPage] = useState(1);
@@ -404,6 +406,134 @@ const CrosswordAdminPage = () => {
     }
   };
 
+  // Update word
+  const updateWord = async () => {
+    if (!wordForm.wordText) {
+      toast.error("Word text is required");
+      return;
+    }
+    if (!wordForm.category) {
+      toast.error("Category is required");
+      return;
+    }
+    try {
+      const data = await makeApiCall(`/crossword/admin/words/${editingWord.wordId}`, 'PUT', wordForm);
+      if (data.status !== "success") {
+        throw new Error(data.message || "Failed to update word");
+      }
+      
+      await fetchData();
+      setWordForm({ wordText: '', difficulty: 'easy', category: '' });
+      setShowWordForm(false);
+      setEditingWord(null);
+      toast.success('Word updated successfully!');
+    } catch (err) {
+      console.error("Error updating word:", err);
+      toast.error(err.message);
+    }
+  };
+
+  // Delete word
+  const deleteWord = async (wordId) => {
+    if (!window.confirm('Are you sure you want to delete this word? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      const data = await makeApiCall(`/crossword/admin/words/${wordId}`, 'DELETE');
+      if (data.status !== "success") {
+        throw new Error(data.message || "Failed to delete word");
+      }
+      
+      await fetchData();
+      toast.success('Word deleted successfully!');
+    } catch (err) {
+      console.error("Error deleting word:", err);
+      toast.error(err.message);
+    }
+  };
+
+  // Update clue
+  const updateClue = async () => {
+    if (!clueForm.clueText) {
+      toast.error("Clue text is required");
+      return;
+    }
+    if (!clueForm.category) {
+      toast.error("Category is required");
+      return;
+    }
+    try {
+      const data = await makeApiCall(`/crossword/admin/clues/${editingClue.clueId}`, 'PUT', clueForm);
+      if (data.status !== "success") {
+        throw new Error(data.message || "Failed to update clue");
+      }
+      
+      await fetchData();
+      setClueForm({ clueText: '', clueType: 'definition', difficulty: 'easy', category: '' });
+      setShowClueForm(false);
+      setEditingClue(null);
+      toast.success('Clue updated successfully!');
+    } catch (err) {
+      console.error("Error updating clue:", err);
+      toast.error(err.message);
+    }
+  };
+
+  // Delete clue
+  const deleteClue = async (clueId) => {
+    if (!window.confirm('Are you sure you want to delete this clue? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      const data = await makeApiCall(`/crossword/admin/clues/${clueId}`, 'DELETE');
+      if (data.status !== "success") {
+        throw new Error(data.message || "Failed to delete clue");
+      }
+      
+      await fetchData();
+      toast.success('Clue deleted successfully!');
+    } catch (err) {
+      console.error("Error deleting clue:", err);
+      toast.error(err.message);
+    }
+  };
+
+  // Handle edit word
+  const handleEditWord = (word) => {
+    setEditingWord(word);
+    setWordForm({
+      wordText: word.wordText,
+      difficulty: word.difficulty,
+      category: word.category
+    });
+    setShowWordForm(true);
+  };
+
+  // Handle edit clue
+  const handleEditClue = (clue) => {
+    setEditingClue(clue);
+    setClueForm({
+      clueText: clue.clueText,
+      clueType: clue.clueType,
+      difficulty: clue.difficulty,
+      category: clue.category
+    });
+    setShowClueForm(true);
+  };
+
+  // Cancel edit
+  const cancelWordEdit = () => {
+    setEditingWord(null);
+    setWordForm({ wordText: '', difficulty: 'easy', category: '' });
+    setShowWordForm(false);
+  };
+
+  const cancelClueEdit = () => {
+    setEditingClue(null);
+    setClueForm({ clueText: '', clueType: 'definition', difficulty: 'easy', category: '' });
+    setShowClueForm(false);
+  };
+
   // Format date
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -629,6 +759,7 @@ const CrosswordAdminPage = () => {
                           <th className="px-6 py-3 text-left text-white font-semibold">Difficulty</th>
                           <th className="px-6 py-3 text-left text-white font-semibold">Category</th>
                           <th className="px-6 py-3 text-left text-white font-semibold">Created</th>
+                          <th className="px-6 py-3 text-left text-white font-semibold">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -648,6 +779,24 @@ const CrosswordAdminPage = () => {
                             </td>
                             <td className="px-6 py-4 text-white/80">{word.category || 'N/A'}</td>
                             <td className="px-6 py-4 text-white/80">{formatDate(word.createdAt)}</td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleEditWord(word)}
+                                  className="p-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg transition-colors"
+                                  title="Edit word"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => deleteWord(word.wordId)}
+                                  className="p-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition-colors"
+                                  title="Delete word"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -717,6 +866,7 @@ const CrosswordAdminPage = () => {
                           <th className="px-6 py-3 text-left text-white font-semibold">Difficulty</th>
                           <th className="px-6 py-3 text-left text-white font-semibold">Category</th>
                           <th className="px-6 py-3 text-left text-white font-semibold">Created</th>
+                          <th className="px-6 py-3 text-left text-white font-semibold">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -740,6 +890,24 @@ const CrosswordAdminPage = () => {
                             </td>
                             <td className="px-6 py-4 text-white/80">{clue.category || 'N/A'}</td>
                             <td className="px-6 py-4 text-white/80">{formatDate(clue.createdAt)}</td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleEditClue(clue)}
+                                  className="p-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-lg transition-colors"
+                                  title="Edit clue"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => deleteClue(clue.clueId)}
+                                  className="p-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition-colors"
+                                  title="Delete clue"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -898,9 +1066,9 @@ const CrosswordAdminPage = () => {
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-xl font-bold text-white">Add Word</h3>
+                      <h3 className="text-xl font-bold text-white">{editingWord ? 'Edit Word' : 'Add Word'}</h3>
                       <button
-                        onClick={() => setShowWordForm(false)}
+                        onClick={() => editingWord ? cancelWordEdit() : setShowWordForm(false)}
                         className="text-white/60 hover:text-white"
                         aria-label="Close word form"
                       >
@@ -957,18 +1125,18 @@ const CrosswordAdminPage = () => {
 
                     <div className="flex gap-3 mt-6">
                       <button
-                        onClick={() => setShowWordForm(false)}
+                        onClick={() => editingWord ? cancelWordEdit() : setShowWordForm(false)}
                         className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-all duration-300"
                         aria-label="Cancel word creation"
                       >
                         Cancel
                       </button>
                       <button
-                        onClick={createWord}
+                        onClick={editingWord ? updateWord : createWord}
                         className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all duration-300"
-                        aria-label="Add word"
+                        aria-label={editingWord ? "Update word" : "Add word"}
                       >
-                        Add Word
+                        {editingWord ? 'Update Word' : 'Add Word'}
                       </button>
                     </div>
                   </motion.div>
@@ -994,9 +1162,9 @@ const CrosswordAdminPage = () => {
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-xl font-bold text-white">Add Clue</h3>
+                      <h3 className="text-xl font-bold text-white">{editingClue ? 'Edit Clue' : 'Add Clue'}</h3>
                       <button
-                        onClick={() => setShowClueForm(false)}
+                        onClick={() => editingClue ? cancelClueEdit() : setShowClueForm(false)}
                         className="text-white/60 hover:text-white"
                         aria-label="Close clue form"
                       >
@@ -1070,18 +1238,18 @@ const CrosswordAdminPage = () => {
 
                     <div className="flex gap-3 mt-6">
                       <button
-                        onClick={() => setShowClueForm(false)}
+                        onClick={() => editingClue ? cancelClueEdit() : setShowClueForm(false)}
                         className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-all duration-300"
                         aria-label="Cancel clue creation"
                       >
                         Cancel
                       </button>
                       <button
-                        onClick={createClue}
+                        onClick={editingClue ? updateClue : createClue}
                         className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all duration-300"
-                        aria-label="Add clue"
+                        aria-label={editingClue ? "Update clue" : "Add clue"}
                       >
-                        Add Clue
+                        {editingClue ? 'Update Clue' : 'Add Clue'}
                       </button>
                     </div>
                   </motion.div>

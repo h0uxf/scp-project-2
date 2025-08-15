@@ -282,4 +282,68 @@ module.exports = {
             data: clue 
         });
     }),
+
+    updateWord: catchAsync(async (req, res, next) => {
+        const { wordId } = req.params;
+        const { wordText, difficulty, category } = req.body;
+
+        if (!wordText) {
+            logger.warn("Update word failed: Missing word text");
+            return next(new AppError("Word text is required", 400));
+        }
+
+        const wordData = { wordText, difficulty, category };
+        const word = await crosswordModel.updateWord(wordId, wordData);
+        
+        logger.info(`Updated word: ${wordId}`);
+        res.status(200).json({ 
+            status: "success", 
+            message: "Word updated successfully",
+            data: word 
+        });
+    }),
+
+    deleteWord: catchAsync(async (req, res, next) => {
+        const { wordId } = req.params;
+
+        await crosswordModel.deleteWord(wordId);
+        
+        logger.info(`Deleted word: ${wordId}`);
+        res.status(200).json({ 
+            status: "success", 
+            message: "Word deleted successfully"
+        });
+    }),
+
+    updateClue: catchAsync(async (req, res, next) => {
+        const { clueId } = req.params;
+        const { clueText, clueType, difficulty, category } = req.body;
+
+        if (!clueText || !clueType) {
+            logger.warn("Update clue failed: Missing required fields");
+            return next(new AppError("Clue text and clue type are required", 400));
+        }
+
+        const clueData = { clueText, clueType, difficulty, category };
+        const clue = await crosswordModel.updateClue(clueId, clueData);
+        
+        logger.info(`Updated clue: ${clueId}`);
+        res.status(200).json({ 
+            status: "success", 
+            message: "Clue updated successfully",
+            data: clue 
+        });
+    }),
+
+    deleteClue: catchAsync(async (req, res, next) => {
+        const { clueId } = req.params;
+
+        await crosswordModel.deleteClue(clueId);
+        
+        logger.info(`Deleted clue: ${clueId}`);
+        res.status(200).json({ 
+            status: "success", 
+            message: "Clue deleted successfully"
+        });
+    }),
 };

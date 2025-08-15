@@ -625,4 +625,96 @@ module.exports = {
             throw error;
         }
     },
+
+    updateWord: async (wordId, wordData) => {
+        try {
+            const { wordText, difficulty, category } = wordData;
+            
+            const word = await prisma.word.update({
+                where: { wordId: parseInt(wordId, 10) },
+                data: {
+                    wordText: wordText.toUpperCase(),
+                    wordLength: wordText.length,
+                    difficulty,
+                    category,
+                    updatedAt: new Date(),
+                },
+                select: {
+                    wordId: true,
+                    wordText: true,
+                    wordLength: true,
+                    difficulty: true,
+                    category: true,
+                    createdAt: true,
+                    updatedAt: true,
+                },
+            });
+
+            return word;
+        } catch (error) {
+            if (error.code === 'P2025') {
+                throw new Error('Word not found');
+            }
+            throw error;
+        }
+    },
+
+    deleteWord: async (wordId) => {
+        try {
+            await prisma.word.delete({
+                where: { wordId: parseInt(wordId, 10) },
+            });
+        } catch (error) {
+            if (error.code === 'P2025') {
+                throw new Error('Word not found');
+            }
+            throw error;
+        }
+    },
+
+    updateClue: async (clueId, clueData) => {
+        try {
+            const { clueText, clueType, difficulty, category } = clueData;
+            
+            const clue = await prisma.clue.update({
+                where: { clueId: parseInt(clueId, 10) },
+                data: {
+                    clueText,
+                    clueType,
+                    difficulty,
+                    category,
+                    updatedAt: new Date(),
+                },
+                select: {
+                    clueId: true,
+                    clueText: true,
+                    clueType: true,
+                    difficulty: true,
+                    category: true,
+                    createdAt: true,
+                    updatedAt: true,
+                },
+            });
+
+            return clue;
+        } catch (error) {
+            if (error.code === 'P2025') {
+                throw new Error('Clue not found');
+            }
+            throw error;
+        }
+    },
+
+    deleteClue: async (clueId) => {
+        try {
+            await prisma.clue.delete({
+                where: { clueId: parseInt(clueId, 10) },
+            });
+        } catch (error) {
+            if (error.code === 'P2025') {
+                throw new Error('Clue not found');
+            }
+            throw error;
+        }
+    },
 };

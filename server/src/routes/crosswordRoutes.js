@@ -136,6 +136,40 @@ router.post(
     crosswordController.createClue
 );
 
+// [PUT] Update word
+router.put(
+    '/admin/words/:wordId',
+    jwtMiddleware.verifyAccessToken,
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]), 
+    validate,
+    crosswordController.updateWord
+);
+
+// [DELETE] Delete word
+router.delete(
+    '/admin/words/:wordId',
+    jwtMiddleware.verifyAccessToken,
+    roleMiddleware(["admin", "super_admin"]), // Admin, Super Admin only
+    crosswordController.deleteWord
+);
+
+// [PUT] Update clue
+router.put(
+    '/admin/clues/:clueId',
+    jwtMiddleware.verifyAccessToken,
+    roleMiddleware(["content_manager", "moderator", "admin", "super_admin" ]), 
+    validate,
+    crosswordController.updateClue
+);
+
+// [DELETE] Delete clue
+router.delete(
+    '/admin/clues/:clueId',
+    jwtMiddleware.verifyAccessToken,
+    roleMiddleware(["admin", "super_admin"]), // Admin, Super Admin only
+    crosswordController.deleteClue
+);
+
 //////////////////////////////////////////////////////
 // EXPORT ROUTER
 //////////////////////////////////////////////////////
