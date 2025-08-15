@@ -341,7 +341,7 @@ const CrosswordPage = () => {
   };
 
   const goToCrosswordList = () => {
-    navigate('/crosswords');
+    navigate('/crossword');
   };
 
   useEffect(() => {
