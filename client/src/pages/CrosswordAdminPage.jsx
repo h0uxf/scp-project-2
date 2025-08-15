@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, Eye, EyeOff, Save, X } from "lucide-react";
+import { Plus, Edit2, Trash2, Eye, EyeOff, Save, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../components/AuthProvider";
 import { useNavigate } from "react-router-dom";
@@ -48,6 +48,15 @@ const CrosswordAdminPage = () => {
   const [showPuzzleBuilder, setShowPuzzleBuilder] = useState(false);
   const [editingPuzzle, setEditingPuzzle] = useState(null);
   
+  // Pagination states
+  const [wordsPage, setWordsPage] = useState(1);
+  const [cluesPage, setCluesPage] = useState(1);
+  const [wordsTotalPages, setWordsTotalPages] = useState(1);
+  const [cluesTotalPages, setCluesTotalPages] = useState(1);
+  const [wordsTotal, setWordsTotal] = useState(0);
+  const [cluesTotal, setCluesTotal] = useState(0);
+  const itemsPerPage = 10;
+  
   const [puzzleForm, setPuzzleForm] = useState({
     title: '',
     difficulty: 'easy',
@@ -78,25 +87,46 @@ const CrosswordAdminPage = () => {
   // Fetch data based on active tab
   useEffect(() => {
     if (currentUser && hasRole("content_manager", "moderator", "admin", "super_admin")) {
+      // Reset pagination when switching tabs
+      if (activeTab === 'words') {
+        setWordsPage(1);
+      } else if (activeTab === 'clues') {
+        setCluesPage(1);
+      }
       fetchData();
     }
   }, [activeTab, currentUser, hasRole, makeApiCall]);
 
+  // Fetch data when pagination changes
+  useEffect(() => {
+    if (currentUser && hasRole("content_manager", "moderator", "admin", "super_admin")) {
+      fetchData();
+    }
+  }, [wordsPage, cluesPage]);
+
   const fetchData = async () => {
     try {
       let endpoint = '';
+      let page = 1;
       switch (activeTab) {
         case 'puzzles':
           endpoint = '/crossword/admin/puzzles';
           break;
         case 'words':
           endpoint = '/crossword/admin/words';
+          page = wordsPage;
           break;
         case 'clues':
           endpoint = '/crossword/admin/clues';
+          page = cluesPage;
           break;
         default:
           return;
+      }
+      
+      // Add pagination parameters for words and clues
+      if (activeTab === 'words' || activeTab === 'clues') {
+        endpoint += `?page=${page}&limit=${itemsPerPage}`;
       }
       
       const data = await makeApiCall(endpoint, 'GET');
@@ -110,9 +140,17 @@ const CrosswordAdminPage = () => {
           break;
         case 'words':
           setWords(data.data || []);
+          if (data.pagination) {
+            setWordsTotalPages(data.pagination.totalPages || 1);
+            setWordsTotal(data.pagination.total || 0);
+          }
           break;
         case 'clues':
           setClues(data.data || []);
+          if (data.pagination) {
+            setCluesTotalPages(data.pagination.totalPages || 1);
+            setCluesTotal(data.pagination.total || 0);
+          }
           break;
       }
     } catch (err) {
@@ -243,12 +281,20 @@ const CrosswordAdminPage = () => {
       toast.error("Word text is required");
       return;
     }
+    if (!wordForm.category) {
+      toast.error("Category is required");
+      return;
+    }
     try {
       const data = await makeApiCall('/crossword/admin/words', 'POST', wordForm);
       if (data.status !== "success") {
         throw new Error(data.message || "Failed to create word");
       }
-      setWords([data.data, ...words]);
+      
+      // Reset to first page and refresh data
+      setWordsPage(1);
+      await fetchData();
+      
       setWordForm({ wordText: '', difficulty: 'easy', category: '' });
       setShowWordForm(false);
       toast.success('Word created successfully!');
@@ -264,12 +310,20 @@ const CrosswordAdminPage = () => {
       toast.error("Clue text is required");
       return;
     }
+    if (!clueForm.category) {
+      toast.error("Category is required");
+      return;
+    }
     try {
       const data = await makeApiCall('/crossword/admin/clues', 'POST', clueForm);
       if (data.status !== "success") {
         throw new Error(data.message || "Failed to create clue");
       }
-      setClues([data.data, ...clues]);
+      
+      // Reset to first page and refresh data
+      setCluesPage(1);
+      await fetchData();
+      
       setClueForm({ clueText: '', clueType: 'definition', difficulty: 'easy', category: '' });
       setShowClueForm(false);
       toast.success('Clue created successfully!');
@@ -288,6 +342,19 @@ const CrosswordAdminPage = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  // Pagination handlers
+  const handleWordsPageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= wordsTotalPages) {
+      setWordsPage(newPage);
+    }
+  };
+
+  const handleCluesPageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= cluesTotalPages) {
+      setCluesPage(newPage);
+    }
   };
 
   if (authLoading || apiLoading) {
@@ -400,11 +467,12 @@ const CrosswordAdminPage = () => {
                             </h3>
                             <div className="flex items-center gap-2 mb-2">
                               <span className={`px-3 py-1 rounded-full text-sm font-medium border ${
-                                puzzle.difficulty === 'easy' ? 'text-green-400 border-green-400/30 bg-green-500/10' :
-                                puzzle.difficulty === 'medium' ? 'text-yellow-400 border-yellow-400/30 bg-yellow-500/10' :
-                                'text-red-400 border-red-400/30 bg-red-500/10'
+                                puzzle.difficulty?.toLowerCase() === 'easy' ? 'text-green-400 border-green-400/30 bg-green-500/10' :
+                                puzzle.difficulty?.toLowerCase() === 'medium' ? 'text-yellow-400 border-yellow-400/30 bg-yellow-500/10' :
+                                puzzle.difficulty?.toLowerCase() === 'hard' ? 'text-red-400 border-red-400/30 bg-red-500/10' :
+                                'text-gray-400 border-gray-400/30 bg-gray-500/10'
                               }`}>
-                                {puzzle.difficulty}
+                                {puzzle.difficulty ? puzzle.difficulty.charAt(0).toUpperCase() + puzzle.difficulty.slice(1) : 'N/A'}
                               </span>
                               <span className={`px-3 py-1 rounded-full text-sm font-medium border ${
                                 puzzle.isPublished 
@@ -498,12 +566,13 @@ const CrosswordAdminPage = () => {
                             <td className="px-6 py-4 text-white font-medium">{word.wordText}</td>
                             <td className="px-6 py-4 text-white/80">{word.wordLength}</td>
                             <td className="px-6 py-4">
-                              <span className={`px-2 py-1 rounded text-sm ${
-                                word.difficulty === 'easy' ? 'text-green-400 bg-green-500/10' :
-                                word.difficulty === 'medium' ? 'text-yellow-400 bg-yellow-500/10' :
-                                'text-red-400 bg-red-500/10'
+                              <span className={`px-3 py-1 rounded-full text-sm font-medium border ${
+                                word.difficulty?.toLowerCase() === 'easy' ? 'text-green-400 border-green-400/30 bg-green-500/10' :
+                                word.difficulty?.toLowerCase() === 'medium' ? 'text-yellow-400 border-yellow-400/30 bg-yellow-500/10' :
+                                word.difficulty?.toLowerCase() === 'hard' ? 'text-red-400 border-red-400/30 bg-red-500/10' :
+                                'text-gray-400 border-gray-400/30 bg-gray-500/10'
                               }`}>
-                                {word.difficulty || 'N/A'}
+                                {word.difficulty ? word.difficulty.charAt(0).toUpperCase() + word.difficulty.slice(1) : 'N/A'}
                               </span>
                             </td>
                             <td className="px-6 py-4 text-white/80">{word.category || 'N/A'}</td>
@@ -514,6 +583,40 @@ const CrosswordAdminPage = () => {
                     </table>
                   </div>
                 </div>
+
+                {/* Words Pagination */}
+                {wordsTotalPages > 1 && (
+                  <div className="mt-6 flex justify-center items-center gap-2">
+                    <button
+                      onClick={() => handleWordsPageChange(wordsPage - 1)}
+                      disabled={wordsPage === 1}
+                      className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Previous
+                    </button>
+                    
+                    <div className="flex items-center gap-2">
+                      <span className="text-white">
+                        Page {wordsPage} of {wordsTotalPages}
+                      </span>
+                      <span className="text-white/60 text-sm">
+                        ({wordsTotal} total words)
+                      </span>
+                    </div>
+                    
+                    <button
+                      onClick={() => handleWordsPageChange(wordsPage + 1)}
+                      disabled={wordsPage === wordsTotalPages}
+                      className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
+                      aria-label="Next page"
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -555,12 +658,13 @@ const CrosswordAdminPage = () => {
                               </span>
                             </td>
                             <td className="px-6 py-4">
-                              <span className={`px-2 py-1 rounded text-sm ${
-                                clue.difficulty === 'easy' ? 'text-green-400 bg-green-500/10' :
-                                clue.difficulty === 'medium' ? 'text-yellow-400 bg-yellow-500/10' :
-                                'text-red-400 bg-red-500/10'
+                              <span className={`px-3 py-1 rounded-full text-sm font-medium border ${
+                                clue.difficulty?.toLowerCase() === 'easy' ? 'text-green-400 border-green-400/30 bg-green-500/10' :
+                                clue.difficulty?.toLowerCase() === 'medium' ? 'text-yellow-400 border-yellow-400/30 bg-yellow-500/10' :
+                                clue.difficulty?.toLowerCase() === 'hard' ? 'text-red-400 border-red-400/30 bg-red-500/10' :
+                                'text-gray-400 border-gray-400/30 bg-gray-500/10'
                               }`}>
-                                {clue.difficulty || 'N/A'}
+                                {clue.difficulty ? clue.difficulty.charAt(0).toUpperCase() + clue.difficulty.slice(1) : 'N/A'}
                               </span>
                             </td>
                             <td className="px-6 py-4 text-white/80">{clue.category || 'N/A'}</td>
@@ -571,6 +675,40 @@ const CrosswordAdminPage = () => {
                     </table>
                   </div>
                 </div>
+
+                {/* Clues Pagination */}
+                {cluesTotalPages > 1 && (
+                  <div className="mt-6 flex justify-center items-center gap-2">
+                    <button
+                      onClick={() => handleCluesPageChange(cluesPage - 1)}
+                      disabled={cluesPage === 1}
+                      className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Previous
+                    </button>
+                    
+                    <div className="flex items-center gap-2">
+                      <span className="text-white">
+                        Page {cluesPage} of {cluesTotalPages}
+                      </span>
+                      <span className="text-white/60 text-sm">
+                        ({cluesTotal} total clues)
+                      </span>
+                    </div>
+                    
+                    <button
+                      onClick={() => handleCluesPageChange(cluesPage + 1)}
+                      disabled={cluesPage === cluesTotalPages}
+                      className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
+                      aria-label="Next page"
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -732,15 +870,16 @@ const CrosswordAdminPage = () => {
 
                       <div>
                         <label className="block text-white/80 text-sm font-medium mb-2">
-                          Category (Optional)
+                          Category <span className="text-red-400">*</span>
                         </label>
                         <input
                           type="text"
                           value={wordForm.category}
                           onChange={(e) => setWordForm({ ...wordForm, category: e.target.value })}
                           className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="e.g., Animals, Sports, Science"
+                          placeholder="e.g., Programming, Database, Network"
                           aria-label="Word category"
+                          required
                         />
                       </div>
                     </div>
@@ -844,15 +983,16 @@ const CrosswordAdminPage = () => {
 
                       <div>
                         <label className="block text-white/80 text-sm font-medium mb-2">
-                          Category (Optional)
+                          Category <span className="text-red-400">*</span>
                         </label>
                         <input
                           type="text"
                           value={clueForm.category}
                           onChange={(e) => setClueForm({ ...clueForm, category: e.target.value })}
                           className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="e.g., Animals, Sports, Science"
+                          placeholder="e.g., Software, Hardware, AI, Security"
                           aria-label="Clue category"
+                          required
                         />
                       </div>
                     </div>

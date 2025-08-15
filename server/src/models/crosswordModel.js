@@ -306,41 +306,69 @@ module.exports = {
     },
 
     // Word and Clue management
-    readAllWords: async () => {
+    readAllWords: async (page = 1, limit = 10) => {
         try {
-            const words = await prisma.word.findMany({
-                select: {
-                    wordId: true,
-                    wordText: true,
-                    wordLength: true,
-                    difficulty: true,
-                    category: true,
-                    createdAt: true,
-                },
-                orderBy: { wordText: 'asc' },
-            });
+            const skip = (page - 1) * limit;
+            
+            const [words, totalCount] = await Promise.all([
+                prisma.word.findMany({
+                    select: {
+                        wordId: true,
+                        wordText: true,
+                        wordLength: true,
+                        difficulty: true,
+                        category: true,
+                        createdAt: true,
+                    },
+                    orderBy: { wordText: 'asc' },
+                    skip,
+                    take: limit,
+                }),
+                prisma.word.count()
+            ]);
 
-            return words;
+            return {
+                words,
+                totalItems: totalCount,
+                totalPages: Math.ceil(totalCount / limit),
+                currentPage: page,
+                hasNextPage: skip + limit < totalCount,
+                hasPrevPage: page > 1
+            };
         } catch (error) {
             throw error;
         }
     },
 
-    readAllClues: async () => {
+    readAllClues: async (page = 1, limit = 10) => {
         try {
-            const clues = await prisma.clue.findMany({
-                select: {
-                    clueId: true,
-                    clueText: true,
-                    clueType: true,
-                    difficulty: true,
-                    category: true,
-                    createdAt: true,
-                },
-                orderBy: { clueText: 'asc' },
-            });
+            const skip = (page - 1) * limit;
+            
+            const [clues, totalCount] = await Promise.all([
+                prisma.clue.findMany({
+                    select: {
+                        clueId: true,
+                        clueText: true,
+                        clueType: true,
+                        difficulty: true,
+                        category: true,
+                        createdAt: true,
+                    },
+                    orderBy: { clueText: 'asc' },
+                    skip,
+                    take: limit,
+                }),
+                prisma.clue.count()
+            ]);
 
-            return clues;
+            return {
+                clues,
+                totalItems: totalCount,
+                totalPages: Math.ceil(totalCount / limit),
+                currentPage: page,
+                hasNextPage: skip + limit < totalCount,
+                hasPrevPage: page > 1
+            };
         } catch (error) {
             throw error;
         }

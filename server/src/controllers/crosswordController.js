@@ -180,15 +180,51 @@ module.exports = {
 
     // Word and Clue management
     getAllWords: catchAsync(async (req, res, next) => {
-        const words = await crosswordModel.readAllWords();
-        logger.debug("Fetching all words");
-        res.status(200).json({ status: "success", data: words });
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        
+        const result = await crosswordModel.readAllWords(page, limit);
+        if (!result) {
+            logger.warn("Fetch all words failed: Database error");
+            return next(new AppError("Failed to fetch words", 500));
+        }
+        
+        logger.debug(`Fetching words - page: ${page}, limit: ${limit}`);
+        res.status(200).json({ 
+            status: "success", 
+            data: result.words,
+            pagination: {
+                currentPage: page,
+                totalPages: result.totalPages,
+                total: result.totalItems,
+                hasNextPage: page < result.totalPages,
+                hasPrevPage: page > 1
+            }
+        });
     }),
 
     getAllClues: catchAsync(async (req, res, next) => {
-        const clues = await crosswordModel.readAllClues();
-        logger.debug("Fetching all clues");
-        res.status(200).json({ status: "success", data: clues });
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        
+        const result = await crosswordModel.readAllClues(page, limit);
+        if (!result) {
+            logger.warn("Fetch all clues failed: Database error");
+            return next(new AppError("Failed to fetch clues", 500));
+        }
+        
+        logger.debug(`Fetching clues - page: ${page}, limit: ${limit}`);
+        res.status(200).json({ 
+            status: "success", 
+            data: result.clues,
+            pagination: {
+                currentPage: page,
+                totalPages: result.totalPages,
+                total: result.totalItems,
+                hasNextPage: page < result.totalPages,
+                hasPrevPage: page > 1
+            }
+        });
     }),
 
     createWord: catchAsync(async (req, res, next) => {
