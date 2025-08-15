@@ -106,4 +106,35 @@ module.exports = {
     logger.debug("Fetching user statistics");
     res.status(200).json({ status: "success", data: statistics });
   }),
+
+  // Get user activities by user ID
+  getUserActivities: catchAsync(async (req, res, next) => {
+    const { userId } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    if (!userId) {
+      logger.warn("Fetch user activities failed: Missing user ID");
+      return next(new AppError("User ID is required", 400));
+    }
+
+    const result = await adminModel.getUserActivities(userId, page, limit);
+    if (!result) {
+      logger.warn(`Fetch user activities failed: User with ID ${userId} not found or no activities`);
+      return next(new AppError(`No activities found for user with ID ${userId}`, 404));
+    }
+
+    logger.debug(`Fetching activities for user ID ${userId} - page: ${page}, limit: ${limit}`);
+    res.status(200).json({ 
+      status: "success", 
+      data: result.activities,
+      pagination: {
+        currentPage: page,
+        totalPages: result.totalPages,
+        totalActivities: result.totalActivities,
+        hasNextPage: page < result.totalPages,
+        hasPrevPage: page > 1
+      }
+    });
+  }),
 };

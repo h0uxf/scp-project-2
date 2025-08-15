@@ -312,4 +312,60 @@ module.exports = {
             throw error;
         }
     },
+
+    // Get user activities by user ID with pagination
+    getUserActivities: async (userId, page = 1, limit = 10) => {
+        try {
+            const skip = (page - 1) * limit;
+            const userIdInt = parseInt(userId);
+
+            // Check if user exists
+            const user = await prisma.user.findUnique({
+                where: { userId: userIdInt },
+                select: { userId: true, username: true }
+            });
+
+            if (!user) {
+                return null;
+            }
+
+            // Get total count for pagination
+            const totalActivities = await prisma.userActivities.count({
+                where: { userId: userIdInt }
+            });
+
+            // Get user activities with pagination
+            const activities = await prisma.userActivities.findMany({
+                where: { userId: userIdInt },
+                include: {
+                    activity: {
+                        include: {
+                            location: {
+                                select: {
+                                    name: true,
+                                    description: true
+                                }
+                            }
+                        }
+                    }
+                },
+                orderBy: {
+                    createdAt: 'desc'
+                },
+                skip: skip,
+                take: limit
+            });
+
+            const totalPages = Math.ceil(totalActivities / limit);
+
+            return {
+                user,
+                activities,
+                totalPages,
+                totalActivities
+            };
+        } catch (error) {
+            throw error;
+        }
+    },
 };

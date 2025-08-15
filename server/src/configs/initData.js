@@ -1069,7 +1069,7 @@ async function initializeUserActivities(username) {
           data: {
             userId: user.userId,
             activityId: activity.activityId,
-            points: 0,
+            points: 10,
           },
         });
         console.log(`UserActivities entry created for username: ${username}, activity: ${activity.name}`);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Edit2, Trash2, Shield, User, Crown, Search, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Filter } from "lucide-react";
+import { Edit2, Trash2, Shield, User, Crown, Search, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Filter, Eye, X, Calendar, MapPin, Award } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../components/AuthProvider";
 import toast, { Toaster } from "react-hot-toast";
@@ -19,6 +19,11 @@ const ManageUsersPage = () => {
   const [sortDirection, setSortDirection] = useState("asc");
   const [roleFilter, setRoleFilter] = useState("");
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [viewingActivities, setViewingActivities] = useState(null);
+  const [userActivities, setUserActivities] = useState([]);
+  const [activitiesPage, setActivitiesPage] = useState(1);
+  const [activitiesTotalPages, setActivitiesTotalPages] = useState(1);
+  const [loadingActivities, setLoadingActivities] = useState(false);
 
   const roles = [
     { id: 1, name: "user", displayName: "User", icon: User, color: "text-gray-400" },
@@ -298,6 +303,46 @@ const ManageUsersPage = () => {
     // Re-process users with reset filters
     const processed = processUsers(allUsers, "", "", "userId", "asc");
     setFilteredUsers(processed);
+  };
+
+  const fetchUserActivities = async (userId, page = 1) => {
+    try {
+      setLoadingActivities(true);
+      const data = await makeApiCall(`/admin/users/${userId}/activities?page=${page}&limit=10`, "GET");
+      
+      if (data.status !== "success") {
+        throw new Error(data.message || "Failed to fetch user activities");
+      }
+
+      setUserActivities(data.data);
+      if (data.pagination) {
+        setActivitiesPage(data.pagination.currentPage);
+        setActivitiesTotalPages(data.pagination.totalPages);
+      }
+    } catch (err) {
+      console.error("Failed to fetch user activities:", err);
+      toast.error(err.message || "Failed to load user activities");
+    } finally {
+      setLoadingActivities(false);
+    }
+  };
+
+  const handleViewActivities = (user) => {
+    setViewingActivities(user);
+    fetchUserActivities(user.userId);
+  };
+
+  const closeActivitiesModal = () => {
+    setViewingActivities(null);
+    setUserActivities([]);
+    setActivitiesPage(1);
+    setActivitiesTotalPages(1);
+  };
+
+  const handleActivitiesPageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= activitiesTotalPages && viewingActivities) {
+      fetchUserActivities(viewingActivities.userId, newPage);
+    }
   };
 
   const getSortIcon = (field) => {
@@ -599,6 +644,14 @@ const ManageUsersPage = () => {
                               </div>
                             ) : (
                               <div className="flex justify-end gap-2">
+                                <button
+                                  onClick={() => handleViewActivities(user)}
+                                  className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg transition-colors"
+                                  title="View Activities"
+                                  aria-label="View user activities"
+                                >
+                                  <Eye size={16} />
+                                </button>
                                 {canEditUser(user) && (
                                   <button
                                     onClick={() => startEditing(user)}
@@ -694,6 +747,121 @@ const ManageUsersPage = () => {
           </motion.div>
         )}
       </div>
+
+      {/* User Activities Modal */}
+      <AnimatePresence>
+        {viewingActivities && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={closeActivitiesModal}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 max-w-4xl w-full max-h-[80vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                  <Eye className="w-6 h-6" />
+                  Activities for {viewingActivities.username}
+                </h3>
+                <button
+                  onClick={closeActivitiesModal}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  aria-label="Close modal"
+                >
+                  <X className="w-6 h-6 text-gray-300" />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto max-h-[60vh]">
+                {loadingActivities ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+                    <p className="text-gray-300">Loading activities...</p>
+                  </div>
+                ) : userActivities.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Award className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+                    <p className="text-lg text-gray-400 mb-2">No activities found</p>
+                    <p className="text-sm text-gray-500">This user hasn't participated in any activities yet.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {userActivities.map((userActivity) => (
+                      <motion.div
+                        key={`${userActivity.userId}-${userActivity.activityId}`}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-colors"
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <h4 className="text-lg font-semibold text-white">
+                            {userActivity.activity.name}
+                          </h4>
+                          <div className="flex items-center gap-2 text-green-400">
+                            <Award className="w-4 h-4" />
+                            <span className="font-medium">+{userActivity.points} points</span>
+                          </div>
+                        </div>
+                        
+                        <p className="text-gray-300 mb-3">{userActivity.activity.description}</p>
+                        
+                        <div className="flex flex-wrap gap-4 text-sm text-gray-400">
+                          {userActivity.activity.location && (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-4 h-4" />
+                              <span>{userActivity.activity.location.name}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            <span>Completed on {new Date(userActivity.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Pagination for activities */}
+              {activitiesTotalPages > 1 && (
+                <div className="mt-6 flex justify-center items-center gap-2">
+                  <button
+                    onClick={() => handleActivitiesPageChange(activitiesPage - 1)}
+                    disabled={activitiesPage === 1}
+                    className="flex items-center gap-2 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Previous
+                  </button>
+                  
+                  <span className="px-4 py-2 text-white">
+                    Page {activitiesPage} of {activitiesTotalPages}
+                  </span>
+                  
+                  <button
+                    onClick={() => handleActivitiesPageChange(activitiesPage + 1)}
+                    disabled={activitiesPage === activitiesTotalPages}
+                    className="flex items-center gap-2 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/20 transition-colors"
+                    aria-label="Next page"
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

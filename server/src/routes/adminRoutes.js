@@ -49,6 +49,12 @@ router.delete(
     adminController.deleteUserById
 );
 
+// [GET] Get user activities by user ID
+router.get(
+    '/users/:userId/activities',
+    adminController.getUserActivities
+);
+
 //////////////////////////////////////////////////////
 // DEFINE ROUTES FOR USER STATISTICS (ADMIN)
 //////////////////////////////////////////////////////
