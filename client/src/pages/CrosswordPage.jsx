@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Clock, Eye, HelpCircle, Check, RotateCcw } from "lucide-react";
+import { Clock, Eye, HelpCircle, Check, RotateCcw, Pause, Play, Home, Send } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../components/AuthProvider";
 import toast, { Toaster } from "react-hot-toast";
@@ -52,16 +52,19 @@ const CrosswordPage = () => {
   const [hintsUsed, setHintsUsed] = useState(0);
   const [showClues, setShowClues] = useState(true);
   const [saveTimeoutRef, setSaveTimeoutRef] = useState(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const [showPauseModal, setShowPauseModal] = useState(false);
+  const [pauseStartTime, setPauseStartTime] = useState(null);
 
   // Timer effect
   useEffect(() => {
-    if (startTime && !progress?.isCompleted) {
+    if (startTime && !progress?.isCompleted && !isPaused) {
       const interval = setInterval(() => {
         setTimeSpent(Math.floor((Date.now() - startTime) / 1000));
       }, 1000);
       return () => clearInterval(interval);
     }
-  }, [startTime, progress?.isCompleted]);
+  }, [startTime, progress?.isCompleted, isPaused]);
 
   // Fetch puzzle data
   const fetchPuzzle = async () => {
@@ -228,6 +231,27 @@ const CrosswordPage = () => {
     });
   };
 
+  // Check if all letters are filled (not necessarily correct)
+  const checkAllLettersFilled = (grid) => {
+    if (!puzzle) return false;
+    
+    return puzzle.puzzleWords.every(wordData => {
+      const { startRow, startCol, direction, word } = wordData;
+      const wordText = word.wordText.toUpperCase();
+      const normalizedDirection = direction.toLowerCase();
+      
+      for (let i = 0; i < wordText.length; i++) {
+        const row = normalizedDirection === 'down' ? startRow + i : startRow;
+        const col = normalizedDirection === 'across' ? startCol + i : startCol;
+        
+        if (!grid[row][col].letter || grid[row][col].letter.trim() === '') {
+          return false;
+        }
+      }
+      return true;
+    });
+  };
+
   // Handle grid changes
   const handleGridChange = (newGrid) => {
     setCurrentGrid(newGrid);
@@ -237,17 +261,12 @@ const CrosswordPage = () => {
       clearTimeout(saveTimeoutRef);
     }
     
-    const isCompleted = checkCompletion(newGrid);
-    if (isCompleted && !progress?.isCompleted) {
-      saveProgress(newGrid, true);
-    } else {
-      // Set new timeout and store reference
-      const newTimeout = setTimeout(() => {
-        saveProgress(newGrid, false);
-        setSaveTimeoutRef(null);
-      }, 2000);
-      setSaveTimeoutRef(newTimeout);
-    }
+    // Just save progress without checking completion automatically
+    const newTimeout = setTimeout(() => {
+      saveProgress(newGrid, false);
+      setSaveTimeoutRef(null);
+    }, 2000);
+    setSaveTimeoutRef(newTimeout);
   };
 
   // Use hint
@@ -289,6 +308,40 @@ const CrosswordPage = () => {
       setStartTime(Date.now());
       toast.success("Puzzle reset!");
     }
+  };
+
+  // Submit puzzle for completion
+  const submitPuzzle = () => {
+    if (!currentGrid || progress?.isCompleted) return;
+    
+    const isCorrect = checkCompletion(currentGrid);
+    if (isCorrect) {
+      saveProgress(currentGrid, true);
+      toast.success("Congratulations! Puzzle completed correctly!");
+    } else {
+      toast.error("Some answers are incorrect. Please check your work.");
+    }
+  };
+
+  // Pause/Resume functions
+  const pausePuzzle = () => {
+    setIsPaused(true);
+    setPauseStartTime(Date.now());
+    setShowPauseModal(true);
+  };
+
+  const resumePuzzle = () => {
+    if (pauseStartTime && startTime) {
+      const pauseDuration = Date.now() - pauseStartTime;
+      setStartTime(startTime + pauseDuration); // Adjust start time to account for pause
+    }
+    setIsPaused(false);
+    setPauseStartTime(null);
+    setShowPauseModal(false);
+  };
+
+  const goToCrosswordList = () => {
+    navigate('/crosswords');
   };
 
   useEffect(() => {
@@ -406,7 +459,8 @@ const CrosswordPage = () => {
                     <div className="space-y-3">
                       <button
                         onClick={() => setShowClues(!showClues)}
-                        className="w-full flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+                        disabled={isPaused}
+                        className="w-full flex items-center gap-2 text-white/80 hover:text-white disabled:text-white/40 transition-colors"
                         aria-label={showClues ? 'Hide clues' : 'Show clues'}
                       >
                         <Eye className="w-4 h-4" />
@@ -414,7 +468,7 @@ const CrosswordPage = () => {
                       </button>
                       <button
                         onClick={useHint}
-                        disabled={hintsUsed >= 3 || !selectedWord}
+                        disabled={hintsUsed >= 3 || !selectedWord || isPaused}
                         className="w-full flex items-center gap-2 text-white/80 hover:text-white disabled:text-white/40 transition-colors"
                         aria-label="Use hint"
                       >
@@ -423,11 +477,30 @@ const CrosswordPage = () => {
                       </button>
                       <button
                         onClick={resetPuzzle}
-                        className="w-full flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+                        disabled={isPaused}
+                        className="w-full flex items-center gap-2 text-white/80 hover:text-white disabled:text-white/40 transition-colors"
                         aria-label="Reset puzzle"
                       >
                         <RotateCcw className="w-4 h-4" />
                         Reset Puzzle
+                      </button>
+                      <button
+                        onClick={isPaused ? resumePuzzle : pausePuzzle}
+                        disabled={!startTime || progress?.isCompleted}
+                        className="w-full flex items-center gap-2 text-white/80 hover:text-white disabled:text-white/40 transition-colors"
+                        aria-label={isPaused ? "Resume puzzle" : "Pause puzzle"}
+                      >
+                        {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+                        {isPaused ? "Resume" : "Pause"} Puzzle
+                      </button>
+                      <button
+                        onClick={submitPuzzle}
+                        disabled={!checkAllLettersFilled(currentGrid) || progress?.isCompleted || isPaused}
+                        className="w-full flex items-center gap-2 bg-green-600/20 hover:bg-green-600/30 disabled:bg-gray-600/20 text-white/80 hover:text-white disabled:text-white/40 transition-all duration-300 py-2 px-4 rounded-lg border border-green-400/30 disabled:border-gray-400/30"
+                        aria-label="Submit puzzle"
+                      >
+                        <Send className="w-4 h-4" />
+                        Submit Puzzle
                       </button>
                     </div>
                   </div>
@@ -460,7 +533,7 @@ const CrosswordPage = () => {
                     onCellSelect={setSelectedCell}
                     onWordSelect={setSelectedWord}
                     onDirectionChange={setDirection}
-                    readonly={progress.isCompleted}
+                    readonly={progress.isCompleted || isPaused}
                   />
                 </div>
 
@@ -530,6 +603,59 @@ const CrosswordPage = () => {
             )}
           </div>
         </div>
+
+        {/* Pause Modal */}
+        <AnimatePresence>
+          {showPauseModal && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+              />
+              
+              {/* Modal */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="fixed inset-0 flex items-center justify-center z-50 p-4"
+              >
+                <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 max-w-md w-full mx-4">
+                  <div className="text-center">
+                    <div className="mb-6">
+                      <Pause className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+                      <h2 className="text-2xl font-bold text-white mb-2">Puzzle Paused</h2>
+                      <p className="text-white/80">
+                        The timer has been paused. What would you like to do?
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <button
+                        onClick={resumePuzzle}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 flex items-center justify-center gap-2"
+                      >
+                        <Play className="w-5 h-5" />
+                        Continue Puzzle
+                      </button>
+                      
+                      <button
+                        onClick={goToCrosswordList}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 flex items-center justify-center gap-2"
+                      >
+                        <Home className="w-5 h-5" />
+                        Back to Crossword List
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
     </CrosswordErrorBoundary>
   );

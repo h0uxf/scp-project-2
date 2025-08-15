@@ -150,6 +150,25 @@ module.exports = {
         try {
             const { currentGrid, isCompleted, timeSpent, hintsUsed, score } = progressData;
             
+            // Get current progress to check if puzzle was already completed
+            const currentProgress = await prisma.userPuzzleProgress.findUnique({
+                where: {
+                    userId_puzzleId: {
+                        userId: userIdInt,
+                        puzzleId: puzzleIdInt,
+                    },
+                },
+                select: {
+                    isCompleted: true,
+                    puzzle: {
+                        select: {
+                            difficulty: true,
+                            title: true
+                        }
+                    }
+                }
+            });
+
             const updateData = {
                 updatedAt: new Date(),
             };
@@ -159,31 +178,104 @@ module.exports = {
             if (hintsUsed !== undefined) updateData.hintsUsed = parseInt(hintsUsed, 10);
             if (score !== undefined) updateData.score = parseInt(score, 10);
             
+            // Check if puzzle is being completed for the first time
+            const isFirstTimeCompletion = isCompleted && !currentProgress?.isCompleted;
+            
             if (isCompleted !== undefined && isCompleted) {
                 updateData.isCompleted = true;
                 updateData.completedAt = new Date();
             }
 
-            const progress = await prisma.userPuzzleProgress.update({
-                where: {
-                    userId_puzzleId: {
-                        userId: userIdInt,
-                        puzzleId: puzzleIdInt,
+            // Use transaction for atomic updates
+            const result = await prisma.$transaction(async (prisma) => {
+                // Update puzzle progress
+                const progress = await prisma.userPuzzleProgress.update({
+                    where: {
+                        userId_puzzleId: {
+                            userId: userIdInt,
+                            puzzleId: puzzleIdInt,
+                        },
                     },
-                },
-                data: updateData,
-                select: {
-                    currentGrid: true,
-                    isCompleted: true,
-                    completedAt: true,
-                    timeSpent: true,
-                    hintsUsed: true,
-                    score: true,
-                    updatedAt: true,
-                },
+                    data: updateData,
+                    select: {
+                        currentGrid: true,
+                        isCompleted: true,
+                        completedAt: true,
+                        timeSpent: true,
+                        hintsUsed: true,
+                        score: true,
+                        updatedAt: true,
+                    },
+                });
+
+                // If puzzle is completed for the first time, add rewards
+                if (isFirstTimeCompletion && currentProgress?.puzzle) {
+                    const difficulty = currentProgress.puzzle.difficulty.toLowerCase();
+                    let points = 0;
+                    
+                    // Assign points based on difficulty
+                    switch (difficulty) {
+                        case 'easy':
+                            points = 5;
+                            break;
+                        case 'medium':
+                            points = 10;
+                            break;
+                        case 'hard':
+                            points = 15;
+                            break;
+                        default:
+                            points = 5; // Default to easy points
+                    }
+
+                    // Find or create crossword activity
+                    let crosswordActivity = await prisma.activity.findFirst({
+                        where: {
+                            name: 'Crossword Puzzle'
+                        }
+                    });
+
+                    if (!crosswordActivity) {
+                        crosswordActivity = await prisma.activity.create({
+                            data: {
+                                name: 'Crossword Puzzle',
+                                description: 'Complete crossword puzzles to earn points'
+                            }
+                        });
+                    }
+
+                    // Add user activity record (use upsert to avoid duplicates)
+                    await prisma.userActivities.upsert({
+                        where: {
+                            userId_activityId: {
+                                userId: userIdInt,
+                                activityId: crosswordActivity.activityId
+                            }
+                        },
+                        create: {
+                            userId: userIdInt,
+                            activityId: crosswordActivity.activityId,
+                            points: points
+                        },
+                        update: {
+                            points: { increment: points },
+                            updatedAt: new Date()
+                        }
+                    });
+
+                    // Update user's total points
+                    await prisma.user.update({
+                        where: { userId: userIdInt },
+                        data: {
+                            points: { increment: points }
+                        }
+                    });
+                }
+
+                return progress;
             });
 
-            return progress;
+            return result;
         } catch (error) {
             if (error.code === 'P2025') {
                 throw new Error('User progress for this puzzle not found.');
