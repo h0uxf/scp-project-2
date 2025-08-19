@@ -31,8 +31,14 @@ const RegisterPage = () => {
       await handleRegister({ username, password });
       setSuccess("Registration successful! Redirecting to login...");
       setTimeout(() => navigate("/login"), 2000);
-    } catch (err) {
-      setError(err.message || "Registration failed");
+    } catch (error) {
+      console.error("Register failed:", error);
+      console.log("Error object:", { message: error.message, status: error.status });
+      setError(
+        error.message && typeof error.message === "string"
+          ? error.message
+          : "Registration failed. Please try a different username or email."
+      );
     } finally {
       setLoading(false);
     }

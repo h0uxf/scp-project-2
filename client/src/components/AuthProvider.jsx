@@ -157,12 +157,16 @@ export function AuthProvider({ children }) {
       const errorData = await res.json().catch(() => ({}));
       console.error("Registration failed:", errorData);
 
-      const firstErrorMsg =
-        errorData.errors && errorData.errors.length > 0
-          ? errorData.errors[0].msg
-          : "Registration failed";
+      let errorMessage = "Registration failed";
+      if (errorData.errors && errorData.errors.length > 0) {
+        errorMessage = errorData.errors[0].msg; 
+      } else if (errorData.message) {
+        errorMessage = errorData.message; 
+      }
 
-      throw new Error(firstErrorMsg);
+      const error = new Error(errorMessage);
+      error.status = res.status; 
+      throw error;
     }
 
     const data = await res.json();

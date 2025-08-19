@@ -60,8 +60,8 @@ module.exports = {
     }
 
     const data = { username };
-    const results = await userModel.selectByUsernameAndPassword(data);
-    if (results && Array.isArray(results) && results.length > 0) {
+    const user = await userModel.selectByUsernameAndPassword(data);
+    if (user) {
       logger.warn(`Username check failed: Username ${username} already exists`);
       return next(new AppError("Username already exists. Please try another username", 409));
     }
