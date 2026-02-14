@@ -9,7 +9,7 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
-    "axios": "^1.10.0",
+    "axios": "^1.13.5",
     "framer-motion": "^12.23.9",
     "html5-qrcode": "^2.3.8",
     "jsqr": "^1.4.0",
